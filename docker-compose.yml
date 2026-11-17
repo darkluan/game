@@ -1,0 +1,27 @@
+# Local environment: the game server and its database.
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    ports:
+      - '2567:2567'
+    environment:
+      PORT: 2567
+      DATABASE_URL: postgres://moba:moba@postgres:5432/moba
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: moba
+      POSTGRES_PASSWORD: moba
+      POSTGRES_DB: moba
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

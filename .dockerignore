@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.git
+.env*
+coverage
+**/test
+**/*.test.ts
+apps/client
+.yarn/cache
+.yarn/install-state.gz
