@@ -18,8 +18,17 @@ function tokenSecret(): string {
   return 'dev-only-secret-not-for-production-use';
 }
 
+/** Comma-separated list of exact origins, e.g. "https://a.example,https://b.example". */
+function listEnv(name: string): string[] {
+  return (process.env[name] ?? '')
+    .split(',')
+    .map((item) => item.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+}
+
 export const config = {
   port: intEnv('PORT', 2567),
   isProduction,
   tokenSecret: tokenSecret(),
+  corsAllowedOrigins: listEnv('CORS_ALLOWED_ORIGINS'),
 } as const;

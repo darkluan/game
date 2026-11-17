@@ -1,11 +1,16 @@
-import { defineRoom, defineServer, WebSocketTransport } from 'colyseus';
+import { defineRoom, defineServer, matchMaker, WebSocketTransport } from 'colyseus';
 import { issueGuest } from './auth/guest.js';
+import { config } from './config.js';
+import { corsHeadersFor } from './cors.js';
 import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { MatchRoom } from './rooms/MatchRoom.js';
 import { PingRoom } from './rooms/PingRoom.js';
 
 /** The game server, not yet listening. */
 export function createGameServer() {
+  // Colyseus answers every HTTP route (matchmaking and ours) with these headers.
+  matchMaker.controller.getCorsHeaders = (headers) =>
+    corsHeadersFor(headers.get('origin'), config.corsAllowedOrigins, config.isProduction);
   return defineServer({
     rooms: {
       ping: defineRoom(PingRoom),
