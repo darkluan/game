@@ -6,7 +6,7 @@ export function NicknameField() {
   const nickname = useSettingsStore((s) => s.nickname);
   const setNickname = useSettingsStore((s) => s.setNickname);
   return (
-    <label className="flex flex-col items-start gap-1 text-sm text-muted-foreground">
+    <label className="flex w-full flex-col items-start gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
       Biệt danh
       <input
         type="text"
@@ -15,7 +15,7 @@ export function NicknameField() {
         autoComplete="nickname"
         placeholder="Nhập biệt danh"
         onChange={(e) => setNickname(e.target.value)}
-        className="w-64 rounded-md border border-border bg-background px-3 py-2 text-base text-foreground"
+        className="w-full rounded-md border border-border bg-background/70 px-4 py-3 text-lg font-medium tracking-normal text-foreground normal-case outline-none select-text placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/30"
       />
     </label>
   );

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="70%">
+      <stop offset="0" stop-color="#1c2a3c" />
+      <stop offset="1" stop-color="#0b1016" />
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)" />
+  <circle cx="32" cy="32" r="19" fill="none" stroke="#e8eef5" stroke-opacity=".16" stroke-width="1.5" />
+  <!-- one arm per race: god (top), dragon (right), machine (bottom), human (left) -->
+  <path d="M32 5 24.5 24.5 32 32Z" fill="#ffe066" />
+  <path d="M32 5 39.5 24.5 32 32Z" fill="#e0a83a" />
+  <path d="M59 32 39.5 24.5 32 32Z" fill="#ff7a6b" />
+  <path d="M59 32 39.5 39.5 32 32Z" fill="#d93a2e" />
+  <path d="M32 59 39.5 39.5 32 32Z" fill="#2f9a4a" />
+  <path d="M32 59 24.5 39.5 32 32Z" fill="#56d977" />
+  <path d="M5 32 24.5 39.5 32 32Z" fill="#2f7fd6" />
+  <path d="M5 32 24.5 24.5 32 32Z" fill="#6cb6ff" />
+  <path d="M32 26.5 37.5 32 32 37.5 26.5 32Z" fill="#f4f8fc" />
+</svg>

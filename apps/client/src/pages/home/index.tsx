@@ -1,33 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useServerStatus } from '@/net/serverStatus';
+import { LobbyShell } from '@/components/LobbyShell';
 import { useGameStore } from '@/store/gameStore';
 import { useRoomStore } from '@/store/roomStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { GameView } from '@/ui/GameView';
+import { HeroPicker } from '@/ui/HeroPicker';
 import { NicknameField } from '@/ui/NicknameField';
-import { SoundSettings } from '@/ui/SoundSettings';
 import { useLobbyMusic } from '@/ui/useLobbyMusic';
-
-function ServerStatusLine() {
-  const { status, retry } = useServerStatus();
-  if (status.state === 'connecting') return <p className="text-sm text-muted-foreground">Đang kết nối máy chủ…</p>;
-  if (status.state === 'online') {
-    return (
-      <p className="text-sm text-hp">
-        Máy chủ: đã kết nối ({status.pingMs} ms, {status.tickRate} tick/giây)
-      </p>
-    );
-  }
-  return (
-    <p className="text-sm text-danger">
-      Máy chủ: không kết nối được.{' '}
-      <button type="button" onClick={retry} className="underline">
-        Thử lại
-      </button>
-    </p>
-  );
-}
 
 function Menu() {
   const navigate = useNavigate();
@@ -35,6 +15,8 @@ function Menu() {
   const createRoom = useRoomStore((s) => s.createRoom);
   const roomError = useRoomStore((s) => (s.phase === 'error' ? s.error : null));
   const nickname = useSettingsStore((s) => s.nickname);
+  const heroId = useSettingsStore((s) => s.heroId);
+  const setHeroId = useSettingsStore((s) => s.setHeroId);
   const [creating, setCreating] = useState(false);
   useLobbyMusic();
 
@@ -46,34 +28,43 @@ function Menu() {
   };
 
   return (
-    <main className="flex h-full flex-col items-center justify-center gap-5 overflow-y-auto p-6 text-center">
-      <h1 className="text-6xl font-bold tracking-wide text-primary">Tứ Tộc</h1>
-      <p className="max-w-md text-muted-foreground">
-        MOBA 3v3 một đường, chơi ngay trên trình duyệt. Tạo phòng rồi gửi link cho bạn bè, ô trống sẽ do máy điều khiển.
-        Phá đền địch để thắng.
+    <LobbyShell
+      heroId={heroId}
+      aside={<HeroPicker label="Tướng khi chơi thử với máy" value={heroId} onChange={setHeroId} />}
+      actions={
+        <div className="flex w-full max-w-md animate-rise flex-col gap-3 [animation-delay:240ms]">
+          <button
+            type="button"
+            onClick={() => void onCreate()}
+            disabled={creating}
+            className="btn btn-primary cut-corners text-lg"
+          >
+            {creating ? 'Đang tạo phòng…' : 'Tạo phòng'}
+          </button>
+          <button type="button" onClick={startOffline} className="btn btn-ghost cut-corners text-sm">
+            Chơi thử với máy
+          </button>
+          {roomError && (
+            <p role="alert" className="text-sm text-danger">
+              {roomError}
+            </p>
+          )}
+        </div>
+      }
+    >
+      <p className="animate-rise text-xs font-bold tracking-[0.35em] text-primary uppercase">
+        MOBA 3v3 · Một đường · Chơi ngay trên trình duyệt
       </p>
-      <NicknameField />
-      <div className="flex flex-wrap justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => void onCreate()}
-          disabled={creating}
-          className="rounded-md bg-primary px-8 py-3 text-lg font-semibold text-primary-foreground disabled:opacity-60"
-        >
-          {creating ? 'Đang tạo phòng…' : 'Tạo phòng'}
-        </button>
-        <button type="button" onClick={startOffline} className="rounded-md border border-border px-8 py-3 text-lg">
-          Chơi thử với máy
-        </button>
+      <h1 className="animate-rise text-title text-7xl leading-none font-black tracking-[0.08em] uppercase [animation-delay:80ms] sm:text-8xl">
+        Tứ Tộc
+      </h1>
+      <p className="max-w-md animate-rise text-muted-foreground [animation-delay:120ms]">
+        Tạo phòng rồi gửi link cho bạn bè, ô trống sẽ do máy điều khiển. Phá đền địch để thắng.
+      </p>
+      <div className="glass-panel w-full max-w-md animate-rise rounded-xl p-5 [animation-delay:160ms]">
+        <NicknameField />
       </div>
-      {roomError && (
-        <p role="alert" className="text-sm text-danger">
-          {roomError}
-        </p>
-      )}
-      <ServerStatusLine />
-      <SoundSettings />
-    </main>
+    </LobbyShell>
   );
 }
 
