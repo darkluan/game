@@ -289,7 +289,7 @@ CMD ["node", "apps/server/dist/index.js"]
 - [x] Cấu hình TypeScript, ESLint, Prettier, Vitest
 - [x] Client: scene trống, mặt đất, camera nhìn từ trên xuống
 - [x] Server: Colyseus chạy được, một phòng thử kết nối
-- [ ] Triển khai thử cả client và server lên mạng
+- [x] Triển khai thử cả client và server lên mạng *(client: https://tu-toc.pages.dev trên Cloudflare Pages; server: https://tu-toc-server.onrender.com trên Render gói free)*
 
 **Xong khi:** mở link công khai thấy scene 3D và client kết nối được tới server.
 
@@ -321,15 +321,15 @@ CMD ["node", "apps/server/dist/index.js"]
 
 ### Giai đoạn 3: Nội dung (4-5 tuần)
 
-- [ ] Cơ chế tộc Rồng (không mana, tiến hóa), tướng Ignar
-- [ ] Cơ chế tộc Thần (tín đồ, hồi sinh lâu), tướng Sola
-- [ ] Cơ chế tộc Người máy (Nhiệt, Quá tải), tướng Bolt-7
-- [ ] Shop và 15 món đồ
-- [ ] Rừng, quái rừng, bụi cỏ và tầm nhìn
-- [ ] Màn chọn tướng
-- [ ] Bot nâng cao: đi đường, farm, lùi khi yếu máu, dùng chiêu
-- [ ] **Mốc MVP**
-- [ ] 4 tướng còn lại: Lyra, Baru, Vesper, Mekka
+- [x] Cơ chế tộc Rồng (không mana, tiến hóa), tướng Ignar
+- [x] Cơ chế tộc Thần (tín đồ, hồi sinh lâu), tướng Sola
+- [x] Cơ chế tộc Người máy (Nhiệt, Quá tải), tướng Bolt-7
+- [x] Shop và 15 món đồ
+- [x] Rừng, quái rừng, bụi cỏ và tầm nhìn
+- [x] Màn chọn tướng
+- [x] Bot nâng cao: đi đường, farm, lùi khi yếu máu, dùng chiêu
+- [ ] **Mốc MVP** *(đủ nội dung; còn thiếu lần chơi thử 6 người ở 6 máy)*
+- [x] 4 tướng còn lại: Lyra, Baru, Vesper, Mekka
 
 **Xong khi:** đủ 8 tướng, mỗi tộc chơi khác nhau rõ rệt.
 
