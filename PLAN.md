@@ -310,12 +310,12 @@ CMD ["node", "apps/server/dist/index.js"]
 
 ### Giai đoạn 2: Online và phòng qua link (2-3 tuần)
 
-- [ ] Tài khoản khách (token trong trình duyệt)
-- [ ] `MatchRoom` chạy `core` trên server, nhận lệnh, phát trạng thái
-- [ ] Client nội suy vị trí
-- [ ] `LobbyRoom`: tạo phòng, mã phòng, link `/r/:code`, chọn đội
-- [ ] Vào lại trận khi rớt mạng
-- [ ] Bot đơn giản lấp ô trống
+- [x] Tài khoản khách (token trong trình duyệt)
+- [x] `MatchRoom` chạy `core` trên server, nhận lệnh, phát trạng thái
+- [x] Client nội suy vị trí
+- [x] `LobbyRoom`: tạo phòng, mã phòng, link `/r/:code`, chọn đội
+- [x] Vào lại trận khi rớt mạng
+- [x] Bot đơn giản lấp ô trống
 
 **Xong khi:** 6 người ở 6 máy chơi chung một trận bằng Kael qua link mời.
 
