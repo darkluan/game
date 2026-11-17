@@ -252,7 +252,7 @@ penalties(player_id, reason, until)
 - Lệnh build: `docker build -f apps/server/Dockerfile -t moba-server .`
 - Server là stateful (mỗi trận sống trong bộ nhớ một tiến trình) và dùng WebSocket: nền tảng triển khai phải hỗ trợ WebSocket, không tự tắt container khi rảnh, và khi deploy bản mới cần chờ các trận đang chạy kết thúc.
 - Chỉ đóng gói server. Client là file tĩnh, triển khai lên CDN.
-- Cấu hình qua biến môi trường: `PORT`, `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `TOKEN_SECRET`.
+- Cấu hình qua biến môi trường: `PORT`, `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `TOKEN_SECRET`, `CORS_ALLOWED_ORIGINS`.
 
 Dockerfile khởi điểm (cần chạy thử và chỉnh khi dựng project):
 
@@ -285,7 +285,7 @@ CMD ["node", "apps/server/dist/index.js"]
 ### Giai đoạn 0: Dựng nền (3-5 ngày)
 
 - [x] Khởi tạo monorepo Yarn workspaces với `packages/core`, `apps/client`, `apps/server`
-- [ ] Dockerfile cho server, `docker-compose.yml` (server + postgres), `.dockerignore` *(đã viết, chưa build thử image vì Docker daemon chưa chạy)*
+- [x] Dockerfile cho server, `docker-compose.yml` (server + postgres), `.dockerignore`
 - [x] Cấu hình TypeScript, ESLint, Prettier, Vitest
 - [x] Client: scene trống, mặt đất, camera nhìn từ trên xuống
 - [x] Server: Colyseus chạy được, một phòng thử kết nối

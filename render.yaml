@@ -1,0 +1,17 @@
+# Render Blueprint: the game server as a free Docker web service.
+# The free plan sleeps after a period without traffic, which ends any running match. For trying things out only.
+services:
+  - type: web
+    name: tu-toc-server
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./apps/server/Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthcheck
+    envVars:
+      - key: TOKEN_SECRET
+        generateValue: true
+      # Web pages allowed to call this server, comma-separated.
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://tu-toc.pages.dev
