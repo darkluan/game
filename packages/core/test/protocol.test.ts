@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanNickname, FLAG_DEAD, FLAG_SHIELD, FLAG_TARGETABLE, snapshotOf, youSnapshotOf } from '../src/index.js';
+import { cleanNickname, FLAG_DEAD, FLAG_TARGETABLE, snapshotOf, STATUS_FLAGS, youSnapshotOf } from '../src/index.js';
 import { hero, makeSim, run } from './helpers.js';
 
 describe('snapshot', () => {
@@ -12,7 +12,7 @@ describe('snapshot', () => {
     expect(snap.entities).toHaveLength(sim.world.entities.length);
     const byId = new Map(snap.entities.map((e) => [e.id, e]));
     expect(byId.get(a.id)).toMatchObject({ k: 'hero', hd: 'kael', lv: 1, kda: [0, 0, 0] });
-    expect(byId.get(a.id)!.fl & FLAG_SHIELD).toBeTruthy();
+    expect(byId.get(a.id)!.fl & STATUS_FLAGS.shield).toBeTruthy();
     expect(byId.get(hero(sim, 'b').id)!.fl & FLAG_DEAD).toBeTruthy();
     // Inner towers are protected while the outer one stands.
     const inner = snap.entities.filter((e) => e.k === 'tower' && !(e.fl & FLAG_TARGETABLE));

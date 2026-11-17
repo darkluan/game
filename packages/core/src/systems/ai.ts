@@ -1,10 +1,16 @@
 import { BOT, TOWER } from '../data/balance.js';
+import { BOT_BUILDS } from '../data/items.js';
 import { dist } from '../math.js';
 import type { HeroEntity, Sim, UnitEntity } from '../sim/Sim.js';
-import { ABILITY_SLOTS, type Command } from '../types.js';
+import { ABILITY_SLOTS, type AbilityDef, type AbilitySlot, type Command, type Vec2 } from '../types.js';
+import { castBlocker } from './ability.js';
+import { attackDamageOf } from './combat.js';
 import { applyCommand } from './command.js';
+import { canShop } from './shop.js';
 
 const SKILL_PRIORITY = ['R', 'Q', 'E', 'W'] as const;
+/** How many enemy minions make an area ability worth spending on a wave. */
+const WAVE_CLEAR_COUNT = 3;
 
 function hpPct(e: UnitEntity): number {
   return e.health.hp / e.health.maxHp;
@@ -23,7 +29,7 @@ function towerThreatens(sim: Sim, h: HeroEntity, at: UnitEntity): boolean {
 }
 
 /** Where a bot with nothing to fight waits: just behind its front minion, else at its outer tower. */
-function rallyPoint(sim: Sim, h: HeroEntity): { x: number; z: number } {
+function rallyPoint(sim: Sim, h: HeroEntity): Vec2 {
   const dir = h.team === 0 ? 1 : -1;
   let front = -Infinity;
   for (const m of sim.q.minions) if (m.team === h.team && !m.dead) front = Math.max(front, m.pos.x * dir);
@@ -34,48 +40,168 @@ function rallyPoint(sim: Sim, h: HeroEntity): { x: number; z: number } {
   return { x: (front - 2) * dir, z: ((h.id % 3) - 1) * 2.5 };
 }
 
-function think(sim: Sim, h: HeroEntity): void {
-  const hero = h.hero;
-  const issue = (cmd: Command) => applyCommand(sim, h, cmd);
-  for (const slot of SKILL_PRIORITY) while (hero.skillPoints > 0 && issue({ t: 'levelUp', slot })) continue;
-  if (h.dead) return;
+/** One bot's turn to think. Bots act only through the commands a player could send. */
+class BotBrain {
+  private readonly def;
+  private readonly hero;
+  private readonly enemyHero: UnitEntity | null;
 
-  const enemyHero = sim.nearestEnemy(h, BOT.heroSightRange, (e) => e.hero !== undefined);
-  if (enemyHero && hpPct(h) < 0.6) issue({ t: 'cast', slot: 'W' });
-
-  if (hero.botRetreating && hpPct(h) >= BOT.returnAbove) hero.botRetreating = false;
-  if (!hero.botRetreating && hpPct(h) < BOT.retreatBelow) hero.botRetreating = true;
-  if (hero.botRetreating) {
-    issue({ t: 'move', ...sim.map.fountains[h.team] });
-    return;
-  }
-  if (towerThreatens(sim, h, h)) {
-    const dir = h.team === 0 ? 1 : -1;
-    issue({ t: 'move', x: h.pos.x - dir * 6, z: h.pos.z });
-    return;
+  constructor(
+    private readonly sim: Sim,
+    private readonly h: HeroEntity,
+  ) {
+    this.hero = h.hero;
+    this.def = sim.heroDef(h.hero.defId);
+    this.enemyHero = sim.nearestEnemy(h, BOT.heroSightRange, (e) => e.hero !== undefined);
   }
 
-  if (enemyHero && (!towerThreatens(sim, h, enemyHero) || hpPct(enemyHero) < 0.25)) {
-    const aim = { x: enemyHero.pos.x, z: enemyHero.pos.z, targetId: enemyHero.id };
-    // Try every ability on the target; castAbility rejects the ones out of range or on cooldown.
-    for (const slot of ABILITY_SLOTS) {
-      const def = sim.heroDef(hero.defId).abilities[slot];
-      if (def.targeting !== 'self' && dist(h.pos, enemyHero.pos) <= def.range + 1) issue({ t: 'cast', slot, ...aim });
+  private issue(cmd: Command): boolean {
+    return applyCommand(this.sim, this.h, cmd);
+  }
+
+  private abilities(...kinds: AbilityDef['ai'][]): [AbilitySlot, AbilityDef][] {
+    return ABILITY_SLOTS.map((slot) => [slot, this.def.abilities[slot]] as [AbilitySlot, AbilityDef]).filter(([, a]) =>
+      kinds.includes(a.ai),
+    );
+  }
+
+  /** Cast if possible. Machines hold back when the cast would overheat them. */
+  private cast(slot: AbilitySlot, aim?: UnitEntity | Vec2): boolean {
+    const ability = this.def.abilities[slot];
+    if (castBlocker(this.sim, this.h, slot) !== null) return false;
+    const cost = ability.cost[this.hero.abilityLevels[slot] - 1];
+    if (this.def.resource === 'heat' && cost > 0 && this.hero.heat + cost > BOT.heatLimit) return false;
+    if (ability.targeting === 'self') return this.issue({ t: 'cast', slot });
+    if (!aim) return false;
+    const point = 'pos' in aim ? aim.pos : aim;
+    const reach = dist(this.h.pos, point) - ('pos' in aim ? aim.radius : 0);
+    if (reach > ability.range) return false;
+    if (ability.targeting === 'unit') return 'pos' in aim && this.issue({ t: 'cast', slot, targetId: aim.id });
+    return this.issue({ t: 'cast', slot, x: point.x, z: point.z });
+  }
+
+  private siegeOff(): void {
+    if (this.hero.siege) for (const [slot] of this.abilities('siege')) this.cast(slot);
+  }
+
+  private moveTo(point: Vec2): void {
+    this.siegeOff();
+    this.issue({ t: 'move', x: point.x, z: point.z });
+  }
+
+  private upkeep(): void {
+    for (const slot of SKILL_PRIORITY) while (this.hero.skillPoints > 0 && this.issue({ t: 'levelUp', slot })) continue;
+    if (canShop(this.sim, this.h)) {
+      const next = BOT_BUILDS[this.def.role].find((id) => !this.hero.items.includes(id));
+      if (next) this.issue({ t: 'buy', itemId: next });
     }
-    issue({ t: 'attack', targetId: enemyHero.id });
-    return;
   }
 
-  const minion = sim.nearestEnemy(h, BOT.minionSightRange, (e) => e.kind === 'minion');
-  const structure = sim.nearestEnemy(h, BOT.minionSightRange, (e) => e.kind === 'tower' || e.kind === 'shrine');
-  const target = minion ?? (structure && !towerThreatens(sim, h, structure) ? structure : null);
-  if (target) issue({ t: 'attack', targetId: target.id });
-  else issue({ t: 'move', ...rallyPoint(sim, h) });
+  /** Heals, repairs and Heat venting: useful whatever else is going on. */
+  private support(): void {
+    const { sim, h } = this;
+    for (const [slot, ability] of this.abilities('heal', 'repair', 'vent')) {
+      const allies = sim.alliesWithin(h.team, h.pos, ability.range);
+      if (ability.ai === 'heal') {
+        const threshold = slot === 'R' ? 0.4 : 0.6;
+        if (allies.some((e) => e.hero && hpPct(e) < threshold)) this.cast(slot);
+      } else if (ability.ai === 'repair') {
+        if (allies.some((e) => (e.tower || e.turret) && hpPct(e) < 0.8)) this.cast(slot);
+      } else {
+        const radius = ability.params.radius?.[0] ?? 3;
+        const crowded = sim.enemiesWithin(h.team, h.pos, radius).length > 0;
+        if (this.hero.heat >= 85 || (this.hero.heat >= 60 && crowded)) this.cast(slot);
+      }
+    }
+  }
+
+  private fight(enemy: UnitEntity): void {
+    const { h } = this;
+    const gap = dist(h.pos, enemy.pos);
+    for (const [slot, ability] of this.abilities('damage', 'engage', 'summon', 'buff', 'shield', 'siege')) {
+      if (ability.ai === 'shield') {
+        if (gap <= 6 && hpPct(h) < 0.55) this.cast(slot);
+      } else if (ability.ai === 'buff') {
+        this.cast(slot);
+      } else if (ability.ai === 'siege') {
+        const reach = h.attacker.range + (this.hero.siege ? 0 : (ability.params.range?.[0] ?? 0));
+        if (!this.hero.siege && gap <= reach - 0.5 && gap > 3.5) this.cast(slot);
+        else if (this.hero.siege && gap > reach + 1) this.cast(slot);
+      } else if (ability.ai === 'engage') {
+        if (hpPct(h) > 0.5 || hpPct(enemy) < 0.3) this.cast(slot, enemy);
+      } else {
+        this.cast(slot, enemy);
+      }
+    }
+    this.issue({ t: 'attack', targetId: enemy.id });
+  }
+
+  /** Last-hit when possible, otherwise push; spend area abilities on full waves. */
+  private farm(): boolean {
+    const { sim, h } = this;
+    const minions = sim.enemiesWithin(h.team, h.pos, BOT.minionSightRange).filter((e) => e.minion && sim.canSee(h, e));
+    const hit = attackDamageOf(sim, h) * 0.85;
+    const killable = minions
+      .filter((m) => m.health.hp <= hit)
+      .sort((a, b) => dist(a.pos, h.pos) - dist(b.pos, h.pos))[0];
+    const minion = killable ?? sim.nearestEnemy(h, BOT.minionSightRange, (e) => e.kind === 'minion');
+    const structure = sim.nearestEnemy(
+      h,
+      BOT.minionSightRange,
+      (e) => e.kind === 'tower' || e.kind === 'shrine' || e.kind === 'turret',
+    );
+    const target = minion ?? (structure && !towerThreatens(sim, h, structure) ? structure : null);
+    if (!target) return false;
+
+    const rich = this.def.resource !== 'mana' || this.hero.mana > this.hero.maxMana * 0.6;
+    if (rich && minions.length >= WAVE_CLEAR_COUNT) {
+      for (const [slot, ability] of this.abilities('damage')) {
+        if (slot !== 'R' && ability.targeting !== 'unit') this.cast(slot, minions[0]);
+      }
+    }
+    for (const [slot, ability] of this.abilities('siege')) {
+      const reach = h.attacker.range + (this.hero.siege ? 0 : (ability.params.range?.[0] ?? 0));
+      if (!this.hero.siege && sim.inRange(h, target, reach - 0.5)) this.cast(slot);
+      else if (this.hero.siege && !sim.inRange(h, target, reach)) this.cast(slot);
+    }
+    this.issue({ t: 'attack', targetId: target.id });
+    return true;
+  }
+
+  think(): void {
+    const { sim, h, hero, enemyHero } = this;
+    this.upkeep();
+    if (h.dead) return;
+    this.support();
+
+    if (hero.botRetreating && hpPct(h) >= BOT.returnAbove) hero.botRetreating = false;
+    if (!hero.botRetreating && hpPct(h) < BOT.retreatBelow) hero.botRetreating = true;
+    if (hero.botRetreating) {
+      const fountain = sim.map.fountains[h.team];
+      if (enemyHero && dist(h.pos, enemyHero.pos) <= 7) {
+        for (const [slot, ability] of this.abilities('escape', 'shield')) {
+          this.cast(slot, ability.targeting === 'self' ? undefined : fountain);
+        }
+      }
+      this.moveTo(fountain);
+      return;
+    }
+    if (towerThreatens(sim, h, h)) {
+      const dir = h.team === 0 ? 1 : -1;
+      this.moveTo({ x: h.pos.x - dir * 6, z: h.pos.z });
+      return;
+    }
+    if (enemyHero && (!towerThreatens(sim, h, enemyHero) || hpPct(enemyHero) < 0.25)) {
+      this.fight(enemyHero);
+      return;
+    }
+    if (!this.farm()) this.moveTo(rallyPoint(sim, h));
+  }
 }
 
 /** Bots decide a few times a second and act through the same commands as players. */
 export function aiSystem(sim: Sim): void {
   for (const h of sim.q.heroes) {
-    if (h.hero.isBot && (sim.tick + h.id) % BOT.thinkTicks === 0) think(sim, h);
+    if (h.hero.isBot && (sim.tick + h.id) % BOT.thinkTicks === 0) new BotBrain(sim, h).think();
   }
 }

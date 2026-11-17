@@ -30,3 +30,9 @@ export function modifyDamageTaken(sim: Sim, victim: Entity, source: Entity | nul
   const hook = passive && DAMAGE_TAKEN[passive.effect];
   return hook ? hook(victim, source, amount, passive.params) : amount;
 }
+
+/** Extra gold a hero's passive pays for killing an enemy hero. */
+export function bonusKillGold(sim: Sim, killer: Entity): number {
+  const passive = killer.hero && sim.heroDef(killer.hero.defId).passive;
+  return passive?.effect === 'bounty' ? passive.params.gold : 0;
+}

@@ -1,23 +1,41 @@
-import { World } from 'miniplex';
-import { HERO, SHRINE, TOWER } from '../data/balance.js';
+import { type Query, World } from 'miniplex';
+import { HERO, JUNGLE, SHRINE, TOWER } from '../data/balance.js';
 import { HEROES } from '../data/heroes.js';
 import { MAP, type MapDef } from '../data/map.js';
 import { dist, Rng } from '../math.js';
 import { NavGrid } from '../pathfinding/grid.js';
-import { castReadyTick } from '../systems/ability.js';
 import { aiSystem } from '../systems/ai.js';
 import { attackSystem, projectileSystem, statusSystem } from '../systems/combat.js';
 import { applyCommand } from '../systems/command.js';
 import { heroUpkeepSystem, onDeath } from '../systems/economy.js';
+import { jungleSystem } from '../systems/jungle.js';
 import { minionSpawnSystem, minionSystem } from '../systems/minion.js';
 import { heroOrderSystem, separationSystem } from '../systems/movement.js';
 import { modifyDamageTaken } from '../systems/passives.js';
+import { recomputeStats } from '../systems/stats.js';
+import { summonSystem } from '../systems/summons.js';
 import { towerSystem } from '../systems/tower.js';
-import type { Command, Entity, HeroDef, PlayerSetup, SimEvent, StatusType, Team, Vec2 } from '../types.js';
+import { computeCanSee, computeVisible } from '../systems/vision.js';
+import {
+  type AbilitySlot,
+  type Command,
+  type Entity,
+  type Faction,
+  type HeroDef,
+  NEUTRAL,
+  type PlayerSetup,
+  type SimEvent,
+  type StatusType,
+  type Team,
+  type Vec2,
+} from '../types.js';
 
 type With<K extends keyof Entity> = Entity & Required<Pick<Entity, K>>;
-export type HeroEntity = With<'hero' | 'health' | 'statuses' | 'mover' | 'attacker'>;
 export type UnitEntity = With<'health' | 'statuses'>;
+export type HeroEntity = With<'hero' | 'health' | 'statuses' | 'mover' | 'attacker'> & { team: Team };
+export type MinionEntity = With<'minion' | 'health' | 'statuses' | 'mover' | 'attacker'> & { team: Team };
+export type TowerEntity = With<'tower' | 'health' | 'statuses' | 'attacker'> & { team: Team };
+export type MonsterEntity = With<'monster' | 'health' | 'statuses' | 'mover' | 'attacker'>;
 
 export interface SimOptions {
   seed: number;
@@ -40,18 +58,25 @@ export class Sim {
   readonly nav: NavGrid;
   readonly world = new World<Entity>();
   readonly q = {
-    heroes: this.world.with('hero', 'health', 'statuses', 'mover', 'attacker'),
-    minions: this.world.with('minion', 'health', 'statuses', 'mover', 'attacker'),
-    towers: this.world.with('tower', 'health', 'statuses', 'attacker'),
+    heroes: this.world.with('hero', 'health', 'statuses', 'mover', 'attacker') as unknown as Query<HeroEntity>,
+    minions: this.world.with('minion', 'health', 'statuses', 'mover', 'attacker') as unknown as Query<MinionEntity>,
+    towers: this.world.with('tower', 'health', 'statuses', 'attacker') as unknown as Query<TowerEntity>,
+    monsters: this.world.with('monster', 'health', 'statuses', 'mover', 'attacker'),
+    turrets: this.world.with('turret', 'health', 'statuses', 'attacker'),
     units: this.world.with('health', 'statuses'),
     attackers: this.world.with('attacker'),
     projectiles: this.world.with('projectile'),
+    zones: this.world.with('zone'),
+    traps: this.world.with('trap'),
   };
+  /** Per jungle camp: monsters still alive and when the camp comes back. */
+  readonly camps: { alive: number; respawnAt: number }[];
 
   private nextId = 1;
   private readonly byId = new Map<number, Entity>();
   private readonly byPlayer = new Map<string, HeroEntity>();
   private pending: { playerId: string; cmd: Command }[] = [];
+  private readonly visionCache = new Map<number, boolean>();
 
   constructor(options: SimOptions) {
     this.map = options.map ?? MAP;
@@ -61,6 +86,7 @@ export class Sim {
       ...this.map.towers.map((t) => ({ pos: t.pos, radius: TOWER.radius })),
     ];
     this.nav = new NavGrid(this.map, buildings, HERO.radius);
+    this.camps = this.map.camps.map(() => ({ alive: 0, respawnAt: JUNGLE.firstSpawnTick }));
 
     for (const team of [0, 1] as const) {
       this.spawn({
@@ -105,13 +131,13 @@ export class Sim {
       pos: { x: fountain.x, z: fountain.z + (indexInTeam - 1) * 2 },
       radius: HERO.radius,
       facing: p.team === 0 ? Math.PI / 2 : -Math.PI / 2,
-      health: { hp: def.base.hp, maxHp: def.base.hp, armor: def.base.armor },
+      health: { hp: 1, maxHp: 1, armor: 0 },
       statuses: [],
-      mover: { speed: def.base.moveSpeed, path: [] },
+      mover: { speed: 0, path: [] },
       attacker: {
-        damage: def.base.attack,
-        range: def.base.attackRange,
-        intervalTicks: def.base.attackInterval,
+        damage: 0,
+        range: 0,
+        intervalTicks: 1,
         cooldown: 0,
         projectileSpeed: def.base.projectileSpeed,
         targetId: null,
@@ -126,8 +152,15 @@ export class Sim {
         skillPoints: 1,
         abilityLevels: { Q: 0, W: 0, E: 0, R: 0 },
         readyAt: { Q: 0, W: 0, E: 0, R: 0 },
-        mana: def.base.mana,
-        maxMana: def.base.mana,
+        mana: 0,
+        maxMana: 0,
+        heat: 0,
+        lastCastTick: -Infinity,
+        overloadUntil: 0,
+        stage: 0,
+        followers: 0,
+        siege: false,
+        items: [],
         respawnTick: 0,
         order: { t: 'idle' },
         kills: 0,
@@ -138,6 +171,9 @@ export class Sim {
         botRetreating: false,
       },
     }) as HeroEntity;
+    recomputeStats(this, hero);
+    hero.health.hp = hero.health.maxHp;
+    hero.hero.mana = hero.hero.maxMana;
     this.byPlayer.set(p.playerId, hero);
   }
 
@@ -182,6 +218,7 @@ export class Sim {
   step(): void {
     if (this.winner !== null) return;
     this.events = [];
+    this.visionCache.clear();
     const pending = this.pending;
     this.pending = [];
     for (const { playerId, cmd } of pending) {
@@ -190,8 +227,10 @@ export class Sim {
     }
     aiSystem(this);
     minionSpawnSystem(this);
+    jungleSystem(this);
     statusSystem(this);
     heroUpkeepSystem(this);
+    summonSystem(this);
     minionSystem(this);
     heroOrderSystem(this);
     towerSystem(this);
@@ -204,6 +243,7 @@ export class Sim {
         this.byId.delete(e.id);
       }
     }
+    this.visionCache.clear();
     this.tick++;
   }
 
@@ -231,24 +271,55 @@ export class Sim {
     return dist(from.pos, target.pos) <= range + target.radius;
   }
 
-  nearestEnemy(from: Entity, range: number, filter?: (e: UnitEntity) => boolean): UnitEntity | null {
+  /** Whether `team` can currently see the entity (bushes, stealth, hidden traps). */
+  isVisibleTo(e: Entity, team: Faction): boolean {
+    if (team === NEUTRAL || e.team === team) return true;
+    const key = e.id * 2 + team;
+    let visible = this.visionCache.get(key);
+    if (visible === undefined) {
+      visible = computeVisible(this, e, team);
+      this.visionCache.set(key, visible);
+    }
+    return visible;
+  }
+
+  /** Whether this particular unit can see the entity: its team's vision, cut short when blinded. */
+  canSee(viewer: Entity, e: Entity): boolean {
+    return computeCanSee(this, viewer, e);
+  }
+
+  /**
+   * The closest enemy `from` may attack: targetable and visible. Jungle monsters are left alone
+   * unless `neutral` is set.
+   */
+  nearestEnemy(from: Entity, range: number, filter?: (e: UnitEntity) => boolean, neutral = false): UnitEntity | null {
     let best: UnitEntity | null = null;
     let bestD = Infinity;
     for (const e of this.q.units) {
-      if (e.team === from.team || !this.isTargetable(e) || (filter && !filter(e))) continue;
+      if (e.team === from.team || (e.team === NEUTRAL && !neutral)) continue;
+      if (!this.isTargetable(e) || (filter && !filter(e))) continue;
       const d = dist(from.pos, e.pos) - e.radius;
-      if (d <= range && (d < bestD || (d === bestD && best !== null && e.id < best.id))) {
-        best = e;
-        bestD = d;
-      }
+      if (d > range || d > bestD || (d === bestD && best !== null && e.id > best.id)) continue;
+      if (!this.canSee(from, e)) continue;
+      best = e;
+      bestD = d;
     }
     return best;
   }
 
-  enemiesWithin(team: Team, centre: Vec2, radius: number): UnitEntity[] {
+  /** Everything hostile to `team` in a circle, monsters included, seen or not (for area effects). */
+  enemiesWithin(team: Faction, centre: Vec2, radius: number): UnitEntity[] {
     const out: UnitEntity[] = [];
     for (const e of this.q.units) {
       if (e.team !== team && this.isTargetable(e) && dist(centre, e.pos) <= radius + e.radius) out.push(e);
+    }
+    return out.sort((a, b) => a.id - b.id);
+  }
+
+  alliesWithin(team: Faction, centre: Vec2, radius: number): UnitEntity[] {
+    const out: UnitEntity[] = [];
+    for (const e of this.q.units) {
+      if (e.team === team && this.isAlive(e) && dist(centre, e.pos) <= radius + e.radius) out.push(e);
     }
     return out.sort((a, b) => a.id - b.id);
   }
@@ -257,14 +328,51 @@ export class Sim {
     return e.statuses?.some((s) => s.type === type) ?? false;
   }
 
-  addStatus(e: Entity, type: StatusType, durationTicks: number, value = 0): void {
-    if (!e.statuses || e.kind === 'tower' || e.kind === 'shrine') return;
-    e.statuses.push({ type, untilTick: this.tick + durationTicks, value });
+  /** Sum of the values of every status of one type (stacking buffs). */
+  statusSum(e: Entity, type: StatusType): number {
+    let sum = 0;
+    for (const s of e.statuses ?? []) if (s.type === type) sum += s.value;
+    return sum;
+  }
+
+  /** Largest value among the statuses of one type (non-stacking effects such as slows). */
+  statusMax(e: Entity, type: StatusType): number {
+    let max = 0;
+    for (const s of e.statuses ?? []) if (s.type === type && s.value > max) max = s.value;
+    return max;
+  }
+
+  addStatus(e: Entity, type: StatusType, durationTicks: number, value = 0, sourceId?: number): void {
+    if (!e.statuses) return;
+    // Buildings can be shielded or empowered, never controlled.
+    if ((e.kind === 'tower' || e.kind === 'shrine') && type !== 'shield' && type !== 'attack') return;
+    e.statuses.push({ type, untilTick: this.tick + durationTicks, value, sourceId });
+  }
+
+  removeStatus(e: Entity, type: StatusType): void {
+    if (e.statuses) e.statuses = e.statuses.filter((s) => s.type !== type);
+  }
+
+  cannotAct(e: Entity): boolean {
+    return this.hasStatus(e, 'stun') || this.hasStatus(e, 'stone');
+  }
+
+  cannotMove(e: Entity): boolean {
+    return this.cannotAct(e) || this.hasStatus(e, 'root') || e.hero?.siege === true;
+  }
+
+  /** The hero that gets credit for what a summoned thing does. */
+  creditOf(source: Entity | null): Entity | null {
+    const ownerId = source?.turret?.ownerId;
+    return ownerId === undefined ? source : (this.get(ownerId) ?? source);
   }
 
   dealDamage(target: Entity, raw: number, source: Entity | null): number {
     if (!this.isTargetable(target)) return 0;
-    let amount = (raw * 100) / (100 + target.health.armor);
+    const armor = target.health.armor + this.statusSum(target, 'armor');
+    let amount = (raw * 100) / (100 + Math.max(0, armor));
+    amount *= 1 + this.statusMax(target, 'mark');
+    amount *= 1 - this.statusMax(target, 'stone');
     amount = modifyDamageTaken(this, target, source, amount);
     for (const s of target.statuses) {
       if (s.type !== 'shield' || amount <= 0) continue;
@@ -274,11 +382,16 @@ export class Sim {
     }
     target.statuses = target.statuses.filter((s) => s.type !== 'shield' || s.value > 0);
 
-    if (source?.hero && target.hero) {
-      source.hero.lastHeroHitTick = this.tick;
-      const recent = target.hero.recentAttackers.filter((a) => a.id !== source.id);
-      recent.push({ id: source.id, tick: this.tick });
+    const credit = this.creditOf(source);
+    if (credit?.hero && target.hero) {
+      credit.hero.lastHeroHitTick = this.tick;
+      const recent = target.hero.recentAttackers.filter((a) => a.id !== credit.id);
+      recent.push({ id: credit.id, tick: this.tick });
       target.hero.recentAttackers = recent;
+    }
+    if (target.monster && credit && this.isAlive(credit)) {
+      // Hitting one monster wakes its whole camp.
+      for (const m of this.q.monsters) if (m.monster.camp === target.monster.camp) m.monster.aggroId ??= credit.id;
     }
     if (amount <= 0) return 0;
     target.health.hp -= amount;
@@ -286,9 +399,34 @@ export class Sim {
     if (target.health.hp <= 0) {
       target.health.hp = 0;
       target.dead = true;
-      onDeath(this, target, source);
+      onDeath(this, target, credit);
     }
     return amount;
+  }
+
+  heal(target: Entity, amount: number): number {
+    if (!this.isAlive(target) || amount <= 0) return 0;
+    const healed = Math.min(amount, target.health.maxHp - target.health.hp);
+    if (healed <= 0) return 0;
+    target.health.hp += healed;
+    this.emit({ t: 'heal', targetId: target.id, amount: healed, x: target.pos.x, z: target.pos.z });
+    return healed;
+  }
+
+  /** Push a mobile unit directly away from a point, stopping at walls. */
+  knockback(target: Entity, from: Vec2, distance: number): void {
+    if (!target.mover || this.hasStatus(target, 'stone')) return;
+    const d = dist(from, target.pos);
+    const nx = d > 1e-6 ? (target.pos.x - from.x) / d : 1;
+    const nz = d > 1e-6 ? (target.pos.z - from.z) / d : 0;
+    for (let moved = 0; moved < distance; moved += 0.25) {
+      const x = target.pos.x + nx * 0.25;
+      const z = target.pos.z + nz * 0.25;
+      if (!this.nav.isWalkable(x, z)) break;
+      target.pos.x = x;
+      target.pos.z = z;
+    }
+    target.mover.path = [];
   }
 
   spawnProjectile(source: Entity, target: Entity, damage: number, speed: number): void {
@@ -302,8 +440,8 @@ export class Sim {
   }
 
   /** Ticks until the hero can cast `slot`, 0 when ready. */
-  cooldownLeft(hero: HeroEntity, slot: 'Q' | 'W' | 'E' | 'R'): number {
-    return Math.max(0, castReadyTick(hero, slot) - this.tick);
+  cooldownLeft(hero: HeroEntity, slot: AbilitySlot): number {
+    return Math.max(0, hero.hero.readyAt[slot] - this.tick);
   }
 
   /** Stable digest of the match state, to check two runs stayed identical. */

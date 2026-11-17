@@ -1,0 +1,95 @@
+import { seconds } from '../data/balance.js';
+import type { AbilityEffect } from '../systems/ability.js';
+import { spawnZone } from '../systems/summons.js';
+
+/** Fire on the ground hurts twice a second. */
+const BURN_PULSE_TICKS = seconds(0.5);
+const FLAME_PATCHES = 3;
+
+export const dragonEffects: Record<string, AbilityEffect> = {
+  // ---- Ignar ----
+
+  /** Breathe fire along a line and leave patches of flame behind. */
+  ignar_breath({ sim, caster, point, param, damage, enemiesOnLine, power }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) damage(e, param('damage'));
+    for (let i = 1; i <= FLAME_PATCHES; i++) {
+      const t = i / FLAME_PATCHES;
+      spawnZone(
+        sim,
+        caster,
+        { x: caster.pos.x + (point.x - caster.pos.x) * t, z: caster.pos.z + (point.z - caster.pos.z) * t },
+        {
+          effect: 'burn',
+          radius: param('radius'),
+          lifeTicks: param('burnTicks'),
+          everyTicks: BURN_PULSE_TICKS,
+          value: (param('burn') * power) / 2,
+        },
+      );
+    }
+  },
+
+  /** A fireball that explodes at a point and sets enemies alight. */
+  ignar_fireball({ sim, caster, point, param, damage, power }) {
+    for (const e of sim.enemiesWithin(caster.team, point, param('radius'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'burn', param('burnTicks'), param('burn') * power, caster.id);
+    }
+  },
+
+  /** Beat wings: throw nearby enemies back and slow them. */
+  ignar_gust({ sim, caster, param }) {
+    for (const e of sim.enemiesWithin(caster.team, caster.pos, param('radius'))) {
+      sim.knockback(e, caster.pos, param('knockback'));
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+    }
+  },
+
+  /** A large area that keeps burning. */
+  ignar_firestorm({ sim, caster, point, param, power }) {
+    spawnZone(sim, caster, point, {
+      effect: 'burn',
+      radius: param('radius'),
+      lifeTicks: param('lifeTicks'),
+      everyTicks: BURN_PULSE_TICKS,
+      value: (param('burn') * power) / 2,
+    });
+  },
+
+  // ---- Baru ----
+
+  /** Charge and shove everything in the way. */
+  baru_ram({ sim, caster, def, param, damage, dash, enemiesOnLine }) {
+    const from = dash(def.range);
+    for (const e of enemiesOnLine(from, caster.pos, param('width'))) {
+      damage(e, param('damage'));
+      sim.knockback(e, from, param('knockback'));
+    }
+  },
+
+  /** Turn to stone: nearly immune, immobile, and a wall enemies cannot walk through. */
+  baru_petrify({ sim, caster, param }) {
+    sim.addStatus(caster, 'stone', param('stoneTicks'), param('reduce'));
+    sim.heal(caster, caster.health.maxHp * param('heal'));
+    caster.mover.path = [];
+    caster.hero.order = { t: 'idle' };
+  },
+
+  /** Stomp: damage and slow all around. */
+  baru_stomp({ sim, caster, param, damage }) {
+    for (const e of sim.enemiesWithin(caster.team, caster.pos, param('radius'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+    }
+  },
+
+  /** Leap to a point: heavy damage, stun, and enemies are thrown outward. */
+  baru_avalanche({ sim, caster, point, param, damage, blink }) {
+    blink(point);
+    for (const e of sim.enemiesWithin(caster.team, caster.pos, param('radius'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'stun', param('stunTicks'));
+      sim.knockback(e, caster.pos, param('knockback'));
+    }
+  },
+};

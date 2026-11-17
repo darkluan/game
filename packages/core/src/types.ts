@@ -1,4 +1,7 @@
 export type Team = 0 | 1;
+/** Jungle monsters belong to neither team. */
+export const NEUTRAL = 2;
+export type Faction = Team | typeof NEUTRAL;
 export type Race = 'human' | 'dragon' | 'god' | 'machine';
 export type Role = 'fighter' | 'marksman' | 'mage' | 'tank' | 'assassin' | 'support';
 export type AbilitySlot = 'Q' | 'W' | 'E' | 'R';
@@ -18,12 +21,18 @@ export type Command =
   | { t: 'sell'; slotIndex: number }
   | { t: 'levelUp'; slot: AbilitySlot };
 
+/** What an ability is for; bots use it to decide when to cast. */
+export type AbilityAi =
+  'damage' | 'heal' | 'repair' | 'shield' | 'buff' | 'engage' | 'escape' | 'summon' | 'siege' | 'vent';
+
 export interface AbilityDef {
   id: string;
   name: string;
+  /** One line shown to the player. */
+  description: string;
   /** Per ability level. */
   cooldownTicks: number[];
-  /** Mana spent, or Heat generated. Per ability level. */
+  /** Mana spent, or Heat generated. Per ability level. Ignored for heroes with no resource. */
   cost: number[];
   targeting: 'self' | 'unit' | 'point' | 'direction';
   range: number;
@@ -31,16 +40,27 @@ export interface AbilityDef {
   effect: string;
   /** Balance numbers read by the effect handler, each per ability level. */
   params: Record<string, number[]>;
+  ai: AbilityAi;
 }
 
+/** A dragon's form from a given level on. Bonuses are totals for that form, not increments. */
 export interface EvolutionDef {
   level: number;
+  /** Body size multiplier: bigger is easier to hit. */
   scale: number;
+  hp: number;
+  attack: number;
+  /** Multiplier on ability damage. */
+  abilityMult: number;
+  /** Moves in straight lines over walls. */
+  flying?: boolean;
 }
 
 export interface HeroDef {
   id: string;
   name: string;
+  /** Short epithet shown under the name. */
+  title: string;
   race: Race;
   role: Role;
   base: {
@@ -60,18 +80,62 @@ export interface HeroDef {
   };
   resource: 'mana' | 'none' | 'heat';
   /** Key of the handler in systems/passives, with its balance numbers. */
-  passive?: { effect: string; params: Record<string, number> };
+  passive?: { effect: string; description: string; params: Record<string, number> };
   abilities: Record<AbilitySlot, AbilityDef>;
   evolutions?: EvolutionDef[];
 }
 
-export type StatusType = 'stun' | 'slow' | 'shield';
+export interface ItemStats {
+  attack?: number;
+  /** Fraction of extra attacks per second, e.g. 0.25. */
+  attackSpeed?: number;
+  armor?: number;
+  hp?: number;
+  hpRegen?: number;
+  mana?: number;
+  manaRegen?: number;
+  moveSpeed?: number;
+  /** Fraction of basic attack damage returned as health. */
+  lifesteal?: number;
+  /** Fraction of extra ability damage. */
+  abilityDamage?: number;
+  /** Fraction taken off cooldowns. */
+  cooldownReduction?: number;
+}
+
+export interface ItemDef {
+  id: string;
+  name: string;
+  cost: number;
+  stats: ItemStats;
+}
+
+export type StatusType =
+  | 'stun'
+  | 'slow'
+  | 'shield'
+  | 'silence'
+  | 'root'
+  | 'stealth'
+  | 'haste'
+  | 'armor'
+  | 'attack'
+  | 'mark'
+  | 'burn'
+  | 'stone'
+  | 'blind';
 
 export interface Status {
   type: StatusType;
   untilTick: number;
-  /** slow: fraction of speed removed (0..1). shield: damage left to absorb. */
+  /**
+   * slow/haste: fraction of speed. shield: damage left to absorb. armor: flat armor.
+   * attack: fraction of extra attack damage. mark: fraction of extra damage taken.
+   * burn: damage per second. stone: fraction of damage ignored.
+   */
   value: number;
+  /** Who applied it, for kill credit on damage over time. */
+  sourceId?: number;
 }
 
 export type HeroOrder = { t: 'idle' } | { t: 'move' } | { t: 'attack'; targetId: number };
@@ -89,6 +153,18 @@ export interface HeroState {
   readyAt: Record<AbilitySlot, number>;
   mana: number;
   maxMana: number;
+  /** Machines: 0..100. */
+  heat: number;
+  lastCastTick: number;
+  /** Machines: tick at which the current Overload ends, 0 when not overloaded. */
+  overloadUntil: number;
+  /** Dragons: how many evolutions have happened (0..2). */
+  stage: number;
+  /** Gods: allied minions currently close by. */
+  followers: number;
+  /** Bolt-7's fixed cannon mode. */
+  siege: boolean;
+  items: string[];
   respawnTick: number;
   order: HeroOrder;
   kills: number;
@@ -101,13 +177,14 @@ export interface HeroState {
   botRetreating: boolean;
 }
 
-export type EntityKind = 'hero' | 'minion' | 'tower' | 'shrine' | 'projectile';
+export type EntityKind = 'hero' | 'minion' | 'tower' | 'shrine' | 'projectile' | 'monster' | 'zone' | 'trap' | 'turret';
+export type ZoneEffect = 'burn' | 'blind';
 
 /** ECS entity: a bag of optional components. Systems query by component presence. */
 export interface Entity {
   id: number;
   kind: EntityKind;
-  team: Team;
+  team: Faction;
   pos: Vec2;
   radius: number;
   /** Radians, 0 = +z, grows toward +x (same as three.js rotation.y). */
@@ -129,6 +206,11 @@ export interface Entity {
   tower?: { tier: 1 | 2 };
   shrine?: true;
   projectile?: { sourceId: number; targetId: number; damage: number; speed: number };
+  monster?: { type: 'big' | 'small'; camp: number; home: Vec2; aggroId: number | null };
+  /** An area that keeps affecting units inside it until it expires. */
+  zone?: { ownerId: number; effect: ZoneEffect; untilTick: number; everyTicks: number; value: number };
+  trap?: { ownerId: number; untilTick: number; damage: number; rootTicks: number; markTicks: number; mark: number };
+  turret?: { ownerId: number; untilTick: number };
 }
 
 export interface PlayerSetup {
@@ -140,10 +222,13 @@ export interface PlayerSetup {
 
 export type SimEvent =
   | { t: 'damage'; targetId: number; amount: number; x: number; z: number }
+  | { t: 'heal'; targetId: number; amount: number; x: number; z: number }
   | { t: 'attack'; sourceId: number; targetId: number }
-  | { t: 'death'; id: number; kind: EntityKind; team: Team; killerId: number | null; x: number; z: number }
+  | { t: 'death'; id: number; kind: EntityKind; team: Faction; killerId: number | null; x: number; z: number }
   | { t: 'cast'; casterId: number; slot: AbilitySlot; abilityId: string; x: number; z: number }
   | { t: 'levelUp'; id: number; level: number }
+  | { t: 'evolve'; id: number; stage: number }
+  | { t: 'overload'; id: number }
   | { t: 'gold'; id: number; amount: number; x: number; z: number }
   | { t: 'respawn'; id: number }
   | { t: 'gameOver'; winner: Team };

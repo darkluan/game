@@ -19,7 +19,7 @@ export function towerSystem(sim: Sim): void {
       continue;
     }
     const current = a.targetId === null ? undefined : sim.get(a.targetId);
-    if (current && sim.isTargetable(current) && sim.inRange(t, current, a.range)) continue;
+    if (current && sim.isTargetable(current) && sim.canSee(t, current) && sim.inRange(t, current, a.range)) continue;
     const next = sim.nearestEnemy(t, a.range, (e) => e.kind === 'minion') ?? sim.nearestEnemy(t, a.range);
     a.targetId = next?.id ?? null;
   }

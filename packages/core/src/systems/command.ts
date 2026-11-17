@@ -1,6 +1,8 @@
 import type { HeroEntity, Sim } from '../sim/Sim.js';
 import { ABILITY_SLOTS, type Command } from '../types.js';
 import { castAbility, levelUpAbility } from './ability.js';
+import { pathFor } from './movement.js';
+import { buyItem, sellItem } from './shop.js';
 
 const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 
@@ -15,14 +17,14 @@ export function applyCommand(sim: Sim, hero: HeroEntity, cmd: Command): boolean 
       return ABILITY_SLOTS.includes(cmd.slot) && levelUpAbility(sim, hero, cmd.slot);
     case 'move': {
       if (hero.dead || !finite(cmd.x) || !finite(cmd.z)) return false;
-      hero.mover.path = sim.nav.findPath(hero.pos, { x: cmd.x, z: cmd.z });
+      hero.mover.path = pathFor(sim, hero, { x: cmd.x, z: cmd.z });
       hero.hero.order = hero.mover.path.length > 0 ? { t: 'move' } : { t: 'idle' };
       return true;
     }
     case 'attack': {
       if (hero.dead || !finite(cmd.targetId)) return false;
       const target = sim.get(cmd.targetId);
-      if (!target || target.team === hero.team || !sim.isTargetable(target)) return false;
+      if (!target || target.team === hero.team || !sim.isTargetable(target) || !sim.canSee(hero, target)) return false;
       hero.hero.order = { t: 'attack', targetId: target.id };
       return true;
     }
@@ -40,10 +42,10 @@ export function applyCommand(sim: Sim, hero: HeroEntity, cmd: Command): boolean 
       hero.hero.order = { t: 'idle' };
       return true;
     }
-    // The shop arrives in phase 3 (PLAN.md); until then buying and selling are rejected.
     case 'buy':
+      return buyItem(sim, hero, cmd.itemId);
     case 'sell':
-      return false;
+      return sellItem(sim, hero, cmd.slotIndex);
     default:
       return false;
   }

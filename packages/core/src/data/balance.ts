@@ -1,4 +1,4 @@
-/** Every balance number lives here or in heroes.ts. All values are starting points to tune by playtest. */
+/** Every balance number lives here, in heroes.ts, items.ts or races/. All values are starting points to tune by playtest. */
 
 export const TICK_RATE = 20;
 export const seconds = (s: number): number => Math.round(s * TICK_RATE);
@@ -51,12 +51,43 @@ export const HERO = {
   fountainRadius: 6,
   /** Fraction of max hp / mana restored per second at the own fountain. */
   fountainRegen: 0.12,
+  maxCooldownReduction: 0.4,
+} as const;
+
+export const SHOP = {
+  /** Items in the bag for every race except human (see races/). */
+  slots: 4,
+  /** Fraction of the price paid back when selling. */
+  sellRefund: 0.5,
+} as const;
+
+export const JUNGLE = {
+  firstSpawnTick: seconds(15),
+  respawnTicks: seconds(60),
+  /** Monsters give up and walk home when dragged this far from their camp. */
+  leash: 9,
+  speed: 5,
+  /** Fraction of max hp regained per second while walking home. */
+  homeRegen: 0.25,
+  big: { hp: 900, attack: 40, armor: 15, range: 1.7, intervalTicks: 24, radius: 0.9, gold: 60, xp: 90 },
+  small: { hp: 350, attack: 18, armor: 5, range: 1.4, intervalTicks: 22, radius: 0.5, gold: 20, xp: 35 },
+} as const;
+
+export const VISION = {
+  /** A stealthed or trapped-in-bush enemy this close is seen anyway. */
+  revealRange: 3,
+  /** How far a blinded hero can see enemies. */
+  blindRange: 4,
+  /** Traps are invisible to enemies farther than this. */
+  trapRevealRange: 2,
 } as const;
 
 export const BOT = {
   thinkTicks: 5,
   retreatBelow: 0.3,
   returnAbove: 0.8,
-  heroSightRange: 8,
+  heroSightRange: 9,
   minionSightRange: 10,
+  /** Machines stop casting when the next cast would push Heat past this. */
+  heatLimit: 90,
 } as const;

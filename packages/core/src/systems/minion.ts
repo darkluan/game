@@ -38,20 +38,26 @@ export function minionSpawnSystem(sim: Sim): void {
   }
 }
 
-/** Minions march down the lane and fight the nearest enemy they meet. */
+/** Minions march down the lane and fight the nearest enemy they can see. */
 export function minionSystem(sim: Sim): void {
   for (const m of sim.q.minions) {
-    if (m.dead || sim.hasStatus(m, 'stun')) continue;
+    if (m.dead || sim.cannotAct(m)) continue;
     const a = m.attacker;
     let target = a.targetId === null ? undefined : sim.get(a.targetId);
-    if (!target || !sim.isTargetable(target) || !sim.inRange(m, target, MINION.aggroRange + 2)) {
+    if (
+      !target ||
+      !sim.isTargetable(target) ||
+      !sim.canSee(m, target) ||
+      !sim.inRange(m, target, MINION.aggroRange + 2)
+    ) {
       target = sim.nearestEnemy(m, MINION.aggroRange) ?? undefined;
       a.targetId = target?.id ?? null;
     }
+    if (sim.cannotMove(m)) continue;
     if (target) {
-      if (!sim.inRange(m, target, a.range)) moveToward(m, target.pos, m.mover.speed);
+      if (!sim.inRange(m, target, a.range)) moveToward(sim, m, target.pos, m.mover.speed);
     } else {
-      moveToward(m, { x: sim.map.shrines[m.team === 0 ? 1 : 0].x, z: m.minion.laneZ }, m.mover.speed);
+      moveToward(sim, m, { x: sim.map.shrines[m.team === 0 ? 1 : 0].x, z: m.minion.laneZ }, m.mover.speed);
     }
   }
 }
