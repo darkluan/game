@@ -1,0 +1,255 @@
+import {
+  type Command,
+  FLAG_DEAD,
+  FLAG_SHIELD,
+  FLAG_STUN,
+  FLAG_TARGETABLE,
+  HEROES,
+  MAP,
+  type MatchWelcome,
+  type Snapshot,
+  type StatusType,
+  TICK_RATE,
+  type Vec2,
+} from '@game/core';
+import { BaseSession } from './baseSession';
+import { buildHud } from './hud';
+import type { GameSession, HudState, MinionView, SoundCue, UnitView, ViewEntity } from './session';
+
+const TICK_MS = 1000 / TICK_RATE;
+/** The scene shows the game this far in the past, so there are always two snapshots to blend between. */
+const INTERPOLATION_DELAY_MS = 100;
+/** After a network stall, skip ahead instead of replaying a long backlog in fast motion. */
+const MAX_QUEUED_SNAPSHOTS = 8;
+const MOVING_EPSILON = 0.01;
+
+interface View extends ViewEntity {
+  flags: number;
+  heroDefId?: string;
+  level: number;
+  kda: [number, number, number];
+  /** Position at the snapshot being blended from and the one being blended to. */
+  from: Vec2;
+  to: Vec2;
+}
+
+/** The connection to a match, reduced to what this class needs (a Colyseus room in practice). */
+export interface MatchConnection {
+  send(type: 'cmd', cmd: Command): void;
+}
+
+/**
+ * A match played on the server. Receives a snapshot per server tick, shows them slightly delayed
+ * and blends positions between the two snapshots around the displayed moment.
+ */
+export class OnlineGame extends BaseSession implements GameSession {
+  readonly seed = Date.now();
+  readonly map = MAP;
+  hero: ViewEntity;
+
+  private readonly views = new Map<number, View>();
+  private queue: Snapshot[] = [];
+  private current: Snapshot | null = null;
+  private fromTick = 0;
+  /** Smallest seen (arrival time - snapshot game time): maps the local clock to server game time. */
+  private clockOffset = Infinity;
+  private lists = {
+    heroes: [] as View[],
+    minions: [] as MinionView[],
+    projectiles: [] as View[],
+    units: [] as UnitView[],
+  };
+  private startBuildings: View[] = [];
+
+  constructor(
+    private readonly connection: MatchConnection,
+    private readonly welcome: MatchWelcome,
+    onCue: (cue: SoundCue, volume: number) => void = () => {},
+    private readonly now: () => number = () => performance.now(),
+  ) {
+    super(onCue);
+    // Stand-in until the first snapshot arrives; replaced by the real view then.
+    this.hero = { id: welcome.heroId, kind: 'hero', team: 0, pos: { x: 0, z: 0 }, radius: 0.6, facing: 0 };
+  }
+
+  /** True once the first snapshot has been applied and the scene can be built. */
+  get ready(): boolean {
+    return this.current !== null;
+  }
+
+  /** Feed a snapshot received from the server. */
+  receive(snapshot: Snapshot): void {
+    this.queue.push(snapshot);
+    // The fastest delivery so far is the best estimate of the true offset; drift up slowly so one
+    // unusually quick packet does not pin it forever.
+    this.clockOffset = Math.min(this.clockOffset + 0.05, this.now() - snapshot.tick * TICK_MS);
+    if (!this.current) this.apply(this.queue.shift()!);
+  }
+
+  send(cmd: Command): void {
+    this.connection.send('cmd', cmd);
+  }
+
+  update(): boolean {
+    if (!this.current) return false;
+    const renderTick = (this.now() - this.clockOffset - INTERPOLATION_DELAY_MS) / TICK_MS;
+    let applied = false;
+    while (this.queue.length > 0 && (renderTick >= this.current.tick || this.queue.length > MAX_QUEUED_SNAPSHOTS)) {
+      this.apply(this.queue.shift()!);
+      applied = true;
+    }
+    const span = this.current.tick - this.fromTick;
+    const alpha = span > 0 ? Math.min(1, Math.max(0, (renderTick - this.fromTick) / span)) : 1;
+    for (const v of this.views.values()) {
+      v.pos.x = v.from.x + (v.to.x - v.from.x) * alpha;
+      v.pos.z = v.from.z + (v.to.z - v.from.z) * alpha;
+    }
+    this.clock = ((this.fromTick + span * alpha) * TICK_MS) / 1000;
+    if (applied) this.expireFx();
+    return applied;
+  }
+
+  /** Make `snapshot` the state being blended toward. */
+  private apply(snapshot: Snapshot): void {
+    this.fromTick = this.current?.tick ?? snapshot.tick;
+    this.current = snapshot;
+    const seen = new Set<number>();
+    for (const e of snapshot.entities) {
+      seen.add(e.id);
+      let v = this.views.get(e.id);
+      if (!v) {
+        v = {
+          id: e.id,
+          kind: e.k,
+          team: e.t,
+          pos: { x: e.x, z: e.z },
+          radius: e.r,
+          facing: e.f,
+          flags: e.fl,
+          level: 1,
+          kda: [0, 0, 0],
+          from: { x: e.x, z: e.z },
+          to: { x: e.x, z: e.z },
+        };
+        if (e.mt) v.minion = { type: e.mt };
+        if (e.ar) v.attacker = { range: e.ar };
+        if (e.hd) v.heroDefId = e.hd;
+        this.views.set(e.id, v);
+      }
+      // The previous snapshot's position becomes the start of the next blend.
+      v.from = v.to;
+      v.to = { x: e.x, z: e.z };
+      v.facing = e.f;
+      v.flags = e.fl;
+      v.dead = (e.fl & FLAG_DEAD) !== 0;
+      if (e.hp !== undefined && e.mhp !== undefined) v.health = { hp: e.hp, maxHp: e.mhp };
+      if (e.lv !== undefined) v.level = e.lv;
+      if (e.kda) v.kda = e.kda;
+    }
+    for (const id of this.views.keys()) if (!seen.has(id)) this.views.delete(id);
+
+    const all = [...this.views.values()];
+    this.lists = {
+      heroes: all.filter((v) => v.kind === 'hero'),
+      minions: all.filter((v): v is View & MinionView => v.minion !== undefined && v.health !== undefined),
+      projectiles: all.filter((v) => v.kind === 'projectile'),
+      units: all.filter((v): v is View & UnitView => v.health !== undefined),
+    };
+    if (this.fromTick === snapshot.tick) {
+      // First snapshot: fix the lists the scene builds its static objects from.
+      this.startBuildings = all.filter((v) => v.kind === 'tower' || v.kind === 'shrine');
+      this.hero = this.views.get(this.welcome.heroId) ?? this.hero;
+    }
+    this.clock = (this.fromTick * TICK_MS) / 1000;
+    for (const event of snapshot.events) this.handleEvent(event);
+  }
+
+  heroes(): readonly ViewEntity[] {
+    return this.lists.heroes;
+  }
+
+  minions(): Iterable<MinionView> {
+    return this.lists.minions;
+  }
+
+  projectiles(): Iterable<ViewEntity> {
+    return this.lists.projectiles;
+  }
+
+  units(): Iterable<UnitView> {
+    return this.lists.units;
+  }
+
+  buildings(): readonly ViewEntity[] {
+    return this.startBuildings;
+  }
+
+  exists(id: number): boolean {
+    return this.views.has(id);
+  }
+
+  hasStatus(e: ViewEntity, type: StatusType): boolean {
+    const flags = this.views.get(e.id)?.flags ?? 0;
+    return (flags & (type === 'stun' ? FLAG_STUN : type === 'shield' ? FLAG_SHIELD : 0)) !== 0;
+  }
+
+  protected find(id: number): ViewEntity | undefined {
+    return this.views.get(id);
+  }
+
+  protected heroDefId(id: number): string | undefined {
+    return this.views.get(id)?.heroDefId;
+  }
+
+  protected previousPos(id: number): Vec2 | undefined {
+    return this.views.get(id)?.from;
+  }
+
+  protected isTargetable(e: UnitView): boolean {
+    return ((this.views.get(e.id)?.flags ?? 0) & FLAG_TARGETABLE) !== 0;
+  }
+
+  renderPos(e: ViewEntity, out: Vec2): Vec2 {
+    // update() already blended every position for this frame.
+    out.x = e.pos.x;
+    out.z = e.pos.z;
+    return out;
+  }
+
+  isMoving(e: ViewEntity): boolean {
+    const v = this.views.get(e.id);
+    return v !== undefined && Math.hypot(v.to.x - v.from.x, v.to.z - v.from.z) > MOVING_EPSILON;
+  }
+
+  hud(): HudState {
+    const snapshot = this.current;
+    const me = this.views.get(this.welcome.heroId);
+    if (!snapshot || !me || !snapshot.you) throw new Error('hud() called before the first snapshot');
+    const nameOf = new Map(this.welcome.roster.map((r) => [r.heroId, r]));
+    return buildHud({
+      tick: snapshot.tick,
+      def: HEROES[me.heroDefId ?? 'kael'],
+      team: me.team,
+      hp: me.health?.hp ?? 0,
+      maxHp: me.health?.maxHp ?? 1,
+      level: me.level,
+      dead: me.dead === true,
+      stunned: (me.flags & FLAG_STUN) !== 0,
+      you: snapshot.you,
+      scores: this.lists.heroes.map((v) => {
+        const entry = nameOf.get(v.id);
+        return {
+          id: v.id,
+          name: entry ? (entry.isBot ? `${entry.nickname} (máy)` : entry.nickname) : `#${v.id}`,
+          team: v.team,
+          isPlayer: v.id === me.id,
+          level: v.level,
+          kills: v.kda[0],
+          deaths: v.kda[1],
+          assists: v.kda[2],
+        };
+      }),
+      winner: snapshot.winner,
+    });
+  }
+}

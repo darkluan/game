@@ -1,8 +1,8 @@
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Group, Mesh } from 'three';
-import type { HeroEntity, Vec2 } from '@game/core';
-import type { GameSession } from '@/lib/session';
+import type { Vec2 } from '@game/core';
+import type { GameSession, ViewEntity } from '@/lib/session';
 import { Actor, KNIGHT_HIDDEN, KNIGHT_RIG } from './Actor';
 import { MODELS, useModel } from './models';
 import { COLORS, teamColor, teamTint } from './palette';
@@ -12,7 +12,7 @@ const TURN_RATE = 14; // radians of catch-up per second per radian of error
 /** How long the death animation stays on screen before the body disappears. */
 const CORPSE_SECONDS = 1.6;
 
-function HeroModel({ game, hero }: { game: GameSession; hero: HeroEntity }) {
+function HeroModel({ game, hero }: { game: GameSession; hero: ViewEntity }) {
   const gltf = useModel(MODELS.knight);
   const group = useRef<Group>(null);
   const body = useRef<Group>(null);

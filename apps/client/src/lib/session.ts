@@ -1,15 +1,4 @@
-import type {
-  AbilityDef,
-  AbilitySlot,
-  Command,
-  Entity,
-  HeroEntity,
-  MapDef,
-  StatusType,
-  Team,
-  UnitEntity,
-  Vec2,
-} from '@game/core';
+import type { AbilityDef, AbilitySlot, Command, EntityKind, MapDef, StatusType, Team, Vec2 } from '@game/core';
 
 export interface AbilityHud {
   slot: AbilitySlot;
@@ -94,7 +83,25 @@ export type SoundCue =
   | 'victory'
   | 'defeat';
 
-export type MinionEntity = Entity & Required<Pick<Entity, 'minion' | 'health' | 'attacker'>>;
+/**
+ * An entity as the scene needs it. The offline game hands out the sim's own entities, which have
+ * these fields and more; the online game builds these from server snapshots.
+ */
+export interface ViewEntity {
+  id: number;
+  kind: EntityKind;
+  team: Team;
+  pos: Vec2;
+  radius: number;
+  /** Radians, 0 = +z, grows toward +x. */
+  facing: number;
+  dead?: boolean;
+  health?: { hp: number; maxHp: number };
+  minion?: { type: 'melee' | 'ranged' };
+  attacker?: { range: number };
+}
+export type UnitView = ViewEntity & Required<Pick<ViewEntity, 'health'>>;
+export type MinionView = UnitView & Required<Pick<ViewEntity, 'minion'>>;
 
 /**
  * What the scene, HUD and input need from a running match. The offline game implements it on top of a
@@ -105,7 +112,7 @@ export interface GameSession {
   readonly seed: number;
   readonly map: MapDef;
   /** The player's own hero. */
-  readonly hero: HeroEntity;
+  readonly hero: ViewEntity;
   /** Ground point under the mouse. */
   readonly cursor: Vec2;
   /** Seconds of game time including the partial tick, for animating. */
@@ -121,22 +128,22 @@ export interface GameSession {
   addFx(fx: Omit<Fx, 'bornAt'>): void;
   hud(): HudState;
 
-  heroes(): readonly HeroEntity[];
-  minions(): Iterable<MinionEntity>;
-  projectiles(): Iterable<Entity>;
-  units(): Iterable<UnitEntity>;
-  /** Towers and shrines present at the start of the match. */
-  buildings(): readonly Entity[];
+  heroes(): readonly ViewEntity[];
+  minions(): Iterable<MinionView>;
+  projectiles(): Iterable<ViewEntity>;
+  units(): Iterable<UnitView>;
+  /** Towers and shrines present when the scene was built. */
+  buildings(): readonly ViewEntity[];
   exists(id: number): boolean;
-  hasStatus(e: Entity, type: StatusType): boolean;
+  hasStatus(e: ViewEntity, type: StatusType): boolean;
   ability(slot: AbilitySlot): AbilityDef;
 
   /** Interpolated position of an entity for this frame. */
-  renderPos(e: Entity, out: Vec2): Vec2;
-  isMoving(e: Entity): boolean;
+  renderPos(e: ViewEntity, out: Vec2): Vec2;
+  isMoving(e: ViewEntity): boolean;
   lastAction(id: number): ActorAction | undefined;
   /** The enemy closest to a ground point, within a forgiving click distance. */
-  pickEnemy(at: Vec2, slack?: number): Entity | null;
+  pickEnemy(at: Vec2, slack?: number): ViewEntity | null;
   /** The enemy closest to the player's hero within range. */
-  nearestEnemy(range: number): Entity | null;
+  nearestEnemy(range: number): ViewEntity | null;
 }

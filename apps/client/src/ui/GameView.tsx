@@ -1,23 +1,21 @@
 import { lazy, Suspense } from 'react';
-import { useGameStore } from '@/store/gameStore';
+import type { GameSession } from '@/lib/session';
 import { useSettingsStore } from '@/store/settingsStore';
-import { Hud } from '@/ui/Hud';
-import { MainMenu } from '@/ui/MainMenu';
+import { Hud, type HudActions } from './Hud';
 
 // three.js is most of the bundle; load it only when a match starts.
 const GameScene = lazy(() => import('@/scene/GameScene'));
 
-export function App() {
-  const game = useGameStore((s) => s.game);
+/** A running match: the 3D scene with the HUD over it. */
+export function GameView({ game, actions }: { game: GameSession; actions: HudActions }) {
   const graphics = useSettingsStore((s) => s.graphics);
-  if (!game) return <MainMenu />;
   return (
     <div className="relative h-full">
       <Suspense fallback={<p className="flex h-full items-center justify-center text-muted-foreground">Đang tải…</p>}>
         {/* The key rebuilds the scene for each new match and when the graphics mode changes. */}
         <GameScene key={`${game.seed}:${graphics}`} game={game} graphics={graphics} />
       </Suspense>
-      <Hud game={game} />
+      <Hud game={game} actions={actions} />
     </div>
   );
 }

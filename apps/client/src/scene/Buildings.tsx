@@ -1,8 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import type { Group } from 'three';
-import type { Entity } from '@game/core';
-import type { GameSession } from '@/lib/session';
+import type { GameSession, ViewEntity } from '@/lib/session';
 import { MODELS, setShadows, useModel } from './models';
 import { teamColor } from './palette';
 
@@ -11,7 +10,7 @@ const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
 const TOWER_SCALE = 3;
 const SHRINE_SCALE = 2.4;
 
-function Building({ game, entity }: { game: GameSession; entity: Entity }) {
+function Building({ game, entity }: { game: GameSession; entity: ViewEntity }) {
   const ref = useRef<Group>(null);
   const ally = entity.team === game.hero.team;
   const isTower = entity.kind === 'tower';

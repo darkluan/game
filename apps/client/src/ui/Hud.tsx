@@ -93,10 +93,16 @@ function Scoreboard({ hud }: { hud: HudState }) {
   );
 }
 
-export function Hud({ game }: { game: GameSession }) {
+/** What the HUD's buttons do; differs between offline play and a room. */
+export interface HudActions {
+  /** Leave the match at any time. */
+  exit: () => void;
+  /** The main button on the end-of-match screen, e.g. play again or back to the room. */
+  afterMatch: { label: string; run: () => void };
+}
+
+export function Hud({ game, actions }: { game: GameSession; actions: HudActions }) {
   const hud = useGameStore((s) => s.hud);
-  const startOffline = useGameStore((s) => s.startOffline);
-  const quit = useGameStore((s) => s.quit);
   const { graphics, muted, toggleGraphics, toggleMuted } = useSettingsStore();
   if (!hud) return null;
   const topButton = 'pointer-events-auto rounded-md border border-border bg-panel px-3 py-1 text-sm';
@@ -121,7 +127,7 @@ export function Hud({ game }: { game: GameSession }) {
         <button type="button" onClick={toggleGraphics} aria-pressed={graphics === 'high'} className={topButton}>
           Đồ họa: {graphics === 'high' ? 'cao' : 'thấp'}
         </button>
-        <button type="button" onClick={quit} className={topButton}>
+        <button type="button" onClick={actions.exit} className={topButton}>
           Thoát
         </button>
       </div>
@@ -180,13 +186,13 @@ export function Hud({ game }: { game: GameSession }) {
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={startOffline}
+                onClick={actions.afterMatch.run}
                 className="rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground"
               >
-                Chơi lại
+                {actions.afterMatch.label}
               </button>
-              <button type="button" onClick={quit} className="rounded-md border border-border px-4 py-2">
-                Về sảnh
+              <button type="button" onClick={actions.exit} className="rounded-md border border-border px-4 py-2">
+                Về trang chủ
               </button>
             </div>
           </div>

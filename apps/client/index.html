@@ -2,6 +2,9 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
+    <!-- Assets are linked relatively; this makes them resolve from the site root on any route such as /r/CODE.
+         A host serving the app under a sub-path rewrites it. -->
+    <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tứ Tộc</title>
     <!-- Filled in by the host at deploy time, e.g. {"serverUrl":"https://game.example.com"} -->

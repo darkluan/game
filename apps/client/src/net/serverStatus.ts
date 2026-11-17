@@ -1,6 +1,6 @@
-import { Client, type Room } from '@colyseus/sdk';
+import type { Room } from '@colyseus/sdk';
 import { useCallback, useEffect, useState } from 'react';
-import { runtimeConfig } from '@/lib/runtimeConfig';
+import { colyseus } from './colyseus';
 
 export type ServerStatus =
   { state: 'connecting' } | { state: 'online'; pingMs: number; tickRate: number } | { state: 'offline' };
@@ -13,8 +13,7 @@ export function useServerStatus(): { status: ServerStatus; retry: () => void } {
   useEffect(() => {
     let cancelled = false;
     let room: Room | undefined;
-    const client = new Client(runtimeConfig.serverUrl);
-    client
+    colyseus
       .joinOrCreate('ping')
       .then((joined) => {
         room = joined;
