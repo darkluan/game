@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { setMuted } from '@/lib/audio';
-import { cleanNickname } from '@game/core';
+import { cleanNickname, HERO_IDS } from '@game/core';
 import { DEFAULT_THEME, THEME_IDS, type ThemeId } from '@/lib/music';
 
 export type Graphics = 'high' | 'low';
@@ -14,6 +14,8 @@ interface Saved {
   music: ThemeId;
   /** Name shown to other players. */
   nickname: string;
+  /** Hero played against bots, and the first pick offered in a room. */
+  heroId: string;
 }
 
 function load(): Saved {
@@ -25,10 +27,11 @@ function load(): Saved {
       muted: saved.muted === true,
       music: THEME_IDS.find((id) => id === saved.music) ?? DEFAULT_THEME,
       nickname: cleanNickname(saved.nickname),
+      heroId: HERO_IDS.find((id) => id === saved.heroId) ?? HERO_IDS[0],
     };
   } catch {
     // Storage blocked or corrupted: use the defaults.
-    return { graphics: 'high', muted: false, music: DEFAULT_THEME, nickname: '' };
+    return { graphics: 'high', muted: false, music: DEFAULT_THEME, nickname: '', heroId: HERO_IDS[0] };
   }
 }
 
@@ -37,6 +40,7 @@ interface SettingsStore extends Saved {
   toggleMuted: () => void;
   setMusic: (music: ThemeId) => void;
   setNickname: (nickname: string) => void;
+  setHeroId: (heroId: string) => void;
 }
 
 const initial = load();
@@ -45,9 +49,9 @@ setMuted(initial.muted);
 export const useSettingsStore = create<SettingsStore>((set, get) => {
   const update = (change: Partial<Saved>) => {
     set(change);
-    const { graphics, muted, music, nickname } = get();
+    const { graphics, muted, music, nickname, heroId } = get();
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ graphics, muted, music, nickname }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ graphics, muted, music, nickname, heroId }));
     } catch {
       // Storage blocked: the choice just lasts for this visit.
     }
@@ -61,5 +65,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => {
     },
     setMusic: (music) => update({ music }),
     setNickname: (nickname) => update({ nickname: cleanNickname(nickname) }),
+    setHeroId: (heroId) => {
+      if (HERO_IDS.includes(heroId)) update({ heroId });
+    },
   };
 });

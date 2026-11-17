@@ -1,8 +1,21 @@
-import type { AbilityDef, AbilitySlot, Command, EntityKind, MapDef, StatusType, Team, Vec2 } from '@game/core';
+import type {
+  AbilityDef,
+  AbilitySlot,
+  Command,
+  EntityKind,
+  Faction,
+  MapDef,
+  Race,
+  StatusType,
+  Team,
+  Vec2,
+  ZoneEffect,
+} from '@game/core';
 
 export interface AbilityHud {
   slot: AbilitySlot;
   name: string;
+  description: string;
   level: number;
   cost: number;
   cooldownLeft: number; // seconds
@@ -14,6 +27,7 @@ export interface AbilityHud {
 export interface HeroScore {
   id: number;
   name: string;
+  heroName: string;
   team: Team;
   isPlayer: boolean;
   level: number;
@@ -25,26 +39,40 @@ export interface HeroScore {
 /** Everything the HUD shows, rebuilt once per tick. */
 export interface HudState {
   timeSeconds: number;
+  heroDefId: string;
   heroName: string;
+  race: Race;
   team: Team;
   hp: number;
   maxHp: number;
   shield: number;
+  resource: 'mana' | 'heat' | 'none';
   mana: number;
   maxMana: number;
+  heat: number;
+  /** Seconds of Overload left, 0 when not overloaded. */
+  overloadSeconds: number;
+  /** Dragons: evolutions so far. */
+  stage: number;
+  /** Gods: allied minions close by. */
+  followers: number;
   level: number;
   xpFraction: number;
   gold: number;
   skillPoints: number;
   dead: boolean;
   respawnSeconds: number;
-  stunned: boolean;
+  /** Labels of the conditions the hero is under, for display. */
+  conditions: string[];
   abilities: AbilityHud[];
+  items: string[];
+  itemSlots: number;
+  canShop: boolean;
   scores: HeroScore[];
   winner: Team | null;
 }
 
-export type FxColor = 'ally' | 'enemy' | 'gold' | 'neutral';
+export type FxColor = 'ally' | 'enemy' | 'gold' | 'neutral' | 'heal';
 
 /** One-shot visual; the scene draws it and the session expires it. */
 export interface Fx {
@@ -90,7 +118,7 @@ export type SoundCue =
 export interface ViewEntity {
   id: number;
   kind: EntityKind;
-  team: Team;
+  team: Faction;
   pos: Vec2;
   radius: number;
   /** Radians, 0 = +z, grows toward +x. */
@@ -98,14 +126,26 @@ export interface ViewEntity {
   dead?: boolean;
   health?: { hp: number; maxHp: number };
   minion?: { type: 'melee' | 'ranged' };
+  monster?: { type: 'big' | 'small' };
+  zone?: { effect: ZoneEffect };
   attacker?: { range: number };
+  hero?: { defId: string; stage: number };
 }
 export type UnitView = ViewEntity & Required<Pick<ViewEntity, 'health'>>;
 export type MinionView = UnitView & Required<Pick<ViewEntity, 'minion'>>;
+export type MonsterView = UnitView & Required<Pick<ViewEntity, 'monster'>>;
+
+/** A hero taking part in the match. The list never changes, even while a hero is out of sight. */
+export interface RosterHero {
+  id: number;
+  team: Team;
+  defId: string;
+}
 
 /**
  * What the scene, HUD and input need from a running match. The offline game implements it on top of a
- * local Sim; the online game (phase 2) will implement it on top of server state, with no scene changes.
+ * local Sim; the online game implements it on top of server snapshots.
+ * Every list holds only what the player can currently see.
  */
 export interface GameSession {
   /** Identifies the match; the scene remounts when it changes. */
@@ -128,14 +168,24 @@ export interface GameSession {
   addFx(fx: Omit<Fx, 'bornAt'>): void;
   hud(): HudState;
 
+  roster(): readonly RosterHero[];
+  /** The entity with this id, when it exists and the player can see it. */
+  find(id: number): ViewEntity | undefined;
   heroes(): readonly ViewEntity[];
-  minions(): Iterable<MinionView>;
-  projectiles(): Iterable<ViewEntity>;
-  units(): Iterable<UnitView>;
+  minions(): readonly MinionView[];
+  monsters(): readonly MonsterView[];
+  projectiles(): readonly ViewEntity[];
+  /** Fire and darkness on the ground. */
+  zones(): readonly ViewEntity[];
+  /** Turrets and traps. */
+  summons(): readonly ViewEntity[];
+  units(): readonly UnitView[];
   /** Towers and shrines present when the scene was built. */
   buildings(): readonly ViewEntity[];
   exists(id: number): boolean;
   hasStatus(e: ViewEntity, type: StatusType): boolean;
+  /** Bolt-7's fixed cannon form. */
+  isSiege(e: ViewEntity): boolean;
   ability(slot: AbilitySlot): AbilityDef;
 
   /** Interpolated position of an entity for this frame. */

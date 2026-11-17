@@ -22,6 +22,7 @@ interface RoomStore {
   createRoom: (nickname: string) => Promise<string | null>;
   joinRoom: (code: string, nickname: string) => Promise<void>;
   setTeam: (team: Team) => void;
+  setHero: (heroId: string) => void;
   startMatch: () => void;
   /** After a match: leave it and go back to the lobby it started from. */
   backToLobby: () => Promise<void>;
@@ -159,6 +160,7 @@ export const useRoomStore = create<RoomStore>((set, get) => {
       await connect((options) => colyseus.joinById(code, options));
     },
     setTeam: (team) => lobbyRoom?.send('team', team),
+    setHero: (heroId) => lobbyRoom?.send('hero', heroId),
     startMatch: () => lobbyRoom?.send('start'),
     backToLobby: async () => {
       const code = get().code;

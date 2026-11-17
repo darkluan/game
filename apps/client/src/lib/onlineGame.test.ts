@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Command, type MatchWelcome, Sim, snapshotOf, TICK_RATE, youSnapshotOf } from '@game/core';
+import { type Command, heroSnapshot, type MatchWelcome, Sim, teamSnapshot, TICK_RATE } from '@game/core';
 import { OnlineGame } from './onlineGame';
 
 const TICK_MS = 1000 / TICK_RATE;
@@ -18,8 +18,8 @@ function setup() {
     heroId: me.id,
     code: 'ABCDE',
     roster: [
-      { heroId: me.id, nickname: 'Lan', isBot: false, team: 0 },
-      { heroId: sim.heroOf('foe')!.id, nickname: 'Bot', isBot: true, team: 1 },
+      { heroId: me.id, heroDefId: 'kael', nickname: 'Lan', isBot: false, team: 0 },
+      { heroId: sim.heroOf('foe')!.id, heroDefId: 'kael', nickname: 'Bot', isBot: true, team: 1 },
     ],
   };
   let now = 1000;
@@ -33,7 +33,7 @@ function setup() {
   /** One server tick: step, send the snapshot, let the tick's time pass. */
   const serverTick = () => {
     sim.step();
-    game.receive({ ...snapshotOf(sim), you: youSnapshotOf(sim, me) });
+    game.receive(heroSnapshot(sim, me, teamSnapshot(sim, 0)));
     now += TICK_MS;
   };
   return { sim, me, game, sent, serverTick, wait: (ms: number) => (now += ms) };
@@ -101,7 +101,7 @@ describe('OnlineGame', () => {
     game.update();
     const hud = game.hud();
     expect(hud.abilities[0]).toMatchObject({ slot: 'Q', level: 1, usable: true });
-    expect(hud.scores.map((s) => s.name)).toEqual(['Lan', 'Bot (máy)']);
+    expect(hud.scores.map((s) => `${s.name} ${s.heroName}`)).toEqual(['Lan Kael', 'Máy Kael']);
     expect(hud.scores[0].isPlayer).toBe(true);
     expect(hud.winner).toBeNull();
   });
@@ -120,5 +120,25 @@ describe('OnlineGame', () => {
     expect(game.exists(minion.id)).toBe(false);
     game.send({ t: 'stop' });
     expect(sent).toEqual([{ t: 'stop' }]);
+  });
+
+  it('hides an enemy that walks into a bush and keeps its score line', () => {
+    const { sim, game, serverTick } = setup();
+    const foe = sim.heroOf('foe')!;
+    sim.setBot('foe', false);
+    serverTick();
+    game.update();
+    expect(game.find(foe.id)).toBeDefined();
+    const bush = sim.map.bushes[0];
+    foe.pos.x = bush.x;
+    foe.pos.z = bush.z;
+    for (let i = 0; i < 5; i++) {
+      serverTick();
+      game.update();
+    }
+    expect(game.find(foe.id)).toBeUndefined();
+    expect(game.heroes()).toHaveLength(1);
+    expect(game.roster()).toHaveLength(2);
+    expect(game.hud().scores).toHaveLength(2);
   });
 });

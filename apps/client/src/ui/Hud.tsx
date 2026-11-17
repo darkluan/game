@@ -2,7 +2,9 @@ import { castSlot } from '@/input/commands';
 import type { AbilityHud, GameSession, HudState } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { RACE_TEXT, raceName } from './heroText';
 import { Minimap } from './Minimap';
+import { ItemBag, ShopPanel } from './Shop';
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -40,7 +42,7 @@ function AbilityButton({ ability, game }: { ability: AbilityHud; game: GameSessi
       <button
         type="button"
         aria-label={`${ability.name} (${ability.slot})`}
-        title={`${ability.name} · ${ability.cost} mana`}
+        title={`${ability.name}: ${ability.description}`}
         disabled={!ability.usable}
         onClick={() => castSlot(game, ability.slot, null)}
         className={`relative size-14 overflow-hidden rounded-md border-2 bg-background text-lg font-bold ${
@@ -56,12 +58,58 @@ function AbilityButton({ ability, game }: { ability: AbilityHud; game: GameSessi
         <span className="relative">
           {learned && ability.cooldownLeft > 0 ? Math.ceil(ability.cooldownLeft) : ability.slot}
         </span>
-        <span className="absolute right-1 bottom-0 text-[10px] font-normal text-mana">{ability.cost}</span>
+        {ability.cost > 0 && (
+          <span className="absolute right-1 bottom-0 text-[10px] font-normal text-mana">{ability.cost}</span>
+        )}
       </button>
       <span className="text-[10px] text-muted-foreground">
         {ability.name} · {ability.level}
       </span>
     </div>
+  );
+}
+
+/** Mana for humans and gods, the Heat gauge for machines, and the dragon's form in place of a bar. */
+function ResourceBar({ hud }: { hud: HudState }) {
+  if (hud.resource === 'mana') {
+    return (
+      <>
+        <Bar value={hud.mana} max={hud.maxMana} className="bg-mana" label="Mana" />
+        {hud.race === 'god' && (
+          <p className="text-xs text-muted-foreground">
+            Tín đồ ở gần: <span className="font-semibold text-race-god">{hud.followers}</span> / 5
+          </p>
+        )}
+      </>
+    );
+  }
+  if (hud.resource === 'heat') {
+    const overloaded = hud.overloadSeconds > 0;
+    return (
+      <div
+        role="progressbar"
+        aria-label="Nhiệt"
+        aria-valuenow={hud.heat}
+        aria-valuemax={100}
+        className="relative h-5 overflow-hidden rounded-sm border border-border bg-background"
+      >
+        <div
+          className={`h-full ${overloaded ? 'bg-danger' : hud.heat > 50 ? 'bg-race-dragon' : 'bg-gold'}`}
+          style={{ width: `${hud.heat}%` }}
+        />
+        {/* Above this mark abilities hit harder. */}
+        <span aria-hidden className="absolute inset-y-0 left-1/2 w-px bg-foreground/60" />
+        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular-nums">
+          {overloaded ? `QUÁ TẢI ${hud.overloadSeconds} giây` : `Nhiệt ${hud.heat} / 100`}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <p className="text-xs text-muted-foreground">
+      Chiêu không tốn gì · Tiến hóa: <span className="font-semibold text-race-dragon">{hud.stage} / 2</span>
+      {hud.stage < 2 && ` (lần tới ở cấp ${hud.stage === 0 ? 5 : 9})`}
+    </p>
   );
 }
 
@@ -80,7 +128,7 @@ function Scoreboard({ hud }: { hud: HudState }) {
         {hud.scores.map((s) => (
           <tr key={s.id} className={s.team === hud.team ? 'text-ally' : 'text-enemy'}>
             <td className={`px-2 py-0.5 ${s.isPlayer ? 'font-bold' : ''}`}>
-              {s.team === hud.team ? 'Đồng minh' : 'Địch'} · {s.name}
+              {s.heroName} · {s.name}
             </td>
             <td className="px-2 py-0.5 text-center">{s.level}</td>
             <td className="px-2 py-0.5 text-center">
@@ -104,6 +152,8 @@ export interface HudActions {
 export function Hud({ game, actions }: { game: GameSession; actions: HudActions }) {
   const hud = useGameStore((s) => s.hud);
   const { graphics, muted, toggleGraphics, toggleMuted } = useSettingsStore();
+  const shopOpen = useGameStore((s) => s.shopOpen);
+  const toggleShop = useGameStore((s) => s.toggleShop);
   if (!hud) return null;
   const topButton = 'pointer-events-auto rounded-md border border-border bg-panel px-3 py-1 text-sm';
 
@@ -121,6 +171,9 @@ export function Hud({ game, actions }: { game: GameSession; actions: HudActions 
         <span className="rounded-md border border-border bg-panel px-3 py-1 font-semibold text-gold tabular-nums">
           {Math.floor(hud.gold)} vàng
         </span>
+        <button type="button" onClick={toggleShop} aria-pressed={shopOpen} className={topButton}>
+          Cửa hàng (B)
+        </button>
         <button type="button" onClick={toggleMuted} aria-pressed={!muted} className={topButton}>
           Âm thanh: {muted ? 'tắt' : 'bật'}
         </button>
@@ -136,13 +189,18 @@ export function Hud({ game, actions }: { game: GameSession; actions: HudActions 
         <Minimap game={game} />
       </div>
 
+      {shopOpen && <ShopPanel hud={hud} game={game} onClose={toggleShop} />}
+
       <p className="absolute bottom-3 left-3 max-w-56 text-xs text-muted-foreground">
-        Chuột: di chuyển, bấm vào địch để đánh. Q W E R: dùng chiêu theo con trỏ. Alt + phím: nâng chiêu. S: dừng.
+        Chuột: di chuyển, bấm vào địch để đánh. Q W E R: dùng chiêu theo con trỏ. Alt + phím: nâng chiêu. S: dừng. B:
+        cửa hàng.
       </p>
 
       <div className="pointer-events-auto absolute bottom-3 left-1/2 flex w-[420px] max-w-[94vw] -translate-x-1/2 flex-col gap-2 rounded-lg border border-border bg-panel p-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold">{hud.heroName}</span>
+          <span className="font-semibold">
+            {hud.heroName} <span className={`font-normal ${RACE_TEXT[hud.race]}`}>· {raceName(hud.race)}</span>
+          </span>
           <span className="text-muted-foreground">
             Cấp {hud.level}
             {hud.skillPoints > 0 && (
@@ -156,14 +214,19 @@ export function Hud({ game, actions }: { game: GameSession; actions: HudActions 
           ))}
         </div>
         <Bar value={hud.hp} max={hud.maxHp} className="bg-hp" label="Máu" />
-        <Bar value={hud.mana} max={hud.maxMana} className="bg-mana" label="Mana" />
+        <ResourceBar hud={hud} />
+        <ItemBag hud={hud} game={game} />
         <div className="h-1 overflow-hidden rounded-sm bg-background" role="progressbar" aria-label="Kinh nghiệm">
           <div className="h-full bg-xp" style={{ width: `${hud.xpFraction * 100}%` }} />
         </div>
-        {(hud.shield > 0 || hud.stunned) && (
-          <div className="flex gap-3 text-xs">
+        {(hud.shield > 0 || hud.conditions.length > 0) && (
+          <div className="flex flex-wrap gap-x-3 text-xs">
             {hud.shield > 0 && <span className="text-ally">Khiên {Math.ceil(hud.shield)}</span>}
-            {hud.stunned && <span className="text-danger">Bị choáng</span>}
+            {hud.conditions.map((label) => (
+              <span key={label} className="text-danger">
+                {label}
+              </span>
+            ))}
           </div>
         )}
       </div>

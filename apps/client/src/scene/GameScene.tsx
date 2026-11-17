@@ -10,7 +10,8 @@ import { Buildings } from './Buildings';
 import { Effects } from './Effects';
 import { Heroes } from './Heroes';
 import { HealthBars, Swarm } from './Instanced';
-import { Minions } from './Minions';
+import { Summons, Zones } from './Ground';
+import { Minions, Monsters } from './Minions';
 import { COLORS } from './palette';
 import { Terrain } from './Terrain';
 
@@ -86,7 +87,10 @@ export default function GameScene({ game, graphics }: { game: GameSession; graph
         <Buildings game={game} />
         <Heroes game={game} />
         {high && <Minions game={game} />}
+        <Monsters game={game} />
       </Suspense>
+      <Zones game={game} />
+      <Summons game={game} />
       <Swarm game={game} simpleMinions={!high} />
       <HealthBars game={game} />
       <Effects game={game} />

@@ -1,20 +1,29 @@
 import {
   type Command,
   FLAG_DEAD,
-  FLAG_SHIELD,
-  FLAG_STUN,
+  FLAG_SIEGE,
   FLAG_TARGETABLE,
   HEROES,
   MAP,
   type MatchWelcome,
   type Snapshot,
+  STATUS_FLAGS,
   type StatusType,
   TICK_RATE,
   type Vec2,
 } from '@game/core';
 import { BaseSession } from './baseSession';
 import { buildHud } from './hud';
-import type { GameSession, HudState, MinionView, SoundCue, UnitView, ViewEntity } from './session';
+import type {
+  GameSession,
+  HudState,
+  MinionView,
+  MonsterView,
+  RosterHero,
+  SoundCue,
+  UnitView,
+  ViewEntity,
+} from './session';
 
 const TICK_MS = 1000 / TICK_RATE;
 /** The scene shows the game this far in the past, so there are always two snapshots to blend between. */
@@ -25,7 +34,6 @@ const MOVING_EPSILON = 0.01;
 
 interface View extends ViewEntity {
   flags: number;
-  heroDefId?: string;
   level: number;
   kda: [number, number, number];
   /** Position at the snapshot being blended from and the one being blended to. */
@@ -41,6 +49,7 @@ export interface MatchConnection {
 /**
  * A match played on the server. Receives a snapshot per server tick, shows them slightly delayed
  * and blends positions between the two snapshots around the displayed moment.
+ * The server only sends what this player can see, so an entity missing from a snapshot is hidden.
  */
 export class OnlineGame extends BaseSession implements GameSession {
   readonly seed = Date.now();
@@ -48,18 +57,23 @@ export class OnlineGame extends BaseSession implements GameSession {
   hero: ViewEntity;
 
   private readonly views = new Map<number, View>();
+  private readonly heroRoster: RosterHero[];
   private queue: Snapshot[] = [];
   private current: Snapshot | null = null;
   private fromTick = 0;
   /** Smallest seen (arrival time - snapshot game time): maps the local clock to server game time. */
   private clockOffset = Infinity;
-  private lists = {
+  private seen = {
     heroes: [] as View[],
     minions: [] as MinionView[],
+    monsters: [] as MonsterView[],
     projectiles: [] as View[],
+    zones: [] as View[],
+    summons: [] as View[],
     units: [] as UnitView[],
   };
   private startBuildings: View[] = [];
+  private readonly lastScore = new Map<number, { level: number; kda: number[] }>();
 
   constructor(
     private readonly connection: MatchConnection,
@@ -68,6 +82,7 @@ export class OnlineGame extends BaseSession implements GameSession {
     private readonly now: () => number = () => performance.now(),
   ) {
     super(onCue);
+    this.heroRoster = welcome.roster.map((r) => ({ id: r.heroId, team: r.team, defId: r.heroDefId }));
     // Stand-in until the first snapshot arrives; replaced by the real view then.
     this.hero = { id: welcome.heroId, kind: 'hero', team: 0, pos: { x: 0, z: 0 }, radius: 0.6, facing: 0 };
   }
@@ -132,52 +147,81 @@ export class OnlineGame extends BaseSession implements GameSession {
           to: { x: e.x, z: e.z },
         };
         if (e.mt) v.minion = { type: e.mt };
+        if (e.mo) v.monster = { type: e.mo };
+        if (e.ze) v.zone = { effect: e.ze };
         if (e.ar) v.attacker = { range: e.ar };
-        if (e.hd) v.heroDefId = e.hd;
+        if (e.hd) v.hero = { defId: e.hd, stage: 0 };
         this.views.set(e.id, v);
       }
       // The previous snapshot's position becomes the start of the next blend.
       v.from = v.to;
       v.to = { x: e.x, z: e.z };
       v.facing = e.f;
+      v.radius = e.r;
       v.flags = e.fl;
       v.dead = (e.fl & FLAG_DEAD) !== 0;
       if (e.hp !== undefined && e.mhp !== undefined) v.health = { hp: e.hp, maxHp: e.mhp };
+      if (e.ar && v.attacker) v.attacker.range = e.ar;
+      if (v.hero && e.st !== undefined) v.hero.stage = e.st;
       if (e.lv !== undefined) v.level = e.lv;
       if (e.kda) v.kda = e.kda;
     }
+    // Gone, or no longer visible to this player.
     for (const id of this.views.keys()) if (!seen.has(id)) this.views.delete(id);
 
     const all = [...this.views.values()];
-    this.lists = {
+    this.seen = {
       heroes: all.filter((v) => v.kind === 'hero'),
       minions: all.filter((v): v is View & MinionView => v.minion !== undefined && v.health !== undefined),
+      monsters: all.filter((v): v is View & MonsterView => v.monster !== undefined && v.health !== undefined),
       projectiles: all.filter((v) => v.kind === 'projectile'),
+      zones: all.filter((v) => v.kind === 'zone'),
+      summons: all.filter((v) => v.kind === 'trap' || v.kind === 'turret'),
       units: all.filter((v): v is View & UnitView => v.health !== undefined),
     };
     if (this.fromTick === snapshot.tick) {
       // First snapshot: fix the lists the scene builds its static objects from.
       this.startBuildings = all.filter((v) => v.kind === 'tower' || v.kind === 'shrine');
-      this.hero = this.views.get(this.welcome.heroId) ?? this.hero;
     }
+    this.hero = this.views.get(this.welcome.heroId) ?? this.hero;
     this.clock = (this.fromTick * TICK_MS) / 1000;
     for (const event of snapshot.events) this.handleEvent(event);
   }
 
+  roster(): readonly RosterHero[] {
+    return this.heroRoster;
+  }
+
+  find(id: number): ViewEntity | undefined {
+    return this.views.get(id);
+  }
+
   heroes(): readonly ViewEntity[] {
-    return this.lists.heroes;
+    return this.seen.heroes;
   }
 
-  minions(): Iterable<MinionView> {
-    return this.lists.minions;
+  minions(): readonly MinionView[] {
+    return this.seen.minions;
   }
 
-  projectiles(): Iterable<ViewEntity> {
-    return this.lists.projectiles;
+  monsters(): readonly MonsterView[] {
+    return this.seen.monsters;
   }
 
-  units(): Iterable<UnitView> {
-    return this.lists.units;
+  projectiles(): readonly ViewEntity[] {
+    return this.seen.projectiles;
+  }
+
+  zones(): readonly ViewEntity[] {
+    return this.seen.zones;
+  }
+
+  summons(): readonly ViewEntity[] {
+    return this.seen.summons;
+  }
+
+  units(): readonly UnitView[] {
+    return this.seen.units;
   }
 
   buildings(): readonly ViewEntity[] {
@@ -188,17 +232,16 @@ export class OnlineGame extends BaseSession implements GameSession {
     return this.views.has(id);
   }
 
+  private flags(id: number): number {
+    return this.views.get(id)?.flags ?? 0;
+  }
+
   hasStatus(e: ViewEntity, type: StatusType): boolean {
-    const flags = this.views.get(e.id)?.flags ?? 0;
-    return (flags & (type === 'stun' ? FLAG_STUN : type === 'shield' ? FLAG_SHIELD : 0)) !== 0;
+    return (this.flags(e.id) & STATUS_FLAGS[type]) !== 0;
   }
 
-  protected find(id: number): ViewEntity | undefined {
-    return this.views.get(id);
-  }
-
-  protected heroDefId(id: number): string | undefined {
-    return this.views.get(id)?.heroDefId;
+  isSiege(e: ViewEntity): boolean {
+    return (this.flags(e.id) & FLAG_SIEGE) !== 0;
   }
 
   protected previousPos(id: number): Vec2 | undefined {
@@ -206,7 +249,7 @@ export class OnlineGame extends BaseSession implements GameSession {
   }
 
   protected isTargetable(e: UnitView): boolean {
-    return ((this.views.get(e.id)?.flags ?? 0) & FLAG_TARGETABLE) !== 0;
+    return (this.flags(e.id) & FLAG_TARGETABLE) !== 0;
   }
 
   renderPos(e: ViewEntity, out: Vec2): Vec2 {
@@ -225,28 +268,32 @@ export class OnlineGame extends BaseSession implements GameSession {
     const snapshot = this.current;
     const me = this.views.get(this.welcome.heroId);
     if (!snapshot || !me || !snapshot.you) throw new Error('hud() called before the first snapshot');
-    const nameOf = new Map(this.welcome.roster.map((r) => [r.heroId, r]));
+    // Heroes out of sight keep their last known score line.
+    for (const v of this.seen.heroes) this.lastScore.set(v.id, { level: v.level, kda: v.kda });
     return buildHud({
       tick: snapshot.tick,
-      def: HEROES[me.heroDefId ?? 'kael'],
-      team: me.team,
+      def: HEROES[me.hero?.defId ?? 'kael'],
+      team: me.team === 1 ? 1 : 0,
       hp: me.health?.hp ?? 0,
       maxHp: me.health?.maxHp ?? 1,
       level: me.level,
+      stage: me.hero?.stage ?? 0,
       dead: me.dead === true,
-      stunned: (me.flags & FLAG_STUN) !== 0,
+      has: (type) => (me.flags & STATUS_FLAGS[type]) !== 0,
+      siege: (me.flags & FLAG_SIEGE) !== 0,
       you: snapshot.you,
-      scores: this.lists.heroes.map((v) => {
-        const entry = nameOf.get(v.id);
+      scores: this.welcome.roster.map((r) => {
+        const score = this.lastScore.get(r.heroId) ?? { level: 1, kda: [0, 0, 0] };
         return {
-          id: v.id,
-          name: entry ? (entry.isBot ? `${entry.nickname} (máy)` : entry.nickname) : `#${v.id}`,
-          team: v.team,
-          isPlayer: v.id === me.id,
-          level: v.level,
-          kills: v.kda[0],
-          deaths: v.kda[1],
-          assists: v.kda[2],
+          id: r.heroId,
+          name: r.isBot ? 'Máy' : r.nickname,
+          heroName: HEROES[r.heroDefId]?.name ?? r.heroDefId,
+          team: r.team,
+          isPlayer: r.heroId === me.id,
+          level: score.level,
+          kills: score.kda[0],
+          deaths: score.kda[1],
+          assists: score.kda[2],
         };
       }),
       winner: snapshot.winner,

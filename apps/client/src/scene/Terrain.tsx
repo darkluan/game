@@ -6,7 +6,7 @@ import { COLORS } from './palette';
 
 const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
 
-interface Placement {
+export interface Placement {
   x: number;
   z: number;
   scale: number;
@@ -14,7 +14,7 @@ interface Placement {
 }
 
 /** Many copies of one prop model in a single draw call. */
-function Props({ model, items, castShadow }: { model: string; items: Placement[]; castShadow: boolean }) {
+export function Props({ model, items, castShadow }: { model: string; items: Placement[]; castShadow: boolean }) {
   const gltf = useModel(model);
   const source = useMemo(() => firstMesh(gltf.scene), [gltf]);
   const ref = useRef<InstancedMesh>(null);
@@ -111,6 +111,19 @@ export function Terrain({ map, playerTeam, detailed }: { map: MapDef; playerTeam
         <mesh key={i} position={[o.x, detailed ? 0.3 : 1, o.z]} receiveShadow>
           <boxGeometry args={[o.w, detailed ? 0.6 : 2, o.d]} />
           <meshStandardMaterial color={COLORS.wall} />
+        </mesh>
+      ))}
+      {/* Tall grass: units inside are hidden from enemies outside. */}
+      {map.bushes.map((b, i) => (
+        <mesh key={i} position={[b.x, 0.55, b.z]}>
+          <boxGeometry args={[b.w, 1.1, b.d]} />
+          <meshStandardMaterial color={COLORS.bush} transparent opacity={0.55} depthWrite={false} />
+        </mesh>
+      ))}
+      {map.camps.map((camp, i) => (
+        <mesh key={i} rotation={FLAT} position={[camp.pos.x, 0.02, camp.pos.z + 0.4]}>
+          <ringGeometry args={[3.2, 3.5, 40]} />
+          <meshBasicMaterial color={COLORS.monster} transparent opacity={0.35} />
         </mesh>
       ))}
       {detailed && <Scenery map={map} />}

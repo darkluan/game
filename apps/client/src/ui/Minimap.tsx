@@ -14,6 +14,8 @@ function tokens() {
     self: get('--primary'),
     wall: get('--border'),
     lane: get('--muted-foreground'),
+    bush: get('--hp'),
+    monster: get('--gold'),
   };
 }
 
@@ -41,6 +43,21 @@ export function Minimap({ game }: { game: GameSession }) {
     ctx.globalAlpha = 1;
     ctx.fillStyle = colors.wall;
     for (const o of game.map.obstacles) ctx.fillRect(px(o.x - o.w / 2), pz(o.z - o.d / 2), o.w * scale, o.d * scale);
+
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = colors.bush;
+    for (const b of game.map.bushes) ctx.fillRect(px(b.x - b.w / 2), pz(b.z - b.d / 2), b.w * scale, b.d * scale);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = colors.monster;
+    for (const m of game.monsters()) {
+      if (!m.dead)
+        ctx.fillRect(
+          px(m.pos.x) - 2,
+          pz(m.pos.z) - 2,
+          m.monster.type === 'big' ? 5 : 3,
+          m.monster.type === 'big' ? 5 : 3,
+        );
+    }
 
     for (const b of game.buildings()) {
       if (!game.exists(b.id)) continue;

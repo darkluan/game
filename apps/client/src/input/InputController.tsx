@@ -2,9 +2,10 @@ import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';
 import { ABILITY_SLOTS, type AbilitySlot } from '@game/core';
 import type { GameSession } from '@/lib/session';
+import { useGameStore } from '@/store/gameStore';
 import { castSlot, clickGround } from './commands';
 
-/** Mouse: click to move or attack. Keys: Q W E R cast at the cursor, Alt+key levels up, S stops. */
+/** Mouse: click to move or attack. Keys: Q W E R cast at the cursor, Alt+key levels up, S stops, B opens the shop. */
 export function InputController({ game }: { game: GameSession }) {
   const canvas = useThree((s) => s.gl.domElement);
 
@@ -23,6 +24,8 @@ export function InputController({ game }: { game: GameSession }) {
         else castSlot(game, key as AbilitySlot, game.cursor);
       } else if (key === 'S') {
         game.send({ t: 'stop' });
+      } else if (key === 'B') {
+        useGameStore.getState().toggleShop();
       }
     };
     canvas.addEventListener('pointerdown', onPointerDown);

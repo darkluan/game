@@ -1,7 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import { Color, type InstancedMesh, Object3D, Vector3 } from 'three';
-import type { Vec2 } from '@game/core';
+import { HERO, NEUTRAL, type Vec2 } from '@game/core';
 import type { GameSession } from '@/lib/session';
 import { COLORS, teamColor } from './palette';
 
@@ -82,6 +82,8 @@ export function Swarm({ game, simpleMinions }: { game: GameSession; simpleMinion
 const BAR: Record<string, { y: number; w: number; h: number }> = {
   hero: { y: 3, w: 1.9, h: 0.26 },
   minion: { y: 1.6, w: 1, h: 0.14 },
+  monster: { y: 2.2, w: 1.5, h: 0.18 },
+  turret: { y: 1.9, w: 1.1, h: 0.14 },
   tower: { y: 7.6, w: 3.2, h: 0.3 },
   shrine: { y: 10.4, w: 4.4, h: 0.34 },
 };
@@ -108,7 +110,9 @@ export function HealthBars({ game }: { game: GameSession }) {
       if (!bar || e.dead || n >= MAX_BARS) continue;
       const p = game.renderPos(e, pos);
       const pct = Math.max(0, Math.min(1, e.health.hp / e.health.maxHp));
-      dummy.position.set(p.x, bar.y, p.z);
+      // Bars sit above the model: higher for an evolved dragon or a big monster.
+      const lift = e.kind === 'hero' ? e.radius / HERO.radius : e.monster?.type === 'big' ? 1.6 : 1;
+      dummy.position.set(p.x, bar.y * lift, p.z);
       dummy.scale.set(bar.w + 0.08, bar.h + 0.08, 1);
       dummy.updateMatrix();
       b.setMatrixAt(n, dummy.matrix);
@@ -117,7 +121,9 @@ export function HealthBars({ game }: { game: GameSession }) {
       dummy.scale.set(Math.max(0.001, bar.w * pct), bar.h, 1);
       dummy.updateMatrix();
       f.setMatrixAt(n, dummy.matrix);
-      f.setColorAt(n, color.set(e === game.hero ? COLORS.hp : teamColor(e.team, game.hero.team)));
+      const tone =
+        e.id === game.hero.id ? COLORS.hp : e.team === NEUTRAL ? COLORS.monster : teamColor(e.team, game.hero.team);
+      f.setColorAt(n, color.set(tone));
       n++;
     }
     b.count = n;

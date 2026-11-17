@@ -40,4 +40,30 @@ describe('LocalGame', () => {
     expect(hud.scores).toHaveLength(6);
     expect(hud.winner).toBeNull();
   });
+
+  it('plays the chosen hero with bots on distinct heroes per team', () => {
+    const game = new LocalGame(7, 'bolt7');
+    expect(game.hero.hero?.defId).toBe('bolt7');
+    expect(game.hud()).toMatchObject({ resource: 'heat', heat: 0, itemSlots: 4, canShop: true });
+    for (const team of [0, 1]) {
+      const picks = game
+        .roster()
+        .filter((r) => r.team === team)
+        .map((r) => r.defId);
+      expect(new Set(picks).size).toBe(3);
+    }
+  });
+
+  it('shows only what the hero can see', () => {
+    const game = new LocalGame(1);
+    game.update(TICK);
+    const foe = game.sim.q.heroes.entities.find((h) => h.team === 1)!;
+    expect(game.find(foe.id)).toBeDefined();
+    const bush = game.map.bushes[0];
+    foe.pos.x = bush.x;
+    foe.pos.z = bush.z;
+    game.update(TICK);
+    expect(game.find(foe.id)).toBeUndefined();
+    expect(game.heroes().some((h) => h.id === foe.id)).toBe(false);
+  });
 });

@@ -99,32 +99,14 @@ export class Actor {
   }
 }
 
-export const KNIGHT_RIG: Rig = {
-  idle: 'Idle',
-  run: 'Running_A',
-  death: 'Death_A',
-  actions: {
-    attack: { clip: '1H_Melee_Attack_Chop', seconds: 0.6 },
-    Q: { clip: '1H_Melee_Attack_Stab', seconds: 0.6 },
-    W: { clip: 'Blocking', seconds: 0.7 },
-    E: { clip: 'Block_Attack', seconds: 0.6 },
-    R: { clip: 'Jump_Full_Short', seconds: 0.7 },
-  },
-};
-
-/** The knight model ships with every weapon attached; Kael carries a sword and a tall shield. */
-export const KNIGHT_HIDDEN = ['1H_Sword_Offhand', 'Badge_Shield', 'Round_Shield', 'Spike_Shield', '2H_Sword'];
+const MINION_RIG_BASE = { idle: 'Idle', run: 'Running_A', death: 'Death_A' } as const;
 
 export const MELEE_MINION_RIG: Rig = {
-  idle: 'Idle',
-  run: 'Running_A',
-  death: 'Death_A',
+  ...MINION_RIG_BASE,
   actions: { attack: { clip: 'Unarmed_Melee_Attack_Punch_A', seconds: 0.7 } },
 };
 
 export const RANGED_MINION_RIG: Rig = {
-  idle: 'Idle',
-  run: 'Running_A',
-  death: 'Death_A',
+  ...MINION_RIG_BASE,
   actions: { attack: { clip: 'Spellcast_Shoot', seconds: 0.7 } },
 };

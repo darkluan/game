@@ -1,5 +1,7 @@
-import { type AbilityDef, type AbilitySlot, dist, HEROES, type SimEvent, type Team, type Vec2 } from '@game/core';
+import { type AbilityDef, type AbilitySlot, dist, type Faction, HEROES, type SimEvent, type Vec2 } from '@game/core';
 import type { ActorAction, Fx, FxColor, SoundCue, UnitView, ViewEntity } from './session';
+
+const HEAL_TEXT_MINIMUM = 20;
 
 /** Sounds fade out with distance from the player's hero and are silent beyond this. */
 const EARSHOT = 28;
@@ -18,10 +20,9 @@ export abstract class BaseSession {
   constructor(private readonly onCue: (cue: SoundCue, volume: number) => void) {}
 
   abstract readonly hero: ViewEntity;
-  abstract units(): Iterable<UnitView>;
-  protected abstract find(id: number): ViewEntity | undefined;
-  /** The hero definition id of a hero entity. */
-  protected abstract heroDefId(id: number): string | undefined;
+  abstract units(): readonly UnitView[];
+  /** The entity with this id, when the player can see it. */
+  abstract find(id: number): ViewEntity | undefined;
   /** Where the entity was one update earlier, when known. */
   protected abstract previousPos(id: number): Vec2 | undefined;
   protected abstract isTargetable(e: UnitView): boolean;
@@ -44,7 +45,7 @@ export abstract class BaseSession {
   }
 
   ability(slot: AbilitySlot): AbilityDef {
-    return HEROES[this.heroDefId(this.hero.id) ?? 'kael'].abilities[slot];
+    return HEROES[this.hero.hero?.defId ?? 'kael'].abilities[slot];
   }
 
   private nearest(score: (e: UnitView) => number, limit: number): ViewEntity | null {
@@ -69,7 +70,7 @@ export abstract class BaseSession {
     return this.nearest((e) => dist(e.pos, this.hero.pos) - e.radius, range);
   }
 
-  private side(team: Team): FxColor {
+  private side(team: Faction): FxColor {
     return team === this.hero.team ? 'ally' : 'enemy';
   }
 
@@ -91,7 +92,7 @@ export abstract class BaseSession {
       }
       case 'cast': {
         const caster = this.find(event.casterId);
-        const defId = this.heroDefId(event.casterId);
+        const defId = caster?.hero?.defId;
         if (!caster || !defId) return;
         this.actions.set(caster.id, { kind: event.slot, at: this.clock });
         this.cue(`cast${event.slot}`, caster.pos);
@@ -115,7 +116,13 @@ export abstract class BaseSession {
       case 'death': {
         this.actions.delete(event.id);
         if (event.kind === 'projectile') return;
-        const radius = event.kind === 'minion' ? 0.8 : event.kind === 'hero' ? 2 : 4;
+        if (event.kind === 'zone' || event.kind === 'trap') return;
+        const radius =
+          event.kind === 'minion' || event.kind === 'turret'
+            ? 0.8
+            : event.kind === 'hero' || event.kind === 'monster'
+              ? 2
+              : 4;
         this.addFx({ kind: 'ring', x: event.x, z: event.z, radius, color: 'neutral', duration: 0.5 });
         if (event.kind === 'hero') this.cue('heroDeath', event);
         else if (event.kind === 'tower') this.cue('structureDown', null);
@@ -140,6 +147,35 @@ export abstract class BaseSession {
         if (!who) return;
         this.addFx({ kind: 'ring', x: who.pos.x, z: who.pos.z, radius: 2.2, color: 'gold', duration: 0.7 });
         if (who.id === this.hero.id) this.cue('levelUp', null);
+        return;
+      }
+      case 'heal': {
+        const target = this.find(event.targetId);
+        if (!target || event.amount < HEAL_TEXT_MINIMUM) return;
+        this.addFx({
+          kind: 'text',
+          x: event.x,
+          z: event.z,
+          radius: 0,
+          color: 'heal',
+          text: `+${Math.round(event.amount)}`,
+          duration: 0.8,
+        });
+        return;
+      }
+      case 'evolve': {
+        const who = this.find(event.id);
+        if (!who) return;
+        this.addFx({ kind: 'ring', x: who.pos.x, z: who.pos.z, radius: 5, color: 'gold', duration: 1.2 });
+        this.addFx({ kind: 'disc', x: who.pos.x, z: who.pos.z, radius: 3, color: 'gold', duration: 0.8 });
+        this.cue('levelUp', who.pos);
+        return;
+      }
+      case 'overload': {
+        const who = this.find(event.id);
+        if (!who) return;
+        this.addFx({ kind: 'disc', x: who.pos.x, z: who.pos.z, radius: 1.6, color: 'enemy', duration: 0.6 });
+        this.cue('structureDown', who.pos);
         return;
       }
       case 'gameOver':

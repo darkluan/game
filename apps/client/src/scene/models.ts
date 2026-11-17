@@ -7,6 +7,12 @@ const url = (file: string) => `${import.meta.env.BASE_URL}models/${file}`;
 /** CC0 models by Kay Lousberg (KayKit); see public/models/CREDITS.md. */
 export const MODELS = {
   knight: url('knight.glb'),
+  rogue: url('rogue.glb'),
+  rogueHooded: url('rogue_hooded.glb'),
+  mage: url('mage.glb'),
+  barbarian: url('barbarian.glb'),
+  skeletonWarrior: url('skeleton_warrior.glb'),
+  skeletonRogue: url('skeleton_rogue.glb'),
   minionMelee: url('skeleton_minion.glb'),
   minionRanged: url('skeleton_mage.glb'),
   towerAlly: url('building_tower_A_blue.gltf'),
