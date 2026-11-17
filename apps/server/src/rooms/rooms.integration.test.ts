@@ -60,6 +60,11 @@ describe('lobby', () => {
       { nickname: 'Bình', team: 1, isHost: false },
     ]);
 
+    other.room.send('hero', 'vesper');
+    other.room.send('hero', 'nobody');
+    await sleep(150);
+    expect(host.state().players[1].heroId).toBe('vesper');
+
     other.room.send('team', 0);
     await sleep(150);
     expect(host.state().players[1].team).toBe(0);
@@ -118,6 +123,7 @@ describe('match', () => {
     const code = host.room.roomId;
     const other = await inLobby(new Client(URL).joinById(code, { token: b.token, nickname: 'Bình' }));
 
+    host.room.send('hero', 'ignar');
     other.room.send('start');
     await sleep(200);
     expect(host.state().matchRoomId).toBeNull(); // only the host may start
@@ -130,6 +136,12 @@ describe('match', () => {
 
     const match = await inMatch(clientA.joinById(matchRoomId, { token: a.token }));
     const { heroId, roster } = match.welcome();
+    // My pick is my hero; no team has the same hero twice, bots included.
+    expect(roster.find((r) => r.heroId === heroId)!.heroDefId).toBe('ignar');
+    for (const team of [0, 1]) {
+      const heroes = roster.filter((r) => r.team === team).map((r) => r.heroDefId);
+      expect(new Set(heroes).size).toBe(3);
+    }
     expect(roster.map((r) => r.nickname).sort()).toEqual(['An', 'Bot', 'Bot', 'Bot', 'Bot', 'Bình']);
     expect(match.welcome().code).toBe(code);
     const last = () => match.snaps[match.snaps.length - 1];

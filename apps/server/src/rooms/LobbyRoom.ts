@@ -45,6 +45,10 @@ export class LobbyRoom extends Room {
       const { playerId } = client.auth as Auth;
       if (this.matchRoomId === null && this.roster.setTeam(playerId, team as 0 | 1)) this.broadcastState();
     });
+    this.onMessage('hero', (client: Client, heroId: unknown) => {
+      const { playerId } = client.auth as Auth;
+      if (this.matchRoomId === null && this.roster.setHero(playerId, heroId)) this.broadcastState();
+    });
     this.onMessage('start', (client: Client) => {
       const { playerId } = client.auth as Auth;
       if (this.matchRoomId !== null || !this.roster.isHost(playerId)) return;
@@ -100,7 +104,7 @@ export class LobbyRoom extends Room {
     const options: MatchOptions = {
       internalKey: INTERNAL_KEY,
       code: this.roomId,
-      players: this.roster.list().map(({ playerId, nickname, team }) => ({ playerId, nickname, team })),
+      players: this.roster.list().map(({ playerId, nickname, team, heroId }) => ({ playerId, nickname, team, heroId })),
     };
     // Players leave the lobby to join the match; it must outlive them so the link still works.
     this.autoDispose = false;

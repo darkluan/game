@@ -45,4 +45,33 @@ describe('LobbyRoster', () => {
     expect(roster.size).toBe(2);
     expect(roster.list()[1]).toMatchObject({ nickname: 'Renamed', team: 1 });
   });
+
+  it('gives every teammate a different hero and refuses a duplicate pick', () => {
+    const roster = filled(6);
+    for (const team of [0, 1]) {
+      const heroes = roster
+        .list()
+        .filter((p) => p.team === team)
+        .map((p) => p.heroId);
+      expect(new Set(heroes).size).toBe(3);
+    }
+    const [p0, , p2] = roster.list();
+    expect(roster.setHero('p0', p2.heroId)).toBe(false); // p2 is a teammate
+    expect(roster.setHero('p0', 'mekka')).toBe(true);
+    expect(roster.setHero('p1', 'mekka')).toBe(true); // other team may mirror
+    expect(roster.setHero('p0', 'not-a-hero')).toBe(false);
+    expect(roster.setHero('p0', 7)).toBe(false);
+    expect(roster.list()[0].heroId).toBe('mekka');
+    expect(p0.heroId).not.toBe('mekka');
+  });
+
+  it('swaps a clashing hero when a player changes team', () => {
+    const roster = filled(2);
+    roster.setHero('p0', 'sola');
+    roster.setHero('p1', 'sola');
+    expect(roster.setTeam('p1', 0)).toBe(true);
+    const [a, b] = roster.list();
+    expect(a.heroId).toBe('sola');
+    expect(b.heroId).not.toBe('sola');
+  });
 });

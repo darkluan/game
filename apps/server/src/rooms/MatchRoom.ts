@@ -2,15 +2,16 @@ import { randomBytes, randomInt } from 'node:crypto';
 import { type Client, Room, ServerError } from 'colyseus';
 import {
   type Command,
+  HERO_IDS,
+  heroSnapshot,
   type MatchWelcome,
   type PlayerSetup,
   type RosterEntry,
   Sim,
-  snapshotOf,
   type Team,
   TEAM_SIZE,
+  teamSnapshot,
   TICK_RATE,
-  youSnapshotOf,
 } from '@game/core';
 import { verifyGuest } from '../auth/guest.js';
 import { createLogger } from '../logger.js';
@@ -29,7 +30,7 @@ export interface MatchOptions {
   internalKey: string;
   /** Lobby the match was started from. */
   code: string;
-  players: { playerId: string; nickname: string; team: Team }[];
+  players: { playerId: string; nickname: string; team: Team; heroId: string }[];
 }
 
 interface Auth {
@@ -76,19 +77,27 @@ export class MatchRoom extends Room {
     const nicknames = new Map<string, string>();
     for (const team of [0, 1] as const) {
       const humans = options.players.filter((p) => p.team === team).slice(0, TEAM_SIZE);
+      const taken = new Set<string>();
       for (const p of humans) {
-        players.push({ playerId: p.playerId, team, heroId: 'kael', isBot: false });
+        const heroId =
+          HERO_IDS.includes(p.heroId) && !taken.has(p.heroId) ? p.heroId : HERO_IDS.find((id) => !taken.has(id))!;
+        taken.add(heroId);
+        players.push({ playerId: p.playerId, team, heroId, isBot: false });
         nicknames.set(p.playerId, p.nickname);
         this.humans.add(p.playerId);
       }
-      // Empty seats are filled with bots.
+      // Empty seats are filled with bots playing heroes the team does not have yet.
       for (let i = humans.length; i < TEAM_SIZE; i++) {
-        players.push({ playerId: `bot:${team}:${i}`, team, heroId: 'kael', isBot: true });
+        const free = HERO_IDS.filter((id) => !taken.has(id));
+        const heroId = free[randomInt(free.length)];
+        taken.add(heroId);
+        players.push({ playerId: `bot:${team}:${i}`, team, heroId, isBot: true });
       }
     }
     this.sim = new Sim({ seed: randomInt(2 ** 32), players });
     this.roster = players.map((p) => ({
       heroId: this.sim.heroOf(p.playerId)!.id,
+      heroDefId: p.heroId,
       nickname: nicknames.get(p.playerId) ?? 'Bot',
       isBot: p.isBot,
       team: p.team,
@@ -163,10 +172,11 @@ export class MatchRoom extends Room {
       if (ticks + 1 === BOT_TAKEOVER_TICKS) this.sim.setBot(playerId, true);
     }
     this.sim.step();
-    const common = snapshotOf(this.sim);
+    // One snapshot per team: each side only receives what it can see.
+    const views = [teamSnapshot(this.sim, 0), teamSnapshot(this.sim, 1)];
     for (const [playerId, client] of this.clientOf) {
       const hero = this.sim.heroOf(playerId);
-      client.send('s', hero ? { ...common, you: youSnapshotOf(this.sim, hero) } : common);
+      if (hero) client.send('s', heroSnapshot(this.sim, hero, views[hero.team]));
     }
 
     if (this.sim.winner !== null) {
