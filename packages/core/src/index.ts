@@ -7,3 +7,4 @@ export { raceOf, type RaceDef } from './races/index.js';
 export { NavGrid } from './pathfinding/grid.js';
 export { Sim, type SimOptions, type HeroEntity, type UnitEntity } from './sim/Sim.js';
 export { maxAbilityLevel } from './systems/ability.js';
+export * from './protocol.js';

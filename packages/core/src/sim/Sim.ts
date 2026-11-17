@@ -162,6 +162,14 @@ export class Sim {
     return this.byPlayer.get(playerId);
   }
 
+  /** Hand a hero to the bot AI, or back to its player (a player dropped or came back). */
+  setBot(playerId: string, isBot: boolean): void {
+    const hero = this.byPlayer.get(playerId);
+    if (!hero) return;
+    hero.hero.isBot = isBot;
+    hero.hero.botRetreating = false;
+  }
+
   emit(event: SimEvent): void {
     this.events.push(event);
   }
