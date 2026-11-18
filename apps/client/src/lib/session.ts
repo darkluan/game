@@ -237,6 +237,7 @@ export type SoundCue =
   | 'gold'
   | 'levelUp'
   | 'matchStart'
+  | 'matchFound'
   | 'victory'
   | 'defeat';
 

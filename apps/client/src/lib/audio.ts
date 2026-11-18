@@ -437,6 +437,11 @@ const CUES: Record<SoundCue, (v: Voice) => void> = {
   gold: (v) => notes([1319, 1760], 0.06, 'sine', 0.3).forEach((t) => tone(v, t)),
   levelUp: (v) => notes([523, 659, 784, 1047], 0.08, 'triangle', 0.4).forEach((t) => tone(v, t)),
   // A horn call: two notes a fifth apart, each a stack of slightly detuned saws.
+  // A match has been found: a bright rising call, rung twice, that cuts through whatever else is on.
+  matchFound: (v) =>
+    notes([784, 1047, 1319, 1568, 0, 784, 1047, 1319, 1568], 0.1, 'triangle', 0.55)
+      .filter((t) => t.from > 0)
+      .forEach((t) => tone(v, t)),
   matchStart: (v) => {
     for (const [from, at, duration] of [
       [147, 0, 0.5],
@@ -535,7 +540,17 @@ function playRecorded(v: Voice, recorded: Recorded): boolean {
 }
 
 /** Tunes and signals keep their pitch; everything else varies a little each time. */
-const FIXED_PITCH = new Set<SoundCue>(['gold', 'levelUp', 'matchStart', 'victory', 'defeat', 'kill', 'heal', 'dawn']);
+const FIXED_PITCH = new Set<SoundCue>([
+  'gold',
+  'levelUp',
+  'matchStart',
+  'matchFound',
+  'victory',
+  'defeat',
+  'kill',
+  'heal',
+  'dawn',
+]);
 
 /**
  * Plays a game sound. `pan` places it between the left (-1) and right (1) speaker, for something

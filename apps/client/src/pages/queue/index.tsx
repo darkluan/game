@@ -260,7 +260,9 @@ export default function QueuePage() {
   const leave = useQueueStore((s) => s.leave);
   const game = useGameStore((s) => s.game);
   const nickname = useSettingsStore((s) => s.nickname);
-  useLobbyMusic(true);
+  // Searching is waiting, and waiting has music. Once a match is found it stops: from then on the player is needed.
+  const waiting = status === null || status.state === 'idle' || status.state === 'searching';
+  useLobbyMusic(true, !waiting);
 
   // Navigating away drops the queue connection. Deferred one task so a remount (StrictMode) cancels it.
   useEffect(() => {

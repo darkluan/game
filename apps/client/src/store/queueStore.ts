@@ -95,7 +95,7 @@ export const useQueueStore = create<QueueStore>((set, get) => {
     let previous: QueueStatus['state'] = 'idle';
     room.onMessage('queue', (status: QueueStatus) => {
       if (queueRoom !== room) return;
-      if (status.state === 'accept' && previous !== 'accept') playCue('matchStart');
+      if (status.state === 'accept' && previous !== 'accept') playCue('matchFound');
       previous = status.state;
       set({ status, notice: status.notice ?? get().notice });
       if (status.state === 'starting' && status.matchRoomId) void enterMatch(status.matchRoomId);
