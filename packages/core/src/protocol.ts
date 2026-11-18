@@ -1,6 +1,7 @@
 import { RELIC, TICK_RATE, xpToNext } from './data/balance.js';
 import type { HeroEntity, Sim } from './sim/Sim.js';
 import type { TeamSynergy } from './races/index.js';
+import { cleanChatText } from './chatFilter.js';
 import { canShop, discountOf } from './systems/shop.js';
 import { spellCooldownLeft } from './systems/spell.js';
 import { abilityPower } from './systems/stats.js';
@@ -287,6 +288,8 @@ export interface LobbyPlayer {
   /** The hero this player picked. */
   heroId: string;
   isHost: boolean;
+  /** Has said they are ready to start. The host is always ready: starting is how they say so. */
+  ready: boolean;
 }
 
 /** Sent by the lobby to everyone whenever it changes. */
@@ -372,4 +375,91 @@ export function cleanNickname(raw: unknown): string {
   // Drop control characters (code points below space, and DEL).
   const printable = [...raw].filter((ch) => ch >= ' ' && ch !== '\u007f').join('');
   return printable.trim().slice(0, NICKNAME_MAX_LENGTH);
+}
+
+// ---- chat ----
+
+/** Ready-made phrases a player can send to their team during a match. Sent as ids so each receiver reads them in their own language. */
+export const MATCH_CHAT_IDS = [
+  'attack',
+  'retreat',
+  'help',
+  'recalling',
+  'relic',
+  'thanks',
+  'wellPlayed',
+  'sorry',
+] as const;
+/** Ready-made phrases for the pick room, where everyone reads them. */
+export const LOBBY_CHAT_IDS = ['hello', 'readyUp', 'wait', 'swapHero', 'letsGo', 'thanks'] as const;
+export type MatchChatId = (typeof MATCH_CHAT_IDS)[number];
+export type LobbyChatId = (typeof LOBBY_CHAT_IDS)[number];
+
+/** The signals a player can put on the map for the team: strike here, get out, come together here. */
+export const PING_TYPES = ['attack', 'retreat', 'gather'] as const;
+export type PingType = (typeof PING_TYPES)[number];
+
+/** What a client sends in a match: a phrase, typed words, or a signal on the map for the team to look at. */
+export type MatchChatSend =
+  { k: 'quick'; id: MatchChatId } | { k: 'text'; text: string } | { k: 'ping'; type: PingType; x: number; z: number };
+/** What teammates receive: the same, with the sender's hero. */
+export type MatchChatMessage = MatchChatSend & { heroId: number };
+/** What a client sends in a pick room: a phrase's id, or typed words. */
+export type LobbyChatSend = { id: LobbyChatId } | { text: string };
+/** What everyone in a pick room receives: the same, with who said it. */
+export type LobbyChatMessage = LobbyChatSend & { playerId: string };
+
+/** Marks farther than this from the middle of the map are refused; no map is this big. */
+const PING_LIMIT = 500;
+
+/** Checks a match chat message from the network. Returns it cleaned, or null when it is not one. */
+export function parseMatchChat(raw: unknown): MatchChatSend | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const { k, id, x, z, text, type } = raw as Record<string, unknown>;
+  if (k === 'text') {
+    const clean = cleanChatText(text);
+    return clean ? { k, text: clean } : null;
+  }
+  if (k === 'quick') return (MATCH_CHAT_IDS as readonly unknown[]).includes(id) ? { k, id: id as MatchChatId } : null;
+  if (k !== 'ping' || typeof x !== 'number' || typeof z !== 'number') return null;
+  if (!(PING_TYPES as readonly unknown[]).includes(type)) return null;
+  if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > PING_LIMIT || Math.abs(z) > PING_LIMIT) return null;
+  return { k, type: type as PingType, x, z };
+}
+
+/** Checks a pick-room chat message from the network: a phrase's id on its own, or `{ text }`. */
+export function parseLobbyChat(raw: unknown): LobbyChatSend | null {
+  if ((LOBBY_CHAT_IDS as readonly unknown[]).includes(raw)) return { id: raw as LobbyChatId };
+  if (typeof raw !== 'object' || raw === null) return null;
+  const text = cleanChatText((raw as Record<string, unknown>).text);
+  return text ? { text } : null;
+}
+
+/**
+ * Keeps one player from flooding the chat: a few messages may go out in a burst, after that one a
+ * second, and a player who keeps pushing is silenced for a while. Time is passed in, in milliseconds.
+ */
+export class ChatLimiter {
+  private readonly state = new Map<string, { tokens: number; at: number; mutedUntil: number }>();
+
+  constructor(
+    private readonly burst = 3,
+    private readonly refillMs = 1000,
+    private readonly muteMs = 5000,
+  ) {}
+
+  /** True when this player may send now; counts the message when it may. */
+  allow(playerId: string, now: number): boolean {
+    const s = this.state.get(playerId) ?? { tokens: this.burst, at: now, mutedUntil: 0 };
+    this.state.set(playerId, s);
+    if (now < s.mutedUntil) return false;
+    s.tokens = Math.min(this.burst, s.tokens + (now - s.at) / this.refillMs);
+    s.at = now;
+    if (s.tokens < 1) {
+      s.mutedUntil = now + this.muteMs;
+      return false;
+    }
+    s.tokens -= 1;
+    return true;
+  }
 }

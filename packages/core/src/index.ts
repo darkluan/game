@@ -10,3 +10,4 @@ export { Sim, type SimOptions, type HeroEntity, type UnitEntity } from './sim/Si
 export { maxAbilityLevel, castBlocker } from './systems/ability.js';
 export { itemPrice, discountOf, canShop } from './systems/shop.js';
 export * from './protocol.js';
+export { CHAT_TEXT_MAX, censorChat, cleanChatText } from './chatFilter.js';
