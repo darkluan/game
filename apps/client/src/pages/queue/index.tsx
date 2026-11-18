@@ -1,4 +1,5 @@
 import { tr, trServer } from '@/i18n';
+import { reloadHome } from '@/lib/reloadHome';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { HEROES, PARTY_MAX_SIZE, type QueueStatus } from '@game/core';
@@ -296,7 +297,8 @@ export default function QueuePage() {
             <button type="button" onClick={join} className="btn btn-primary cut-corners">
               {tr('Thử lại')}
             </button>
-            <button type="button" onClick={goHome} className="btn btn-ghost cut-corners">
+            {/* After an error the way home is a fresh load, which also picks up a newer version of the game. */}
+            <button type="button" onClick={reloadHome} className="btn btn-ghost cut-corners">
               {tr('Về trang chủ')}
             </button>
           </div>

@@ -1,4 +1,5 @@
 import { tr } from '@/i18n';
+import { reloadHome } from '@/lib/reloadHome';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { LobbyShell } from '@/components/LobbyShell';
@@ -303,7 +304,8 @@ export default function RoomPage() {
             <button type="button" onClick={() => void joinRoom(code, nickname)} className="btn btn-primary cut-corners">
               {tr('Vào lại')}
             </button>
-            <button type="button" onClick={goHome} className="btn btn-ghost cut-corners">
+            {/* After an error the way home is a fresh load, which also picks up a newer version of the game. */}
+            <button type="button" onClick={reloadHome} className="btn btn-ghost cut-corners">
               {tr('Về trang chủ')}
             </button>
           </div>
