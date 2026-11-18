@@ -1,8 +1,8 @@
 {
-  "name": "Tứ Tộc",
-  "short_name": "Tứ Tộc",
-  "description": "MOBA 3v3 một đường, chơi ngay trên trình duyệt.",
-  "lang": "vi",
+  "name": "Tutoc",
+  "short_name": "Tutoc",
+  "description": "A 3v3 one-lane MOBA that plays in your browser.",
+  "lang": "en",
   "start_url": "/",
   "scope": "/",
   "display": "fullscreen",

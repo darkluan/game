@@ -14,15 +14,14 @@ The KayKit character files were reduced from the originals: only the animations 
 
 ## Quaternius
 
-The dragons (the dragon heroes and their evolved forms) and the mechs (the machine heroes) are by
+The wind spirit (the wind god) and the mechs (the machine heroes) are by
 Quaternius (quaternius.com), also released under CC0 1.0. The mechs were downloaded from the
-quaternius-showcase project and the dragons from poly.pizza, which host each model as a separate file.
+quaternius-showcase project and the spirit from poly.pizza, which host each model as a separate file.
 
-| Files                                              | Pack               | Source                                                           |
-| -------------------------------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `dragon_wyvern.glb`                                | Dragon             | https://poly.pizza/m/VBvzjFIYws                                  |
-| `dragon_young.glb`, `dragon_elder.glb`             | Ultimate Monsters  | https://poly.pizza/m/3rUm1cN3yp, https://poly.pizza/m/LlwD0QNUPj |
-| `mech_mike.glb`, `mech_leela.glb`, `mech_stan.glb` | Animated Mech Pack | https://quaternius.com/packs/animatedmech.html                   |
+| Files                                                                 | Pack                           | Source                                         |
+| --------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------- |
+| `wind_spirit.glb`                                                     | Ultimate Monsters (the Wizard) | https://poly.pizza/m/o87Upt5uHX                |
+| `mech_mike.glb`, `mech_leela.glb`, `mech_stan.glb`, `mech_george.glb` | Animated Mech Pack             | https://quaternius.com/packs/animatedmech.html |
 
 The mech files were reduced: unused animations were removed and the texture was scaled down to
-512 pixels. The dragon files are unchanged; the game recolours them per hero.
+512 pixels. The dragon heroes have no model files: they are built in code (src/scene/Hydra.ts).
