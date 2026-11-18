@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { hz, type Melody, melodyByStep, noise, type Theme, thump, voice } from './synth';
 
 /**
@@ -68,7 +69,7 @@ function brass(ctx: AudioContext, out: AudioNode, at: number, freq: number, dura
 }
 
 export const march: Theme = {
-  name: 'Hành khúc',
+  name: tr('Hành khúc'),
   stepSeconds: STEP,
   lowpass: 3200,
   fadeInSeconds: 0.4,

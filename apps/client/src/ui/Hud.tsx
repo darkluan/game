@@ -3,6 +3,7 @@ import type { GameSession } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
 import { DesktopHud } from './hud/DesktopHud';
 import { MobileHud } from './hud/MobileHud';
+import { Tutorial } from './Tutorial';
 
 /** What the HUD's buttons do; differs between offline play and a room. */
 export interface HudActions {
@@ -13,10 +14,15 @@ export interface HudActions {
 }
 
 /** Everything drawn over the match. Picks the touch layout on phones and tablets, the desktop one otherwise. */
-export function Hud({ game, actions }: { game: GameSession; actions: HudActions }) {
+export function Hud({ game, actions, tutorial }: { game: GameSession; actions: HudActions; tutorial: boolean }) {
   const hud = useGameStore((s) => s.hud);
   const touch = useTouchLayout();
   if (!hud) return null;
   const Layout = touch ? MobileHud : DesktopHud;
-  return <Layout game={game} hud={hud} actions={actions} />;
+  return (
+    <>
+      <Layout game={game} hud={hud} actions={actions} />
+      {tutorial && <Tutorial game={game} hud={hud} touch={touch} />}
+    </>
+  );
 }

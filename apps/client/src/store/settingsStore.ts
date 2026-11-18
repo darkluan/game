@@ -1,11 +1,12 @@
 import { create } from 'zustand';
+import { type Lang, lang, SETTINGS_KEY } from '@/i18n';
 import { setMuted } from '@/lib/audio';
 import { cleanNickname, HERO_IDS } from '@game/core';
 import { DEFAULT_THEME, THEME_IDS, type ThemeId } from '@/lib/music';
 
 export type Graphics = 'high' | 'low';
 
-const STORAGE_KEY = 'tu-toc-settings';
+const STORAGE_KEY = SETTINGS_KEY;
 
 interface Saved {
   graphics: Graphics;
@@ -16,6 +17,10 @@ interface Saved {
   nickname: string;
   /** Hero played against bots, and the first pick offered in a room. */
   heroId: string;
+  /** The first-match tutorial has been finished or skipped. */
+  tutorialDone: boolean;
+  /** The language the game is shown in. */
+  lang: Lang;
 }
 
 function load(): Saved {
@@ -28,10 +33,20 @@ function load(): Saved {
       music: THEME_IDS.find((id) => id === saved.music) ?? DEFAULT_THEME,
       nickname: cleanNickname(saved.nickname),
       heroId: HERO_IDS.find((id) => id === saved.heroId) ?? HERO_IDS[0],
+      tutorialDone: saved.tutorialDone === true,
+      lang,
     };
   } catch {
     // Storage blocked or corrupted: use the defaults.
-    return { graphics: 'high', muted: false, music: DEFAULT_THEME, nickname: '', heroId: HERO_IDS[0] };
+    return {
+      graphics: 'high',
+      muted: false,
+      music: DEFAULT_THEME,
+      nickname: '',
+      heroId: HERO_IDS[0],
+      tutorialDone: false,
+      lang,
+    };
   }
 }
 
@@ -45,6 +60,9 @@ interface SettingsStore extends Saved {
   setMusic: (music: ThemeId) => void;
   setNickname: (nickname: string) => void;
   setHeroId: (heroId: string) => void;
+  finishTutorial: () => void;
+  /** Saves the choice and reloads the page, which is when the language is read. */
+  setLang: (lang: Lang) => void;
 }
 
 const initial = load();
@@ -53,9 +71,12 @@ setMuted(initial.muted);
 export const useSettingsStore = create<SettingsStore>((set, get) => {
   const update = (change: Partial<Saved>) => {
     set(change);
-    const { graphics, muted, music, nickname, heroId } = get();
+    const { graphics, muted, music, nickname, heroId, tutorialDone, lang } = get();
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ graphics, muted, music, nickname, heroId }));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ graphics, muted, music, nickname, heroId, tutorialDone, lang }),
+      );
     } catch {
       // Storage blocked: the choice just lasts for this visit.
     }
@@ -77,6 +98,12 @@ export const useSettingsStore = create<SettingsStore>((set, get) => {
     setNickname: (nickname) => update({ nickname: cleanNickname(nickname) }),
     setHeroId: (heroId) => {
       if (HERO_IDS.includes(heroId)) update({ heroId });
+    },
+    finishTutorial: () => update({ tutorialDone: true }),
+    setLang: (next) => {
+      if (next === get().lang) return;
+      update({ lang: next });
+      window.location.reload();
     },
   };
 });

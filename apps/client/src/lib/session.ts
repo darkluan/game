@@ -4,6 +4,7 @@ import type {
   Command,
   EntityKind,
   Faction,
+  HeroStats,
   MapDef,
   Race,
   RelicType,
@@ -25,6 +26,14 @@ export interface AbilityHud {
   cooldownFraction: number; // 1 = just cast, 0 = ready
   canLevelUp: boolean;
   usable: boolean;
+  /** Seconds between casts, per ability level. */
+  cooldowns: number[];
+  /** Mana or Heat per cast, per ability level; empty for heroes whose abilities are free. */
+  costs: number[];
+  /** How far it reaches; 0 for one cast on the spot. */
+  range: number;
+  /** Its numbers, one row each, as text per ability level. */
+  details: { label: string; values: string[] }[];
 }
 
 export interface HeroScore {
@@ -34,6 +43,9 @@ export interface HeroScore {
   heroName: string;
   team: Team;
   isPlayer: boolean;
+  /** Health left, 0 to 1. For an enemy out of sight, what it was when last seen. */
+  hpFraction: number;
+  dead: boolean;
   level: number;
   kills: number;
   deaths: number;
@@ -69,6 +81,8 @@ export interface HudState {
   /** Labels of the conditions the hero is under, for display. */
   conditions: string[];
   abilities: AbilityHud[];
+  /** The hero's fighting numbers; null while the server has not sent them. */
+  stats: HeroStats | null;
   items: string[];
   itemSlots: number;
   canShop: boolean;
@@ -133,14 +147,59 @@ export interface ActorAction {
   at: number; // seconds on the session clock
 }
 
+/** The sound of a basic attack, by what is doing the hitting. */
+export type AttackSound = 'swing' | 'arrow' | 'magic' | 'claw' | 'gun' | 'blade' | 'minionHit' | 'minionShot' | 'tower';
+
+/** The sound of an ability, by what it is made of. Several abilities can share one. */
+export type AbilitySound =
+  | 'dash'
+  | 'guard'
+  | 'bash'
+  | 'slam'
+  | 'trap'
+  | 'mark'
+  | 'tumble'
+  | 'snipe'
+  | 'fire'
+  | 'explosion'
+  | 'wind'
+  | 'firestorm'
+  | 'earth'
+  | 'stone'
+  | 'quake'
+  | 'heal'
+  | 'light'
+  | 'dawn'
+  | 'stab'
+  | 'shadow'
+  | 'darkness'
+  | 'burstFire'
+  | 'servo'
+  | 'vent'
+  | 'orbital'
+  | 'build'
+  | 'repair'
+  | 'zap'
+  | 'overdrive'
+  | 'star'
+  | 'bind'
+  | 'blink'
+  | 'starfall'
+  | 'thunder'
+  | 'charge'
+  | 'roar'
+  | 'saw'
+  | 'boost'
+  | 'execute'
+  | 'cast';
+
 export type SoundCue =
-  | 'hit'
-  | 'tower'
-  | 'castQ'
-  | 'castW'
-  | 'castE'
-  | 'castR'
+  | AttackSound
+  | AbilitySound
+  | 'impact'
   | 'heroDeath'
+  | 'kill'
+  | 'minionDeath'
   | 'structureDown'
   | 'gold'
   | 'levelUp'

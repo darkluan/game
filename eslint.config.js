@@ -22,5 +22,9 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
+  {
+    files: ['apps/client/public/sw.js'],
+    languageOptions: { globals: globals.serviceworker },
+  },
   prettier,
 );

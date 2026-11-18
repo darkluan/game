@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { Link } from 'react-router';
 import { LobbyShell } from '@/components/LobbyShell';
 import { GameIcon } from '@/ui/icons/GameIcon';
@@ -16,7 +17,7 @@ export default function CreditsPage() {
   return (
     <LobbyShell>
       <div>
-        <p className="animate-rise text-xs font-bold tracking-[0.35em] text-primary uppercase">Tứ Tộc</p>
+        <p className="animate-rise text-xs font-bold tracking-[0.35em] text-primary uppercase">{tr('Tứ Tộc')}</p>
         <h1 className="animate-rise text-title text-5xl leading-tight font-black tracking-[0.08em] uppercase">
           Ghi công
         </h1>
@@ -58,11 +59,26 @@ export default function CreditsPage() {
           <a href="https://www.kaylousberg.com" target="_blank" rel="noreferrer" className={link}>
             Kay Lousberg
           </a>
-          . Khủng long và người máy:{' '}
+          . Rồng và người máy:{' '}
           <a href="https://quaternius.com" target="_blank" rel="noreferrer" className={link}>
             Quaternius
           </a>
           . Cả hai phát hành theo CC0.
+        </p>
+      </section>
+
+      <section className="glass-panel flex w-full flex-col gap-2 rounded-xl p-4 text-left text-sm">
+        <h2 className="font-semibold">Âm thanh</h2>
+        <p className="text-muted-foreground">
+          Tiếng vũ khí, va chạm, lửa, đá và tiền xu: các gói CC0 của{' '}
+          <a href="https://www.kenney.nl" target="_blank" rel="noreferrer" className={link}>
+            Kenney
+          </a>{' '}
+          và{' '}
+          <a href="https://opengameart.org/users/rubberduck" target="_blank" rel="noreferrer" className={link}>
+            rubberduck
+          </a>{' '}
+          trên OpenGameArt. Nhạc và các tiếng còn lại do game tự tổng hợp.
         </p>
       </section>
 

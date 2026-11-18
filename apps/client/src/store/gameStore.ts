@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { playCue, unlockAudio } from '@/lib/audio';
 import { LocalGame } from '@/lib/localGame';
 import type { GameSession, HudState } from '@/lib/session';
+import { useTutorialStore } from './tutorialStore';
 import { useSettingsStore } from './settingsStore';
 
 interface GameStore {
@@ -27,7 +28,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   startOffline: () => {
     unlockAudio();
     playCue('matchStart');
-    get().setGame(new LocalGame(Date.now(), useSettingsStore.getState().heroId, playCue));
+    const game = new LocalGame(Date.now(), useSettingsStore.getState().heroId, playCue);
+    useTutorialStore.getState().begin(game.hero.pos);
+    get().setGame(game);
   },
   quit: () => get().setGame(null),
   setGame: (game) => set({ game, hud: game ? game.hud() : null, shopOpen: false, scoreboardOpen: false }),

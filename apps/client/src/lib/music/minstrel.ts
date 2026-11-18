@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { hz, type Melody, melodyByStep, type Theme, thump, voice } from './synth';
 
 /**
@@ -56,7 +57,7 @@ const melodyAt = melodyByStep(MELODY);
 const LOOP_STEPS = BASS.length * STEPS_PER_BAR;
 
 export const minstrel: Theme = {
-  name: 'Khúc hát rong',
+  name: tr('Khúc hát rong'),
   stepSeconds: STEP,
   lowpass: 2400,
   fadeInSeconds: 1.5,

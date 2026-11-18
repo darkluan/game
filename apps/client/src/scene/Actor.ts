@@ -2,7 +2,7 @@ import { AnimationMixer, type AnimationAction, type AnimationClip, Box3, Group, 
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { ActorAction } from '@/lib/session';
-import { setShadows, tintModel } from './models';
+import { paintModel, setShadows, tintModel } from './models';
 
 /** Which clips a model uses for standing, running, dying and for each one-shot action. */
 export interface Rig {
@@ -25,6 +25,8 @@ export interface ActorOptions {
   /** Multiplies the model's colours, for models that come out too dark. */
   brightness?: number;
   tint?: string;
+  /** New colours for materials, by material name. */
+  palette?: Record<string, string>;
   /** Node names to hide, e.g. the weapons a character does not carry. */
   hide?: string[];
   castShadow: boolean;
@@ -62,6 +64,7 @@ export class Actor {
       const node = model.getObjectByName(name);
       if (node) node.visible = false;
     }
+    if (options.palette) paintModel(model, options.palette);
     if (options.tint || options.brightness) tintModel(model, options.tint ?? '#ffffff', options.brightness);
     setShadows(model, options.castShadow);
     this.root.add(model);

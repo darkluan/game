@@ -1,6 +1,8 @@
+import { tr } from '@/i18n';
 import { type AbilityDef, type AbilitySlot, dist, type Faction, HEROES, type SimEvent, type Vec2 } from '@game/core';
 import { RELIC_EFFECTS, RELIC_NAMES } from '@/ui/relicText';
 import { ABILITY_FX } from './abilityFx';
+import { ABILITY_SOUND, HERO_ATTACK_SOUND } from './abilitySounds';
 import type { ActorAction, Announcement, Fx, FxColor, RosterHero, SoundCue, UnitView, ViewEntity } from './session';
 
 /** How long an announcement stays on screen. */
@@ -11,6 +13,10 @@ const HEAL_TEXT_MINIMUM = 20;
 
 /** Sounds fade out with distance from the player's hero and are silent beyond this. */
 const EARSHOT = 28;
+/** A hit on a hero weaker than this makes no sound of its own. */
+const IMPACT_MINIMUM = 12;
+/** Units that attack from farther than this shoot instead of striking. */
+const RANGED_BEYOND = 3;
 
 /**
  * What the offline and online games share: the cursor, one-shot effects, sound cues, the latest
@@ -25,7 +31,7 @@ export abstract class BaseSession {
   private announced: Announcement[] = [];
   private nextAnnouncementId = 1;
 
-  constructor(private readonly onCue: (cue: SoundCue, volume: number) => void) {}
+  constructor(private readonly onCue: (cue: SoundCue, volume: number, pan: number) => void) {}
 
   abstract readonly hero: ViewEntity;
   abstract roster(): readonly RosterHero[];
@@ -105,9 +111,11 @@ export abstract class BaseSession {
   }
 
   /** Plays a sound for something that happened at `at`, quieter the farther from the player's hero. */
-  private cue(cue: SoundCue, at: Vec2 | null): void {
-    const volume = at ? 1 - dist(at, this.hero.pos) / EARSHOT : 1;
-    if (volume > 0) this.onCue(cue, volume);
+  private cue(cue: SoundCue, at: Vec2 | null, loudness = 1): void {
+    const volume = (at ? 1 - dist(at, this.hero.pos) / EARSHOT : 1) * loudness;
+    // Things to the side of the hero are heard from that side.
+    const pan = at ? (at.x - this.hero.pos.x) / EARSHOT : 0;
+    if (volume > 0) this.onCue(cue, volume, pan);
   }
 
   protected handleEvent(event: SimEvent): void {
@@ -116,8 +124,11 @@ export abstract class BaseSession {
         const source = this.find(event.sourceId);
         if (!source) return;
         this.actions.set(source.id, { kind: 'attack', at: this.clock });
-        if (source.kind === 'hero') this.cue('hit', source.pos);
+        if (source.kind === 'hero') this.cue(HERO_ATTACK_SOUND[source.hero?.defId ?? ''] ?? 'swing', source.pos);
         else if (source.kind === 'tower') this.cue('tower', source.pos);
+        // The rank and file fight quietly under the heroes.
+        else if (source.kind === 'minion' || source.kind === 'monster' || source.kind === 'turret')
+          this.cue((source.attacker?.range ?? 0) > RANGED_BEYOND ? 'minionShot' : 'minionHit', source.pos, 0.4);
         return;
       }
       case 'cast': {
@@ -125,13 +136,14 @@ export abstract class BaseSession {
         const defId = caster?.hero?.defId;
         if (!caster || !defId) return;
         this.actions.set(caster.id, { kind: event.slot, at: this.clock });
-        this.cue(`cast${event.slot}`, caster.pos);
+        this.cue(ABILITY_SOUND[event.abilityId] ?? 'cast', caster.pos);
         this.castFx(caster, HEROES[defId].abilities[event.slot], event);
         return;
       }
       case 'damage': {
         const target = this.find(event.targetId);
         if (target?.kind !== 'hero') return;
+        if (event.amount >= IMPACT_MINIMUM) this.cue('impact', event, Math.min(1, 0.45 + event.amount / 200));
         this.addFx({
           kind: 'disc',
           x: event.x,
@@ -154,17 +166,24 @@ export abstract class BaseSession {
               ? 2
               : 4;
         this.addFx({ kind: 'ring', x: event.x, z: event.z, radius, color: 'neutral', duration: 0.5 });
+        if (event.kind === 'minion' || event.kind === 'monster') this.cue('minionDeath', event, 0.5);
         if (event.kind === 'hero') {
-          this.cue('heroDeath', event);
+          this.cue(event.killerId === this.hero.id ? 'kill' : 'heroDeath', event);
           const victim = this.heroNameOf(event.id);
           const killer = this.heroNameOf(event.killerId);
           const mine = event.team === this.hero.team;
           if (victim)
-            this.announce(killer ? `${killer} hạ gục ${victim}` : `${victim} bị hạ gục`, mine ? 'bad' : 'good');
+            this.announce(
+              killer ? tr('{killer} hạ gục {victim}', { killer, victim }) : tr('{victim} bị hạ gục', { victim }),
+              mine ? 'bad' : 'good',
+            );
         } else if (event.kind === 'tower') {
           this.cue('structureDown', null);
           const mine = event.team === this.hero.team;
-          this.announce(mine ? 'Một trụ của đội bạn đã sụp!' : 'Đội bạn phá được một trụ địch!', mine ? 'bad' : 'good');
+          this.announce(
+            mine ? tr('Một trụ của đội bạn đã sụp!') : tr('Đội bạn phá được một trụ địch!'),
+            mine ? 'bad' : 'good',
+          );
         }
         return;
       }
@@ -219,15 +238,19 @@ export abstract class BaseSession {
         return;
       }
       case 'relicSpawn':
-        this.announce(`Di vật ${RELIC_NAMES[event.relic]} đã sáng lên ở rừng dưới!`, 'neutral');
+        this.announce(tr('Di vật {relic} đã sáng lên ở rừng dưới!', { relic: RELIC_NAMES[event.relic] }), 'neutral');
         this.addFx({ kind: 'ring', x: event.x, z: event.z, radius: 6, color: 'gold', duration: 1.5 });
         this.cue('matchStart', null);
         return;
       case 'relicCaptured': {
         const mine = event.team === this.hero.team;
-        const who = mine ? 'Đội bạn' : 'Đội địch';
+        const who = mine ? tr('Đội bạn') : tr('Đội địch');
         this.announce(
-          `${who} chiếm Di vật ${RELIC_NAMES[event.relic]}: ${RELIC_EFFECTS[event.relic]}`,
+          tr('{who} chiếm Di vật {relic}: {effect}', {
+            who,
+            relic: RELIC_NAMES[event.relic],
+            effect: RELIC_EFFECTS[event.relic],
+          }),
           this.toneFor(event.team),
         );
         this.cue(mine ? 'levelUp' : 'heroDeath', null);
@@ -246,14 +269,14 @@ export abstract class BaseSession {
         });
         return;
       case 'beastSpawn':
-        this.announce('Cổ thú đã xuất hiện trong hang ở rừng trên!', 'neutral');
+        this.announce(tr('Cổ thú đã xuất hiện trong hang ở rừng trên!'), 'neutral');
         this.addFx({ kind: 'ring', x: event.x, z: event.z, radius: 7, color: 'enemy', duration: 1.5 });
         this.cue('matchStart', null);
         return;
       case 'beastSlain':
         if (event.team === null) return;
         this.announce(
-          event.team === this.hero.team ? 'Đội bạn đã hạ Cổ thú!' : 'Đội địch đã hạ Cổ thú!',
+          event.team === this.hero.team ? tr('Đội bạn đã hạ Cổ thú!') : tr('Đội địch đã hạ Cổ thú!'),
           this.toneFor(event.team),
         );
         this.cue('structureDown', null);
@@ -261,8 +284,8 @@ export abstract class BaseSession {
       case 'beastMarch':
         this.announce(
           event.team === this.hero.team
-            ? 'Cổ thú đang cùng lính đội bạn tiến về đền địch!'
-            : 'Cổ thú đang tiến về đền của đội bạn!',
+            ? tr('Cổ thú đang cùng lính đội bạn tiến về đền địch!')
+            : tr('Cổ thú đang tiến về đền của đội bạn!'),
           this.toneFor(event.team),
         );
         return;

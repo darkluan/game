@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { hz, type Melody, melodyByStep, noise, type Theme, thump, voice } from './synth';
 
 /**
@@ -95,7 +96,7 @@ function flute(ctx: AudioContext, out: AudioNode, at: number, freq: number, dura
 }
 
 export const festival: Theme = {
-  name: 'Trống hội',
+  name: tr('Trống hội'),
   stepSeconds: STEP,
   lowpass: 5200,
   fadeInSeconds: 0.4,

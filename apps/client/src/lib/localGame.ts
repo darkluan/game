@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import {
   type Command,
   dist,
@@ -80,7 +81,7 @@ export class LocalGame extends BaseSession implements GameSession {
   constructor(
     readonly seed: number,
     heroId = 'kael',
-    onCue: (cue: SoundCue, volume: number) => void = () => {},
+    onCue: (cue: SoundCue, volume: number, pan: number) => void = () => {},
   ) {
     super(onCue);
     this.sim = new Sim({ seed, players: offlinePlayers(heroId, new Rng(seed)) });
@@ -235,11 +236,13 @@ export class LocalGame extends BaseSession implements GameSession {
       you: youSnapshotOf(sim, h),
       scores: sim.q.heroes.entities.map((e) => ({
         id: e.id,
-        name: e === h ? 'Bạn' : 'Máy',
+        name: e === h ? tr('Bạn') : tr('Máy'),
         heroDefId: e.hero.defId,
         heroName: sim.heroDef(e.hero.defId).name,
         team: e.team,
         isPlayer: e === h,
+        hpFraction: e.dead ? 0 : e.health.hp / e.health.maxHp,
+        dead: e.dead === true,
         level: e.hero.level,
         kills: e.hero.kills,
         deaths: e.hero.deaths,

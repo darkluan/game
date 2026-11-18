@@ -10,7 +10,7 @@ import { minstrel } from './minstrel';
 export const THEMES = { minstrel, march, festival } as const;
 export type ThemeId = keyof typeof THEMES;
 export const THEME_IDS = Object.keys(THEMES) as ThemeId[];
-export const DEFAULT_THEME: ThemeId = 'minstrel';
+export const DEFAULT_THEME: ThemeId = 'march';
 
 const LOOKAHEAD = 0.25;
 

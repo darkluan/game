@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { castSlot } from '@/input/commands';
 import type { AbilityHud, GameSession, HudState } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
@@ -8,7 +9,17 @@ import { Minimap } from '../Minimap';
 import { GameIcon } from '../icons/GameIcon';
 import { ItemBag, ShopPanel } from '../Shop';
 import { clock, teamKills } from './format';
-import { Bar, DeathNotice, EndScreen, EventFeed, type LayoutProps, ResourceBar, Scoreboard } from './parts';
+import {
+  AbilityInfo,
+  Bar,
+  DeathNotice,
+  EndScreen,
+  EventFeed,
+  type LayoutProps,
+  ResourceBar,
+  Scoreboard,
+  StatsGrid,
+} from './parts';
 
 /** The player's portrait is underlined in the colour of its race. */
 const RACE_FRAME = {
@@ -18,27 +29,34 @@ const RACE_FRAME = {
   machine: 'border-b-2 border-race-machine',
 } as const;
 
+/** Shown above an ability while the pointer is over it or its level-up button. */
+const TIP =
+  'hud-panel pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden w-72 -translate-x-1/2 rounded-md p-3';
+
 function AbilityButton({ ability, game }: { ability: AbilityHud; game: GameSession }) {
   const learned = ability.level > 0;
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="relative flex flex-col items-center gap-1">
+      {/* peer-hover: the level-up button shows what the next level brings, the ability itself what it has now. */}
       <button
         type="button"
-        aria-label={`Nâng cấp ${ability.name}`}
-        title={`Nâng cấp (Alt+${ability.slot})`}
+        aria-label={tr('Nâng cấp {name}', { name: ability.name })}
         disabled={!ability.canLevelUp}
         onClick={() => game.send({ t: 'levelUp', slot: ability.slot })}
-        className="h-4 w-8 rounded-sm bg-primary text-xs leading-none font-bold text-primary-foreground disabled:invisible"
+        className="peer/up h-4 w-8 rounded-sm bg-primary text-xs leading-none font-bold text-primary-foreground disabled:invisible"
       >
         +
       </button>
+      <div role="tooltip" className={`${TIP} peer-hover/up:block`}>
+        <AbilityInfo ability={ability} next />
+        <p className="mt-1 text-[10px] text-primary">{tr('Nâng cấp (Alt+{slot})', { slot: ability.slot })}</p>
+      </div>
       <button
         type="button"
         aria-label={`${ability.name} (${ability.slot})`}
-        title={`${ability.name}: ${ability.description}`}
         disabled={!ability.usable}
         onClick={() => castSlot(game, ability.slot, null)}
-        className={`cut-corners-sm relative size-14 overflow-hidden border-2 bg-background text-lg font-bold ${
+        className={`peer/cast cut-corners-sm relative size-14 overflow-hidden border-2 bg-background text-lg font-bold ${
           ability.usable
             ? 'border-primary shadow-[inset_0_0_14px_color-mix(in_srgb,var(--primary)_45%,transparent)]'
             : 'border-border text-muted-foreground'
@@ -68,6 +86,9 @@ function AbilityButton({ ability, game }: { ability: AbilityHud; game: GameSessi
         {/* One pip per point spent. */}
         <span className="absolute top-0.5 left-1 text-[9px] font-normal text-gold">{'•'.repeat(ability.level)}</span>
       </button>
+      <div role="tooltip" className={`${TIP} peer-hover/cast:block`}>
+        <AbilityInfo ability={ability} />
+      </div>
       <span className="max-w-16 truncate text-[10px] text-muted-foreground">{ability.name}</span>
     </div>
   );
@@ -83,12 +104,19 @@ function TopBar({ hud }: { hud: HudState }) {
         <span
           key={s.id}
           title={`${s.heroName} · ${s.name} · ${s.kills}/${s.deaths}/${s.assists}`}
-          className={`cut-corners-sm relative block size-12 border-b-2 bg-background ${
-            own ? 'border-ally' : 'border-enemy'
-          } ${s.isPlayer ? 'outline-2 -outline-offset-2 outline-primary' : ''}`}
+          className={`cut-corners-sm relative block size-12 bg-background ${
+            s.isPlayer ? 'outline-2 -outline-offset-2 outline-primary' : ''
+          }`}
         >
-          <HeroPortrait heroId={s.heroDefId} className="size-full" />
-          <span className="absolute right-0 bottom-0 bg-background/85 px-1 text-[10px] leading-tight font-bold tabular-nums">
+          <HeroPortrait heroId={s.heroDefId} className={`size-full ${s.dead ? 'opacity-40 grayscale' : ''}`} />
+          {/* Health left, in the team's colour. */}
+          <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-background/90">
+            <span
+              className={`block h-full ${own ? 'bg-hp' : 'bg-enemy'}`}
+              style={{ width: `${Math.max(0, Math.min(1, s.hpFraction)) * 100}%` }}
+            />
+          </span>
+          <span className="absolute top-0 right-0 bg-background/85 px-1 text-[10px] leading-tight font-bold tabular-nums">
             {s.level}
           </span>
         </span>
@@ -124,13 +152,17 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
 
       <div className="absolute top-2 right-2 flex items-center gap-2">
         <button type="button" onClick={toggleMuted} aria-pressed={!muted} className={corner}>
-          Âm thanh: {muted ? 'tắt' : 'bật'}
+          {muted ? tr('Âm thanh: tắt') : tr('Âm thanh: bật')}
         </button>
         <button type="button" onClick={toggleGraphics} aria-pressed={graphics === 'high'} className={corner}>
-          Đồ họa: {graphics === 'high' ? 'cao' : autoLowered ? 'thấp (tự giảm vì máy chậm)' : 'thấp'}
+          {graphics === 'high'
+            ? tr('Đồ họa: cao')
+            : autoLowered
+              ? tr('Đồ họa: thấp (tự giảm vì máy chậm)')
+              : tr('Đồ họa: thấp')}
         </button>
         <button type="button" onClick={actions.exit} className={corner}>
-          Thoát
+          {tr('Thoát')}
         </button>
       </div>
 
@@ -146,16 +178,16 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
       </div>
 
       <p className="absolute right-2 bottom-2 max-w-52 text-right text-[11px] leading-snug text-muted-foreground">
-        Chuột: di chuyển, bấm vào địch để đánh.
+        {tr('Chuột: di chuyển, bấm vào địch để đánh.')}
         <br />
-        Q W E R: chiêu theo con trỏ · Alt + phím: nâng chiêu
+        {tr('Q W E R: chiêu theo con trỏ · Alt + phím: nâng chiêu')}
         <br />
-        S: dừng · B: cửa hàng · giữ Tab: bảng điểm
+        {tr('S: dừng · B: cửa hàng · giữ Tab: bảng điểm')}
       </p>
 
       {/* The console. Three blocks: who you are, what you can do, what you carry. */}
-      <div className="pointer-events-auto absolute bottom-0 left-1/2 flex max-w-[calc(100vw-560px)] min-w-[620px] -translate-x-1/2 items-stretch gap-3 rounded-t-lg hud-panel border-b-0 border-t-primary/60 px-3 pt-2 pb-2">
-        <div className="flex w-40 flex-col justify-between gap-1 text-xs">
+      <div className="pointer-events-auto absolute bottom-0 left-1/2 flex max-w-[calc(100vw-560px)] min-w-[690px] -translate-x-1/2 items-stretch gap-3 rounded-t-lg hud-panel border-b-0 border-t-primary/60 px-3 pt-2 pb-2">
+        <div className="flex w-56 flex-col justify-between gap-1 text-xs">
           <div className="flex items-center gap-2">
             <HeroPortrait
               heroId={hud.heroDefId}
@@ -166,6 +198,7 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
               <p className={RACE_TEXT[hud.race]}>{raceName(hud.race)}</p>
             </div>
           </div>
+          <StatsGrid hud={hud} />
           {hud.synergy.map((line) => (
             <p key={line} className="text-[10px] leading-tight text-primary">
               {line}
@@ -173,13 +206,17 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
           ))}
           <div>
             <p className="text-muted-foreground">
-              Cấp {hud.level}
-              {hud.skillPoints > 0 && <span className="ml-1 font-semibold text-primary">+{hud.skillPoints} điểm</span>}
+              {tr('Cấp {level}', { level: hud.level })}
+              {hud.skillPoints > 0 && (
+                <span className="ml-1 font-semibold text-primary">
+                  {tr('+{points} điểm', { points: hud.skillPoints })}
+                </span>
+              )}
             </p>
             <div
               className="mt-1 h-1.5 overflow-hidden rounded-sm bg-background"
               role="progressbar"
-              aria-label="Kinh nghiệm"
+              aria-label={tr('Kinh nghiệm')}
             >
               <div className="h-full bg-xp" style={{ width: `${hud.xpFraction * 100}%` }} />
             </div>
@@ -192,11 +229,13 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
               <AbilityButton key={a.slot} ability={a} game={game} />
             ))}
           </div>
-          <Bar value={hud.hp} max={hud.maxHp} className="bg-hp" label="Máu" />
+          <Bar value={hud.hp} max={hud.maxHp} className="bg-hp" label={tr('Máu')} />
           <ResourceBar hud={hud} />
           {(hud.shield > 0 || hud.conditions.length > 0) && (
             <div className="flex flex-wrap gap-x-3 text-xs">
-              {hud.shield > 0 && <span className="text-ally">Khiên {Math.ceil(hud.shield)}</span>}
+              {hud.shield > 0 && (
+                <span className="text-ally">{tr('Khiên {amount}', { amount: Math.ceil(hud.shield) })}</span>
+              )}
               {hud.conditions.map((label) => (
                 <span key={label} className="text-danger">
                   {label}
@@ -209,14 +248,16 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
         <div className="flex w-44 flex-col justify-between gap-2">
           <ItemBag hud={hud} game={game} columns={3} />
           <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-gold tabular-nums">{Math.floor(hud.gold)} vàng</span>
+            <span className="font-semibold text-gold tabular-nums">
+              {tr('{gold} vàng', { gold: Math.floor(hud.gold) })}
+            </span>
             <button
               type="button"
               onClick={toggleShop}
               aria-pressed={shopOpen}
               className={`rounded-md border px-2 py-1 text-xs ${hud.canShop ? 'border-primary text-primary' : 'border-border'}`}
             >
-              Cửa hàng (B)
+              {tr('Cửa hàng (B)')}
             </button>
           </div>
         </div>

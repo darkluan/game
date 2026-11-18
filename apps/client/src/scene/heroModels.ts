@@ -11,6 +11,8 @@ export interface HeroLook {
   hide: string[];
   /** Multiplied into the texture. Sets heroes sharing a model apart. */
   tint?: string;
+  /** New colours for materials, by material name, for models coloured by material instead of a texture. */
+  palette?: Record<string, string>;
   scale: number;
   /** Fit the model to this height instead of trusting its own units. */
   height?: number;
@@ -27,31 +29,63 @@ export interface HeroModel extends HeroLook {
 
 /** The options an Actor needs to draw a hero look. */
 export function actorOptions(look: HeroLook, castShadow: boolean): ActorOptions {
-  const { scale, height, turn, hide, tint, brightness } = look;
-  return { scale, height, turn, hide, tint, brightness, castShadow };
+  const { scale, height, turn, hide, tint, palette, brightness } = look;
+  return { scale, height, turn, hide, tint, palette, brightness, castShadow };
 }
 
-/** A dinosaur from the Quaternius pack; every clip is named after the animal. */
-function dino(model: string, name: string, height: number, tint: string, death = name): HeroLook {
-  const c = (move: string, seconds: number) => clip(`Armature|${name}_${move}`, seconds);
+/** The colours of a dragon, by part. */
+interface DragonColours {
+  body: string;
+  belly: string;
+  horn: string;
+  wing: string;
+}
+
+const EYE = { Eye_White: '#ffffff', Eye_Black: '#14181f', Eyes: '#ffe27a' };
+
+/** The long-necked dragon with broad wings. It never lands. */
+function wyvern(height: number, c: DragonColours): HeroLook {
+  const move = (name: string, seconds: number) => clip(`DragonArmature|Dragon_${name}`, seconds);
   return {
-    model,
+    model: MODELS.dragonWyvern,
     hide: [],
-    tint,
-    // The pack's colours are very dark; lift them to sit with the rest of the scene.
-    brightness: 3,
+    palette: { ...EYE, Main: c.body, Belly: c.belly, Claws: c.horn, Wings: c.wing },
     scale: 1,
     height,
     rig: {
-      idle: `Armature|${name}_Idle`,
-      run: `Armature|${name}_Run`,
-      death: `Armature|${death}_Death`,
+      idle: 'DragonArmature|Dragon_Flying',
+      run: 'DragonArmature|Dragon_Flying',
+      death: 'DragonArmature|Dragon_Death',
       actions: {
-        attack: c('Attack', 0.6),
-        Q: c('Attack', 0.6),
-        W: c('Attack', 0.7),
-        E: c('Attack', 0.6),
-        R: c('Jump', 0.8),
+        attack: move('Attack', 0.6),
+        Q: move('Attack2', 0.7),
+        W: move('Attack', 0.6),
+        E: move('Attack2', 0.7),
+        R: move('Attack2', 0.9),
+      },
+    },
+  };
+}
+
+/** The stocky dragon, young or grown (`elder`). Both share one set of clips. */
+function drake(elder: boolean, height: number, c: DragonColours): HeroLook {
+  const move = (name: string, seconds: number) => clip(`CharacterArmature|${name}`, seconds);
+  return {
+    model: elder ? MODELS.dragonElder : MODELS.dragonYoung,
+    hide: [],
+    palette: { ...EYE, Dragon_Main: c.body, Dragon_Secondary: c.belly, Dragon_Horn: c.horn },
+    scale: 1,
+    height,
+    rig: {
+      idle: 'CharacterArmature|Flying_Idle',
+      run: 'CharacterArmature|Fast_Flying',
+      death: 'CharacterArmature|Death',
+      actions: {
+        attack: move('Punch', 0.5),
+        Q: move('Headbutt', 0.6),
+        W: move('Yes', 0.7),
+        E: move('Punch', 0.6),
+        R: move('Headbutt', 0.8),
       },
     },
   };
@@ -80,15 +114,11 @@ function mech(model: string, height: number, melee = false): HeroLook {
   };
 }
 
-const FIRE = '#ffb089';
-const STONE = '#c9d2e6';
-const STORM = '#fff3a6';
-
 const MAGE_HIDDEN = ['Spellbook', 'Spellbook_open', '1H_Wand'];
 
 /**
- * How each hero looks. The dragons are dinosaurs that change species as they evolve; the machines
- * are mechs.
+ * How each hero looks. The dragons change colour, size and, for some, body as they evolve;
+ * the machines are mechs.
  */
 export const HERO_MODELS: Record<string, HeroModel> = {
   kael: {
@@ -121,17 +151,20 @@ export const HERO_MODELS: Record<string, HeroModel> = {
       },
     },
   },
+  // Fire: a red wyvern whose scales darken and wings brighten as it grows.
   ignar: {
-    ...dino(MODELS.velociraptor, 'Velociraptor', 1.9, FIRE),
-    stages: [dino(MODELS.parasaurolophus, 'Parasaurolophus', 2.6, FIRE), dino(MODELS.trex, 'TRex', 3.4, FIRE)],
-  },
-  baru: {
-    ...dino(MODELS.triceratops, 'Triceratops', 1.7, STONE),
+    ...wyvern(2.4, { body: '#d9552b', belly: '#f2c46a', horn: '#3a2a22', wing: '#f08a3c' }),
     stages: [
-      dino(MODELS.stegosaurus, 'Stegosaurus', 2.5, STONE),
-      // The pack ships this one's death clip under the Stegosaurus name.
-      // Kept low: this animal is several times longer than it is tall.
-      dino(MODELS.apatosaurus, 'Apatosaurus', 2.1, STONE, 'Stegosaurus'),
+      wyvern(3.1, { body: '#c5371f', belly: '#f5b54a', horn: '#2a1c18', wing: '#ff7a2a' }),
+      wyvern(3.9, { body: '#8f1d1d', belly: '#ffcf5a', horn: '#1a1212', wing: '#ff5a1f' }),
+    ],
+  },
+  // Stone: a grey drake that grows into the heavy elder.
+  baru: {
+    ...drake(false, 2.4, { body: '#7f8b99', belly: '#c9c2ad', horn: '#e9e2cf', wing: '#5f6a78' }),
+    stages: [
+      drake(true, 3, { body: '#6b7785', belly: '#bdb59d', horn: '#f1ead6', wing: '#4f5966' }),
+      drake(true, 3.6, { body: '#4d5764', belly: '#a8a08a', horn: '#fff6dd', wing: '#3a424d' }),
     ],
   },
   sola: {
@@ -185,10 +218,13 @@ export const HERO_MODELS: Record<string, HeroModel> = {
       },
     },
   },
-  // The storm dragon shares the dinosaur models with the other dragons, in its own colour and order.
+  // Storm: a blue-violet drake with lightning-yellow horns.
   zerak: {
-    ...dino(MODELS.velociraptor, 'Velociraptor', 2, STORM),
-    stages: [dino(MODELS.stegosaurus, 'Stegosaurus', 2.4, STORM), dino(MODELS.trex, 'TRex', 3.2, STORM)],
+    ...drake(false, 2.4, { body: '#3f6fd8', belly: '#bfe3ff', horn: '#ffe14d', wing: '#2b4fa8' }),
+    stages: [
+      drake(false, 2.8, { body: '#3a4fc9', belly: '#c9e6ff', horn: '#ffe14d', wing: '#27358f' }),
+      drake(true, 3.4, { body: '#3b2f9e', belly: '#d6ecff', horn: '#fff07a', wing: '#241c6b' }),
+    ],
   },
   orun: {
     model: MODELS.barbarian,

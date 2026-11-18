@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import {
   type Command,
   FLAG_DEAD,
@@ -74,12 +75,12 @@ export class OnlineGame extends BaseSession implements GameSession {
     units: [] as UnitView[],
   };
   private startBuildings: View[] = [];
-  private readonly lastScore = new Map<number, { level: number; kda: number[] }>();
+  private readonly lastScore = new Map<number, { level: number; kda: number[]; hpFraction: number; dead: boolean }>();
 
   constructor(
     private readonly connection: MatchConnection,
     private readonly welcome: MatchWelcome,
-    onCue: (cue: SoundCue, volume: number) => void = () => {},
+    onCue: (cue: SoundCue, volume: number, pan: number) => void = () => {},
     private readonly now: () => number = () => performance.now(),
   ) {
     super(onCue);
@@ -274,7 +275,11 @@ export class OnlineGame extends BaseSession implements GameSession {
     const me = this.views.get(this.welcome.heroId);
     if (!snapshot || !me || !snapshot.you) throw new Error('hud() called before the first snapshot');
     // Heroes out of sight keep their last known score line.
-    for (const v of this.seen.heroes) this.lastScore.set(v.id, { level: v.level, kda: v.kda });
+    for (const v of this.seen.heroes) {
+      const dead = v.dead === true;
+      const hpFraction = dead || !v.health ? 0 : v.health.hp / v.health.maxHp;
+      this.lastScore.set(v.id, { level: v.level, kda: v.kda, hpFraction, dead });
+    }
     return buildHud({
       tick: snapshot.tick,
       def: HEROES[me.hero?.defId ?? 'kael'],
@@ -288,14 +293,16 @@ export class OnlineGame extends BaseSession implements GameSession {
       siege: (me.flags & FLAG_SIEGE) !== 0,
       you: snapshot.you,
       scores: this.welcome.roster.map((r) => {
-        const score = this.lastScore.get(r.heroId) ?? { level: 1, kda: [0, 0, 0] };
+        const score = this.lastScore.get(r.heroId) ?? { level: 1, kda: [0, 0, 0], hpFraction: 1, dead: false };
         return {
           id: r.heroId,
-          name: r.isBot ? 'Máy' : r.nickname,
+          name: r.isBot ? tr('Máy') : r.nickname,
           heroDefId: r.heroDefId,
           heroName: HEROES[r.heroDefId]?.name ?? r.heroDefId,
           team: r.team,
           isPlayer: r.heroId === me.id,
+          hpFraction: score.hpFraction,
+          dead: score.dead,
           level: score.level,
           kills: score.kda[0],
           deaths: score.kda[1],

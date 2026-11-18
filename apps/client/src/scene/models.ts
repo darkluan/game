@@ -11,12 +11,9 @@ export const MODELS = {
   rogueHooded: url('rogue_hooded.glb'),
   mage: url('mage.glb'),
   barbarian: url('barbarian.glb'),
-  velociraptor: url('velociraptor.glb'),
-  parasaurolophus: url('parasaurolophus.glb'),
-  trex: url('trex.glb'),
-  triceratops: url('triceratops.glb'),
-  stegosaurus: url('stegosaurus.glb'),
-  apatosaurus: url('apatosaurus.glb'),
+  dragonWyvern: url('dragon_wyvern.glb'),
+  dragonYoung: url('dragon_young.glb'),
+  dragonElder: url('dragon_elder.glb'),
   mechMike: url('mech_mike.glb'),
   mechLeela: url('mech_leela.glb'),
   mechStan: url('mech_stan.glb'),
@@ -29,6 +26,32 @@ export const MODELS = {
   treeA: url('tree_single_A.gltf'),
   treeB: url('tree_single_B.gltf'),
   rock: url('rock_single_C.gltf'),
+  // Scenery around the battlefield.
+  mountainAGrassTrees: url('mountain_A_grass_trees.gltf'),
+  mountainBGrassTrees: url('mountain_B_grass_trees.gltf'),
+  mountainCGrass: url('mountain_C_grass.gltf'),
+  hillsATrees: url('hills_A_trees.gltf'),
+  hillsBTrees: url('hills_B_trees.gltf'),
+  hillsC: url('hills_C.gltf'),
+  rockSingleA: url('rock_single_A.gltf'),
+  rockSingleB: url('rock_single_B.gltf'),
+  treesALarge: url('trees_A_large.gltf'),
+  treesBLarge: url('trees_B_large.gltf'),
+  flagBlue: url('flag_blue.gltf'),
+  flagRed: url('flag_red.gltf'),
+  barrel: url('barrel.gltf'),
+  crateABig: url('crate_A_big.gltf'),
+  weaponrack: url('weaponrack.gltf'),
+  tent: url('tent.gltf'),
+  fenceStoneStraight: url('fence_stone_straight.gltf'),
+  homeAAlly: url('building_home_A_blue.gltf'),
+  homeAEnemy: url('building_home_A_red.gltf'),
+  homeBAlly: url('building_home_B_blue.gltf'),
+  homeBEnemy: url('building_home_B_red.gltf'),
+  windmillAlly: url('building_windmill_blue.gltf'),
+  windmillEnemy: url('building_windmill_red.gltf'),
+  barracksAlly: url('building_barracks_blue.gltf'),
+  barracksEnemy: url('building_barracks_red.gltf'),
 } as const;
 
 /** Loads a model once and caches it. Suspends while loading. */
@@ -77,6 +100,29 @@ export function tintModel(root: Object3D, tint: string, brightness = 1): void {
       material.color.multiply(colour);
       if (brightness !== 1) material.metalness = 0;
       tinted.set(key, material);
+    }
+    o.material = material;
+  });
+}
+
+const painted = new Map<string, MeshStandardMaterial>();
+
+/**
+ * Gives materials new colours by name, for models coloured by material instead of by a texture.
+ * Materials not named keep their own colour. Painted materials are shared between clones.
+ */
+export function paintModel(root: Object3D, palette: Record<string, string>): void {
+  root.traverse((o) => {
+    if (!(o instanceof Mesh) || Array.isArray(o.material)) return;
+    const colour = palette[o.material.name];
+    if (!colour) return;
+    const key = `${o.material.uuid}:${colour}`;
+    let material = painted.get(key);
+    if (!material) {
+      material = (o.material as MeshStandardMaterial).clone();
+      material.color.set(colour);
+      material.metalness = 0;
+      painted.set(key, material);
     }
     o.material = material;
   });

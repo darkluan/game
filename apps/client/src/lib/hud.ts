@@ -1,6 +1,9 @@
+import { abilityDetails } from './abilityDetails';
+import { tr } from '@/i18n';
 import {
   ABILITY_SLOTS,
   type HeroDef,
+  type HeroStats,
   maxAbilityLevel,
   type Race,
   raceOf,
@@ -32,27 +35,27 @@ export interface HudInput {
 }
 
 const CONDITION_LABELS: [StatusType, string][] = [
-  ['stun', 'Bị choáng'],
-  ['stone', 'Hóa đá'],
-  ['silence', 'Câm lặng'],
-  ['root', 'Bị trói chân'],
-  ['slow', 'Bị chậm'],
-  ['blind', 'Bị mù'],
-  ['mark', 'Bị đánh dấu'],
-  ['burn', 'Bị thiêu đốt'],
-  ['stealth', 'Tàng hình'],
-  ['haste', 'Tăng tốc'],
+  ['stun', tr('Bị choáng')],
+  ['stone', tr('Hóa đá')],
+  ['silence', tr('Câm lặng')],
+  ['root', tr('Bị trói chân')],
+  ['slow', tr('Bị chậm')],
+  ['blind', tr('Bị mù')],
+  ['mark', tr('Bị đánh dấu')],
+  ['burn', tr('Bị thiêu đốt')],
+  ['stealth', tr('Tàng hình')],
+  ['haste', tr('Tăng tốc')],
 ];
 
 const PAIR_TEXT: Record<Race, string> = {
-  human: 'Hai Người: mua đồ rẻ hơn 20%',
-  dragon: 'Hai Rồng: tiến hóa sớm hơn 1 cấp',
-  god: 'Hai Thần: mỗi tín đồ mạnh gấp rưỡi',
-  machine: 'Hai Người máy: Nhiệt giảm nhanh gấp rưỡi',
+  human: tr('Hai Người: mua đồ rẻ hơn 20%'),
+  dragon: tr('Hai Rồng: tiến hóa sớm hơn 1 cấp'),
+  god: tr('Hai Thần: mỗi tín đồ mạnh gấp rưỡi'),
+  machine: tr('Hai Người máy: Nhiệt giảm nhanh gấp rưỡi'),
 };
 
 function synergyLines(synergy: TeamSynergy): string[] {
-  const lines = synergy.speed ? ['Ba tộc khác nhau: cả đội chạy nhanh hơn 6%'] : [];
+  const lines = synergy.speed ? [tr('Ba tộc khác nhau: cả đội chạy nhanh hơn 6%')] : [];
   return synergy.race ? [...lines, PAIR_TEXT[synergy.race]] : lines;
 }
 
@@ -61,11 +64,11 @@ export function buildHud(input: HudInput): HudState {
   const { def, you, has } = input;
   const disabled = input.dead || has('stun') || has('stone') || has('silence');
   const conditions = CONDITION_LABELS.filter(([type]) => has(type)).map(([, label]) => label);
-  if (input.siege) conditions.push('Chế độ pháo');
+  if (input.siege) conditions.push(tr('Chế độ pháo'));
   return {
     timeSeconds: Math.floor(input.tick / TICK_RATE),
     heroDefId: def.id,
-    heroName: `${def.name}, ${def.title}`,
+    heroName: `${def.name}, ${tr(def.title)}`,
     race: def.race,
     team: input.team,
     hp: input.hp,
@@ -94,16 +97,22 @@ export function buildHud(input: HudInput): HudState {
       return {
         id: ability.id,
         slot,
-        name: ability.name,
-        description: ability.description,
+        name: tr(ability.name),
+        description: tr(ability.description),
         level,
         cost: def.resource === 'none' ? 0 : ability.cost[index],
         cooldownLeft: left / TICK_RATE,
         cooldownFraction: left / ability.cooldownTicks[index],
         canLevelUp: you.skillPoints > 0 && level < maxAbilityLevel(ability, slot, input.level),
         usable: level > 0 && left === 0 && !disabled && affordable,
+        cooldowns: ability.cooldownTicks.map((ticks) => ticks / TICK_RATE),
+        costs: def.resource === 'none' ? [] : ability.cost,
+        range: ability.range,
+        details: abilityDetails(ability),
       };
     }),
+    // An older server does not send these yet.
+    stats: (you.stats as HeroStats | undefined) ?? null,
     items: you.items,
     itemSlots: raceOf(def.race).itemSlots,
     canShop: you.canShop,

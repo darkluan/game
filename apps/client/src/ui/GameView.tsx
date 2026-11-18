@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { lazy, Suspense } from 'react';
 import type { GameSession } from '@/lib/session';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -7,16 +8,27 @@ import { Hud, type HudActions } from './Hud';
 const GameScene = lazy(() => import('@/scene/GameScene'));
 
 /** A running match: the 3D scene with the HUD over it. */
-export function GameView({ game, actions }: { game: GameSession; actions: HudActions }) {
+export function GameView({
+  game,
+  actions,
+  tutorial = false,
+}: {
+  game: GameSession;
+  actions: HudActions;
+  /** Show the first-match tips; only the match against bots does. */
+  tutorial?: boolean;
+}) {
   const graphics = useSettingsStore((s) => s.graphics);
   return (
     // touch-none: on a phone, dragging on the game must steer the hero, not scroll or zoom the page.
     <div className="relative h-full touch-none">
-      <Suspense fallback={<p className="flex h-full items-center justify-center text-muted-foreground">Đang tải…</p>}>
+      <Suspense
+        fallback={<p className="flex h-full items-center justify-center text-muted-foreground">{tr('Đang tải…')}</p>}
+      >
         {/* The key rebuilds the scene for each new match and when the graphics mode changes. */}
         <GameScene key={`${game.seed}:${graphics}`} game={game} graphics={graphics} />
       </Suspense>
-      <Hud game={game} actions={actions} />
+      <Hud game={game} actions={actions} tutorial={tutorial} />
     </div>
   );
 }

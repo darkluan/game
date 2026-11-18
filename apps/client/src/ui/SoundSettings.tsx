@@ -1,4 +1,5 @@
-import { THEME_IDS, THEMES } from '@/lib/music';
+import { tr } from '@/i18n';
+import { THEME_IDS, type ThemeId, THEMES } from '@/lib/music';
 import { useSettingsStore } from '@/store/settingsStore';
 
 const pill = 'cursor-pointer rounded-full border px-3 py-1 transition-colors hover:text-foreground';
@@ -8,25 +9,24 @@ export function SoundSettings() {
   const { muted, toggleMuted, music, setMusic } = useSettingsStore();
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground lg:justify-start">
-      <div role="radiogroup" aria-label="Nhạc sảnh" className="flex flex-wrap items-center justify-center gap-2">
-        <span className="tracking-widest uppercase">Nhạc sảnh</span>
-        {THEME_IDS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            role="radio"
-            aria-checked={music === id}
-            onClick={() => setMusic(id)}
-            className={`${pill} ${music === id ? 'border-primary bg-primary/15 text-primary' : 'border-border'}`}
-          >
-            {THEMES[id].name}
-          </button>
-        ))}
-      </div>
+      <label className="flex items-center gap-2">
+        <span className="tracking-widest uppercase">{tr('Nhạc sảnh')}</span>
+        <select
+          value={music}
+          onChange={(e) => setMusic(e.target.value as ThemeId)}
+          className="cursor-pointer rounded-full border border-border bg-background/70 px-3 py-1 text-foreground outline-none focus:border-primary"
+        >
+          {THEME_IDS.map((id) => (
+            <option key={id} value={id}>
+              {tr(THEMES[id].name)}
+            </option>
+          ))}
+        </select>
+      </label>
       <button type="button" onClick={toggleMuted} aria-pressed={!muted} className={`${pill} border-border`}>
-        Âm thanh: {muted ? 'tắt' : 'bật'}
+        {muted ? tr('Âm thanh: tắt') : tr('Âm thanh: bật')}
       </button>
-      {!muted && <p>Bấm vào bất kỳ đâu để bật nhạc nền.</p>}
+      {!muted && <p>{tr('Bấm vào bất kỳ đâu để bật nhạc nền.')}</p>}
     </div>
   );
 }

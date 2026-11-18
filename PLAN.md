@@ -361,7 +361,7 @@ CMD ["node", "apps/server/dist/index.js"]
 
 ### Giai đoạn 6: Hoàn thiện (3-4 tuần)
 
-- [x] Model 3D và hoạt ảnh cho 8 tướng (Rồng cần model riêng cho từng dạng tiến hóa) *(KayKit và Quaternius, đều CC0; Rồng là khủng long đổi loài theo từng lần tiến hóa)*
+- [x] Model 3D và hoạt ảnh cho 8 tướng (Rồng cần model riêng cho từng dạng tiến hóa) *(KayKit và Quaternius, đều CC0; Rồng đổi màu, cỡ và thân hình theo từng lần tiến hóa)*
 - [x] Hiệu ứng chiêu, âm thanh *(hiệu ứng theo kiểu ngắm của chiêu, chưa vẽ riêng cho từng chiêu; âm thanh tổng hợp bằng WebAudio)*
 - [x] Bản đồ nhỏ, bảng điểm, màn kết thúc trận
 - [ ] Cân bằng qua chơi thử *(đã cân bằng bằng 140 trận bot: tỉ lệ thắng mỗi tướng 41–58%; chưa có người chơi thử)*

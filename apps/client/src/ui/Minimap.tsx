@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { useEffect, useRef } from 'react';
 import type { GameSession } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
@@ -108,7 +109,7 @@ export function Minimap({ game }: { game: GameSession }) {
       width={WIDTH}
       height={height}
       role="img"
-      aria-label="Bản đồ nhỏ. Bấm để di chuyển tới đó."
+      aria-label={tr('Bản đồ nhỏ. Bấm để di chuyển tới đó.')}
       className="pointer-events-auto cursor-pointer rounded-md hud-panel"
       onPointerDown={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();

@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import type { Room } from '@colyseus/sdk';
 import type { LobbyState, Team } from '@game/core';
 import { create } from 'zustand';
@@ -41,9 +42,9 @@ let refusedMatchId: string | null = null;
 function messageFor(err: unknown): string {
   const code = (err as { code?: unknown } | null)?.code;
   const reason = (err as { message?: unknown } | null)?.message;
-  if (code === 522) return 'Không tìm thấy phòng. Kiểm tra lại link, hoặc phòng đã đóng.';
-  if (reason === 'lobby_full') return 'Phòng đã đủ 6 người.';
-  return 'Không kết nối được tới máy chủ. Thử lại sau giây lát.';
+  if (code === 522) return tr('Không tìm thấy phòng. Kiểm tra lại link, hoặc phòng đã đóng.');
+  if (reason === 'lobby_full') return tr('Phòng đã đủ 6 người.');
+  return tr('Không kết nối được tới máy chủ. Thử lại sau giây lát.');
 }
 
 export const useRoomStore = create<RoomStore>((set, get) => {
@@ -62,7 +63,7 @@ export const useRoomStore = create<RoomStore>((set, get) => {
     room.onLeave((code) => {
       if (lobbyRoom !== room) return; // we left on purpose
       lobbyRoom = null;
-      fail(code === CLOSE_REPLACED ? 'Bạn đã mở phòng này ở một tab khác.' : 'Mất kết nối với phòng.');
+      fail(code === CLOSE_REPLACED ? tr('Bạn đã mở phòng này ở một tab khác.') : tr('Mất kết nối với phòng.'));
     });
   }
 
@@ -100,7 +101,7 @@ export const useRoomStore = create<RoomStore>((set, get) => {
         // The server closes the room a while after the match is decided: keep the result on screen.
         if (useGameStore.getState().hud?.winner != null) return;
         useGameStore.getState().setGame(null);
-        fail(code === CLOSE_REPLACED ? 'Bạn đã mở trận này ở một tab khác.' : 'Mất kết nối với trận đấu.');
+        fail(code === CLOSE_REPLACED ? tr('Bạn đã mở trận này ở một tab khác.') : tr('Mất kết nối với trận đấu.'));
       });
       // In the match now: the lobby connection is no longer needed.
       const lobby = lobbyRoom;

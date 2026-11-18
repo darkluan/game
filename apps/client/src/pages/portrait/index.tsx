@@ -5,7 +5,7 @@ import { Box3, type Group, Vector3 } from 'three';
 import { HEROES } from '@game/core';
 import { Actor } from '@/scene/Actor';
 import { actorOptions, HERO_MODELS } from '@/scene/heroModels';
-import { useModel } from '@/scene/models';
+import { MODELS, useModel } from '@/scene/models';
 import { heroColor } from '@/scene/palette';
 
 /**
@@ -20,13 +20,16 @@ const FRAMING = {
   person: { lookAt: 0.72, forward: 0.5, distance: 0.95, yaw: 0.35, lift: 0.1 },
   // The whole machine.
   mech: { lookAt: 0.6, forward: 0.5, distance: 1.0, yaw: 0.4, lift: 0.05 },
-  // Long animals: the head and chest, from a front quarter. The head is at the +z end of the body.
-  dinosaur: { lookAt: 0.68, forward: 0.78, distance: 0.34, yaw: 0.75, lift: 0.04 },
+  // Dragons: the whole animal with its wings, from a front quarter.
+  dragon: { lookAt: 0.55, forward: 0.5, distance: 0.75, yaw: 0.6, lift: 0.08 },
+  // The stocky dragons spread their wings far wider than they stand at rest.
+  drake: { lookAt: 0.6, forward: 0.5, distance: 1.05, yaw: 0.6, lift: 0.08 },
 } as const;
 
 function framingOf(heroId: string): (typeof FRAMING)[keyof typeof FRAMING] {
   const race = HEROES[heroId]?.race;
-  return race === 'dragon' ? FRAMING.dinosaur : race === 'machine' ? FRAMING.mech : FRAMING.person;
+  if (race === 'dragon') return HERO_MODELS[heroId].model === MODELS.dragonWyvern ? FRAMING.dragon : FRAMING.drake;
+  return race === 'machine' ? FRAMING.mech : FRAMING.person;
 }
 
 function Subject({ heroId }: { heroId: string }) {
@@ -51,7 +54,7 @@ function Subject({ heroId }: { heroId: string }) {
     const box = new Box3().setFromObject(actor.root);
     const size = box.getSize(new Vector3());
     const framing = framingOf(heroId);
-    const span = heroId && HEROES[heroId]?.race === 'dragon' ? Math.max(size.x, size.z) : size.y;
+    const span = HEROES[heroId]?.race === 'dragon' ? Math.max(size.x, size.y, size.z) : size.y;
     const target = new Vector3(
       (box.min.x + box.max.x) / 2,
       box.min.y + size.y * framing.lookAt,

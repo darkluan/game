@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import type { Room } from '@colyseus/sdk';
 import type { MatchResult, Profile, QueueStatus } from '@game/core';
 import { create } from 'zustand';
@@ -44,8 +45,8 @@ let entering = false;
 
 function messageFor(err: unknown): string {
   const reason = (err as { message?: unknown } | null)?.message;
-  if (reason === 'ranked_unavailable') return 'Máy chủ này chưa bật đấu xếp hạng (chưa có cơ sở dữ liệu).';
-  return 'Không kết nối được tới máy chủ. Thử lại sau giây lát.';
+  if (reason === 'ranked_unavailable') return tr('Máy chủ này chưa bật đấu xếp hạng (chưa có cơ sở dữ liệu).');
+  return tr('Không kết nối được tới máy chủ. Thử lại sau giây lát.');
 }
 
 export const useQueueStore = create<QueueStore>((set, get) => {
@@ -73,7 +74,7 @@ export const useQueueStore = create<QueueStore>((set, get) => {
         // The server closes the room a while after the match is decided: keep the result on screen.
         if (useGameStore.getState().hud?.winner != null) return;
         useGameStore.getState().setGame(null);
-        fail(code === CLOSE_REPLACED ? 'Bạn đã mở trận này ở một tab khác.' : 'Mất kết nối với trận đấu.');
+        fail(code === CLOSE_REPLACED ? tr('Bạn đã mở trận này ở một tab khác.') : tr('Mất kết nối với trận đấu.'));
       });
       // In the match now: the queue connection is no longer needed.
       const queue = queueRoom;
@@ -102,7 +103,7 @@ export const useQueueStore = create<QueueStore>((set, get) => {
     room.onLeave((code) => {
       if (queueRoom !== room) return; // we left on purpose
       queueRoom = null;
-      fail(code === CLOSE_REPLACED ? 'Bạn đã mở hàng chờ ở một tab khác.' : 'Mất kết nối với hàng chờ.');
+      fail(code === CLOSE_REPLACED ? tr('Bạn đã mở hàng chờ ở một tab khác.') : tr('Mất kết nối với hàng chờ.'));
     });
     if (partyCode) room.send('party:join', partyCode);
   }
@@ -158,7 +159,7 @@ export const useQueueStore = create<QueueStore>((set, get) => {
         replaceGuest({ playerId: signedIn.profile.playerId, token: signedIn.token });
         await get().connect(signedIn.profile.nickname || nickname);
       } catch {
-        set({ notice: 'Đăng nhập Google không thành công. Hãy thử lại.' });
+        set({ notice: tr('Đăng nhập Google không thành công. Hãy thử lại.') });
       }
     },
     leave: () => {

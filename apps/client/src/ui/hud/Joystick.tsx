@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { useEffect, useRef } from 'react';
 import type { Vec2 } from '@game/core';
 
@@ -54,7 +55,7 @@ export function Joystick({ onMove, onRelease }: { onMove: (dir: Vec2) => void; o
     <div
       ref={base}
       role="application"
-      aria-label="Cần điều khiển di chuyển"
+      aria-label={tr('Cần điều khiển di chuyển')}
       style={{ width: SIZE, height: SIZE }}
       className="pointer-events-auto flex touch-none items-center justify-center rounded-full border-2 border-border bg-panel/70"
       onPointerDown={(e) => {

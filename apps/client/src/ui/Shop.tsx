@@ -1,3 +1,5 @@
+import { tr } from '@/i18n';
+import { useEffect, useRef, useState } from 'react';
 import { ITEM_LIST, itemPrice, ITEMS } from '@game/core';
 import type { GameSession, HudState } from '@/lib/session';
 import { describeItem } from './heroText';
@@ -9,7 +11,7 @@ export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSessi
     <div
       className="grid gap-1"
       style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-      aria-label="Túi đồ"
+      aria-label={tr('Túi đồ')}
     >
       {Array.from({ length: hud.itemSlots }, (_, i) => {
         const item = ITEMS[hud.items[i]];
@@ -21,7 +23,7 @@ export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSessi
             key={i}
             type="button"
             disabled={!hud.canShop}
-            title={`${item.name}: ${describeItem(item.stats)}${hud.canShop ? ' · bấm để bán lại nửa giá' : ''}`}
+            title={`${tr(item.name)}: ${describeItem(item.stats)}${hud.canShop ? ` · ${tr('bấm để bán lại nửa giá')}` : ''}`}
             onClick={() => game.send({ t: 'sell', slotIndex: i })}
             className="flex h-9 items-center justify-center rounded-sm text-gold border border-border bg-background px-1 text-[10px] enabled:cursor-pointer enabled:hover:border-danger"
           >
@@ -33,20 +35,39 @@ export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSessi
   );
 }
 
+/** The shop closes by itself after this long without the player touching it. */
+const IDLE_CLOSE_MS = 3000;
+
 /** The item shop. Buying only works at the fountain or while waiting to respawn. */
 export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSession; onClose: () => void }) {
   const full = hud.items.length >= hud.itemSlots;
+  // Closes itself when left alone, so it never sits over the fight. Every touch starts the wait again.
+  const [activity, setActivity] = useState(0);
+  const lastActivity = useRef(0);
+  useEffect(() => {
+    const timer = window.setTimeout(onClose, IDLE_CLOSE_MS);
+    return () => window.clearTimeout(timer);
+  }, [activity, onClose]);
+  const stayOpen = (event: { timeStamp: number }) => {
+    // Moving the pointer fires constantly; restarting the wait a few times a second is enough.
+    if (event.timeStamp - lastActivity.current < 250) return;
+    lastActivity.current = event.timeStamp;
+    setActivity((n) => n + 1);
+  };
   return (
     <section
-      aria-label="Cửa hàng"
-      className="pointer-events-auto absolute top-16 left-3 flex max-h-[70vh] w-80 max-w-[92vw] flex-col gap-2 rounded-lg hud-panel p-3"
+      onPointerMove={stayOpen}
+      onPointerDown={stayOpen}
+      onWheel={stayOpen}
+      aria-label={tr('Cửa hàng')}
+      className="pointer-events-auto absolute top-12 right-2 flex max-h-[70vh] w-80 max-w-[92vw] flex-col gap-2 rounded-lg hud-panel p-3"
     >
       <header className="flex items-center justify-between">
-        <h2 className="font-semibold">Cửa hàng</h2>
+        <h2 className="font-semibold">{tr('Cửa hàng')}</h2>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Đóng cửa hàng"
+          aria-label={tr('Đóng cửa hàng')}
           className="cursor-pointer px-2 text-muted-foreground"
         >
           ✕
@@ -55,11 +76,11 @@ export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSes
       <p className={`text-xs ${hud.canShop ? 'text-hp' : 'text-danger'}`}>
         {hud.canShop
           ? full
-            ? 'Túi đồ đã đầy. Bấm vào một món trong túi để bán.'
-            : 'Đang ở đền: mua được.'
-          : 'Chỉ mua bán được khi đứng ở đền của đội mình.'}
+            ? tr('Túi đồ đã đầy. Bấm vào một món trong túi để bán.')
+            : tr('Đang ở đền: mua được.')
+          : tr('Chỉ mua bán được khi đứng ở đền của đội mình.')}
       </p>
-      <ul className="flex flex-col gap-1 overflow-y-auto">
+      <ul onScroll={stayOpen} className="flex flex-col gap-1 overflow-y-auto">
         {ITEM_LIST.map((item) => {
           const price = itemPrice(item.id, hud.discount);
           const can = hud.canShop && !full && hud.gold >= price;
@@ -73,7 +94,7 @@ export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSes
               >
                 <GameIcon id={item.id} className="size-8 shrink-0 text-gold" />
                 <span className="flex-1">
-                  <span className="font-semibold">{item.name}</span>
+                  <span className="font-semibold">{tr(item.name)}</span>
                   <span className="block text-muted-foreground">{describeItem(item.stats)}</span>
                 </span>
                 <span className="font-semibold text-gold tabular-nums">{price}</span>

@@ -1,3 +1,4 @@
+import { tr } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { LobbyShell } from '@/components/LobbyShell';
@@ -10,7 +11,7 @@ import { HeroPicker } from '@/ui/HeroPicker';
 import { NicknameField } from '@/ui/NicknameField';
 import { useLobbyMusic } from '@/ui/useLobbyMusic';
 
-const TEAM_NAMES = ['Đội Xanh', 'Đội Đỏ'] as const;
+const TEAM_NAMES = [tr('Đội Xanh'), tr('Đội Đỏ')] as const;
 
 let pendingLeave: number | undefined;
 
@@ -41,14 +42,14 @@ function TeamColumn({ team, players, myId }: { team: Team; players: LobbyPlayer[
           >
             <span aria-hidden className={`size-2 shrink-0 rotate-45 ${team === 0 ? 'bg-ally' : 'bg-enemy'}`} />
             <span className="truncate font-semibold">{p.nickname}</span>
-            {p.playerId === myId && <span className="text-muted-foreground">(bạn)</span>}
+            {p.playerId === myId && <span className="text-muted-foreground">{tr('(bạn)')}</span>}
             <span className="truncate text-xs text-muted-foreground">· {HEROES[p.heroId]?.name ?? p.heroId}</span>
-            {p.isHost && <span className="ml-auto text-xs whitespace-nowrap text-primary">Chủ phòng</span>}
+            {p.isHost && <span className="ml-auto text-xs whitespace-nowrap text-primary">{tr('Chủ phòng')}</span>}
           </li>
         ))}
         {Array.from({ length: TEAM_SIZE - players.length }, (_, i) => (
           <li key={i} className="rounded-md border border-dashed border-border px-3 py-2 text-muted-foreground">
-            Trống (máy sẽ chơi)
+            {tr('Trống (máy sẽ chơi)')}
           </li>
         ))}
       </ul>
@@ -59,7 +60,7 @@ function TeamColumn({ team, players, myId }: { team: Team; players: LobbyPlayer[
           onClick={() => setTeam(team)}
           className="btn btn-ghost rounded-md px-3! py-2! text-xs whitespace-nowrap"
         >
-          {full ? 'Đội đã đủ' : 'Sang đội này'}
+          {full ? tr('Đội đã đủ') : tr('Sang đội này')}
         </button>
       )}
     </section>
@@ -80,7 +81,7 @@ function ShareLink({ code }: { code: string }) {
   };
   return (
     <div className="glass-panel flex w-full animate-rise flex-col gap-2 rounded-xl p-4 text-left [animation-delay:80ms]">
-      <p className={note}>Gửi link này cho bạn bè để vào phòng:</p>
+      <p className={note}>{tr('Gửi link này cho bạn bè để vào phòng:')}</p>
       <div className="flex items-center gap-2">
         <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-background/70 px-3 py-2 select-all">
           {link}
@@ -90,7 +91,7 @@ function ShareLink({ code }: { code: string }) {
           onClick={() => void copy()}
           className="btn btn-ghost rounded-md px-4! py-2! text-xs whitespace-nowrap"
         >
-          {copied ? 'Đã chép' : 'Chép link'}
+          {copied ? tr('Đã chép') : tr('Chép link')}
         </button>
       </div>
     </div>
@@ -101,12 +102,12 @@ function Lobby({ code }: { code: string }) {
   const lobby = useRoomStore((s) => s.lobby);
   const myId = useRoomStore((s) => s.playerId);
   useLobbyMusic();
-  if (!lobby) return <p className={note}>Đang vào phòng…</p>;
+  if (!lobby) return <p className={note}>{tr('Đang vào phòng…')}</p>;
 
   return (
     <>
       <div>
-        <p className="animate-rise text-xs font-bold tracking-[0.35em] text-primary uppercase">Phòng chờ</p>
+        <p className="animate-rise text-xs font-bold tracking-[0.35em] text-primary uppercase">{tr('Phòng chờ')}</p>
         <h1 className={title}>{code}</h1>
       </div>
       <ShareLink code={code} />
@@ -130,16 +131,16 @@ function LobbyActions({ onLeave }: { onLeave: () => void }) {
   return (
     <div className="flex animate-rise flex-wrap items-center justify-center gap-5 [animation-delay:240ms] lg:justify-start">
       {matchInProgress ? (
-        <p className={note}>Trận đang diễn ra. Bạn sẽ chơi được khi trận này kết thúc.</p>
+        <p className={note}>{tr('Trận đang diễn ra. Bạn sẽ chơi được khi trận này kết thúc.')}</p>
       ) : iAmHost ? (
         <button type="button" onClick={startMatch} className="btn btn-primary cut-corners px-12 text-lg">
-          Bắt đầu
+          {tr('Bắt đầu')}
         </button>
       ) : (
-        <p className={note}>Chờ chủ phòng bấm Bắt đầu…</p>
+        <p className={note}>{tr('Chờ chủ phòng bấm Bắt đầu…')}</p>
       )}
       <button type="button" onClick={onLeave} className={`${note} cursor-pointer underline hover:text-foreground`}>
-        Rời phòng
+        {tr('Rời phòng')}
       </button>
     </div>
   );
@@ -179,7 +180,7 @@ export default function RoomPage() {
     return (
       <GameView
         game={game}
-        actions={{ exit: goHome, afterMatch: { label: 'Về phòng', run: () => void backToLobby() } }}
+        actions={{ exit: goHome, afterMatch: { label: tr('Về phòng'), run: () => void backToLobby() } }}
       />
     );
   }
@@ -196,7 +197,7 @@ export default function RoomPage() {
       aside={
         me &&
         !matchInProgress && (
-          <HeroPicker label="Chọn tướng của bạn" value={me.heroId} taken={teammatePicks} onChange={setHero} />
+          <HeroPicker label={tr('Chọn tướng của bạn')} value={me.heroId} taken={teammatePicks} onChange={setHero} />
         )
       }
     >
@@ -210,27 +211,27 @@ export default function RoomPage() {
       return (
         <>
           <p role="alert" className="glass-panel rounded-xl p-4 text-lg text-danger">
-            {error}
+            {tr(error ?? '')}
           </p>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={() => void joinRoom(code, nickname)} className="btn btn-primary cut-corners">
-              Vào lại
+              {tr('Vào lại')}
             </button>
             <button type="button" onClick={goHome} className="btn btn-ghost cut-corners">
-              Về trang chủ
+              {tr('Về trang chủ')}
             </button>
           </div>
         </>
       );
     }
-    if (phase === 'connecting') return <p className={note}>Đang kết nối…</p>;
+    if (phase === 'connecting') return <p className={note}>{tr('Đang kết nối…')}</p>;
     if (inLobby) return <Lobby code={code} />;
 
     // Opened from a link: ask for a name before joining. The click also lets the browser start audio.
     return (
       <>
         <div>
-          <p className="animate-rise text-xs font-bold tracking-[0.35em] text-primary uppercase">Vào phòng</p>
+          <p className="animate-rise text-xs font-bold tracking-[0.35em] text-primary uppercase">{tr('Vào phòng')}</p>
           <h1 className={title}>{code}</h1>
         </div>
         <div className="glass-panel flex w-full max-w-md animate-rise flex-col gap-5 rounded-xl p-5 [animation-delay:80ms]">
@@ -240,11 +241,11 @@ export default function RoomPage() {
             onClick={() => void joinRoom(code, nickname)}
             className="btn btn-primary cut-corners text-lg"
           >
-            Vào phòng
+            {tr('Vào phòng')}
           </button>
         </div>
         <button type="button" onClick={goHome} className={`${note} cursor-pointer underline hover:text-foreground`}>
-          Về trang chủ
+          {tr('Về trang chủ')}
         </button>
       </>
     );
