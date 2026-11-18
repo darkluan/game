@@ -123,7 +123,7 @@ function PickPanel({ code, onLeave }: { code: string; onLeave: () => void }) {
   const matchInProgress = useRoomStore((s) => s.matchInProgress);
   const startMatch = useRoomStore((s) => s.startMatch);
   const setHero = useRoomStore((s) => s.setHero);
-  useLobbyMusic();
+  useLobbyMusic(true);
   if (!lobby) return <p className={note}>{tr('Đang vào phòng…')}</p>;
   const me = lobby.players.find((p) => p.playerId === myId);
   const teammatePicks = lobby.players.filter((p) => p.team === me?.team && p.playerId !== myId).map((p) => p.heroId);

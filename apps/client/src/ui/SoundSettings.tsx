@@ -6,7 +6,7 @@ const pill = 'cursor-pointer rounded-full border px-3 py-1 transition-colors hov
 
 /** Lobby music picker and the sound on/off switch. */
 export function SoundSettings() {
-  const { muted, toggleMuted, music, setMusic } = useSettingsStore();
+  const { muted, toggleMuted, music, setMusic, homeMusic, toggleHomeMusic } = useSettingsStore();
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground lg:justify-start">
       <label className="flex items-center gap-2">
@@ -26,7 +26,15 @@ export function SoundSettings() {
       <button type="button" onClick={toggleMuted} aria-pressed={!muted} className={`${pill} border-border`}>
         {muted ? tr('Âm thanh: tắt') : tr('Âm thanh: bật')}
       </button>
-      {!muted && <p>{tr('Bấm vào bất kỳ đâu để bật nhạc nền.')}</p>}
+      {/* On the home screen the music waits for this switch; in a room it always plays. */}
+      <button
+        type="button"
+        onClick={toggleHomeMusic}
+        aria-pressed={homeMusic}
+        className={`${pill} ${homeMusic ? 'border-primary text-primary' : 'border-border'}`}
+      >
+        {homeMusic ? tr('Nhạc nền: bật') : tr('Nhạc nền: tắt')}
+      </button>
     </div>
   );
 }

@@ -13,6 +13,8 @@ interface Saved {
   muted: boolean;
   /** Which lobby theme plays on the menu. */
   music: ThemeId;
+  /** Play the theme on the home screen too. Off by default: there the music waits to be asked for. */
+  homeMusic: boolean;
   /** Name shown to other players. */
   nickname: string;
   /** Hero played against bots, and the first pick offered in a room. */
@@ -31,6 +33,7 @@ function load(): Saved {
       graphics: saved.graphics === 'low' ? 'low' : 'high',
       muted: saved.muted === true,
       music: THEME_IDS.find((id) => id === saved.music) ?? DEFAULT_THEME,
+      homeMusic: saved.homeMusic === true,
       nickname: cleanNickname(saved.nickname),
       heroId: HERO_IDS.find((id) => id === saved.heroId) ?? HERO_IDS[0],
       tutorialDone: saved.tutorialDone === true,
@@ -42,6 +45,7 @@ function load(): Saved {
       graphics: 'high',
       muted: false,
       music: DEFAULT_THEME,
+      homeMusic: false,
       nickname: '',
       heroId: HERO_IDS[0],
       tutorialDone: false,
@@ -61,6 +65,7 @@ interface SettingsStore extends Saved {
   lowerGraphics: () => void;
   toggleMuted: () => void;
   setMusic: (music: ThemeId) => void;
+  toggleHomeMusic: () => void;
   setNickname: (nickname: string) => void;
   setHeroId: (heroId: string) => void;
   finishTutorial: () => void;
@@ -74,11 +79,11 @@ setMuted(initial.muted);
 export const useSettingsStore = create<SettingsStore>((set, get) => {
   const update = (change: Partial<Saved>) => {
     set(change);
-    const { graphics, muted, music, nickname, heroId, tutorialDone, lang } = get();
+    const { graphics, muted, music, homeMusic, nickname, heroId, tutorialDone, lang } = get();
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ graphics, muted, music, nickname, heroId, tutorialDone, lang }),
+        JSON.stringify({ graphics, muted, music, homeMusic, nickname, heroId, tutorialDone, lang }),
       );
     } catch {
       // Storage blocked: the choice just lasts for this visit.
@@ -97,6 +102,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => {
       setMuted(get().muted);
     },
     setMusic: (music) => update({ music }),
+    toggleHomeMusic: () => update({ homeMusic: !get().homeMusic }),
     setNickname: (nickname) => update({ nickname: cleanNickname(nickname) }),
     setHeroId: (heroId) => {
       if (HERO_IDS.includes(heroId)) update({ heroId });
