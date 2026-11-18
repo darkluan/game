@@ -6,8 +6,6 @@ const url = (file: string) => `${import.meta.env.BASE_URL}models/${file}`;
 
 /** CC0 models by Kay Lousberg (KayKit) and Quaternius; see public/models/CREDITS.md. */
 export const MODELS = {
-  knight: url('knight.glb'),
-  rogue: url('rogue.glb'),
   rogueHooded: url('rogue_hooded.glb'),
   mage: url('mage.glb'),
   barbarian: url('barbarian.glb'),

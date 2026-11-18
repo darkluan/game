@@ -1,5 +1,6 @@
 import type { ActorOptions, Rig } from './Actor';
 import { HYDRA_ACTIONS, type HydraColours } from './Hydra';
+import { SWORDSMAN_ACTIONS, type SwordsmanColours } from './Swordsman';
 import { MODELS } from './models';
 
 const BASE = { idle: 'Idle', run: 'Running_A', death: 'Death_A' } as const;
@@ -23,8 +24,10 @@ export interface HeroLook {
   brightness?: number;
   /** Multiplies the size on the hero-picking screens only, for a hero that fills too much of the stage there. */
   showcaseScale?: number;
-  /** Set for a hero drawn as the three-headed dragon built in code; `model` is then empty. */
+  /** Set for a hero drawn as a dragon built in code; `model` is then empty. */
   hydra?: HydraColours;
+  /** Set for a hero drawn as the wandering swordsman built in code; `model` is then empty. */
+  swordsman?: SwordsmanColours;
 }
 
 export interface HeroModel extends HeroLook {
@@ -71,35 +74,46 @@ const MAGE_HIDDEN = ['Spellbook', 'Spellbook_open', '1H_Wand'];
  * the machines are mechs.
  */
 export const HERO_MODELS: Record<string, HeroModel> = {
+  // A young blade-master in the style of a wuxia cartoon, built in code: big head, spiked hair in a
+  // topknot, plated shoulders, flying ribbons and a sabre as tall as he is. In the Humans' blue and silver.
   kael: {
-    model: MODELS.knight,
-    hide: ['1H_Sword_Offhand', 'Badge_Shield', 'Round_Shield', 'Spike_Shield', '2H_Sword'],
-    scale: 0.95,
-    rig: {
-      ...BASE,
-      actions: {
-        attack: clip('1H_Melee_Attack_Chop'),
-        Q: clip('1H_Melee_Attack_Stab'),
-        W: clip('Blocking', 0.7),
-        E: clip('Block_Attack'),
-        R: clip('Jump_Full_Short', 0.7),
-      },
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.1,
+    showcaseScale: 0.9,
+    swordsman: {
+      cloth: '#27408f',
+      armour: '#3b4d74',
+      trim: '#e8b84a',
+      ribbon: '#3fd0ff',
+      skin: '#f0c39c',
+      hair: '#1a1b26',
+      blade: '#e6edf5',
+      gem: '#4aa3ff',
     },
+    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
+  // An archer in the same wuxia-cartoon style as Kael: hair in two buns with long tails, a short flared
+  // skirt, a tall bow and a quiver. In forest green with coral ribbons.
   lyra: {
-    model: MODELS.rogue,
-    hide: ['Knife_Offhand', '1H_Crossbow', 'Knife', 'Throwable'],
-    scale: 0.92,
-    rig: {
-      ...BASE,
-      actions: {
-        attack: clip('2H_Ranged_Shoot', 0.5),
-        Q: clip('Throw'),
-        W: clip('2H_Ranged_Shoot'),
-        E: clip('Dodge_Forward', 0.4),
-        R: clip('2H_Ranged_Shoot', 0.8),
-      },
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2,
+    showcaseScale: 0.9,
+    swordsman: {
+      archer: true,
+      cloth: '#2c8a5c',
+      armour: '#3f5f4a',
+      trim: '#e8c35a',
+      ribbon: '#ff7d5c',
+      skin: '#f4cdaa',
+      hair: '#b44a2c',
+      blade: '#e6edf5',
+      gem: '#5fe0a0',
     },
+    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
   // Fire: the red skeleton of a dragon with a fire burning in its ribs, built in code. It has one body
   // and simply grows as it evolves.
