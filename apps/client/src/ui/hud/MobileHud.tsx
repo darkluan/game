@@ -134,7 +134,7 @@ function Vitals({ hud }: { hud: HudState }) {
  * bottom right, and only the essentials elsewhere. Abilities aim themselves at the nearest enemy.
  */
 export function MobileHud({ game, hud, actions }: LayoutProps) {
-  const { graphics, muted, toggleGraphics, toggleMuted } = useSettingsStore();
+  const { graphics, muted, toggleGraphics, toggleMuted, autoLowered } = useSettingsStore();
   const shopOpen = useGameStore((s) => s.shopOpen);
   const toggleShop = useGameStore((s) => s.toggleShop);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -145,6 +145,7 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
   const walk = useCallback((dir: Vec2) => moveInDirection(game, dir), [game]);
   const halt = useCallback(() => game.send({ t: 'stop' }), [game]);
   const chip = 'pointer-events-auto touch-none rounded-md hud-panel px-2.5 py-1.5 text-xs';
+  const option = 'rounded-md border border-border px-3 py-2';
 
   return (
     <div className="pointer-events-none absolute inset-0 text-foreground select-none">
@@ -188,41 +189,52 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
       </div>
 
       {menuOpen && (
-        <div className="pointer-events-auto absolute top-11 right-1 flex max-h-[80vh] flex-col gap-2 overflow-y-auto rounded-lg hud-panel p-2 text-xs">
-          <Scoreboard hud={hud} />
-          <ItemBag hud={hud} game={game} columns={hud.itemSlots} />
-          <StatsGrid hud={hud} className="w-64 rounded-md border border-border p-2" />
-          {/* There is no hovering on a touch screen, so what each ability does is listed here. */}
-          {hud.abilities.map((a) => (
-            <div key={a.slot} className="w-64 rounded-md border border-border p-2">
-              <AbilityInfo ability={a} next={a.canLevelUp} />
-            </div>
-          ))}
-          {fullscreen.active && (
-            <button type="button" onClick={fullscreen.leave} className="rounded-md border border-border px-3 py-2">
-              {tr('Thoát toàn màn hình')}
+        // Above the ability buttons, which sit in the same corner.
+        <div className="pointer-events-auto absolute top-11 right-1 z-20 flex max-h-[calc(100dvh-3.25rem)] w-[min(34rem,calc(100vw-0.5rem))] flex-col gap-2 overflow-y-auto rounded-lg hud-sheet p-2 text-xs">
+          {/* Settings first: they must be reachable without scrolling. */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <button type="button" onClick={toggleMuted} className={option}>
+              {muted ? tr('Âm thanh: tắt') : tr('Âm thanh: bật')}
             </button>
+            <button type="button" onClick={toggleGraphics} aria-pressed={graphics === 'high'} className={option}>
+              {graphics === 'high' ? tr('Đồ họa: cao') : tr('Đồ họa: thấp')}
+            </button>
+            {fullscreen.active && (
+              <button type="button" onClick={fullscreen.leave} className={option}>
+                {tr('Thoát toàn màn hình')}
+              </button>
+            )}
+            <button type="button" onClick={actions.exit} className={`${option} text-danger`}>
+              {tr('Thoát trận')}
+            </button>
+          </div>
+          {autoLowered && graphics === 'low' && (
+            <p className="text-muted-foreground">
+              {tr('Đồ họa đã tự giảm vì máy chạy chậm. Bấm "Đồ họa: thấp" để bật lại mức cao.')}
+            </p>
           )}
           {!fullscreen.supported && !installed && (
-            <p className="max-w-56 text-muted-foreground">
+            <p className="text-muted-foreground">
               {tr(
                 'Để ẩn thanh địa chỉ trên iPhone: bấm Chia sẻ rồi chọn "Thêm vào Màn hình chính" và mở game từ biểu tượng đó.',
               )}
             </p>
           )}
-          <button type="button" onClick={toggleMuted} className="rounded-md border border-border px-3 py-2">
-            {muted ? tr('Âm thanh: tắt') : tr('Âm thanh: bật')}
-          </button>
-          <button type="button" onClick={toggleGraphics} className="rounded-md border border-border px-3 py-2">
-            {graphics === 'high' ? tr('Đồ họa: cao') : tr('Đồ họa: thấp')}
-          </button>
-          <button
-            type="button"
-            onClick={actions.exit}
-            className="rounded-md border border-border px-3 py-2 text-danger"
-          >
-            {tr('Thoát trận')}
-          </button>
+          <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Scoreboard hud={hud} />
+              <ItemBag hud={hud} game={game} columns={hud.itemSlots} />
+              <StatsGrid hud={hud} className="rounded-md border border-border p-2" />
+            </div>
+            <div className="flex flex-col gap-2">
+              {/* There is no hovering on a touch screen, so what each ability does is listed here. */}
+              {hud.abilities.map((a) => (
+                <div key={a.slot} className="rounded-md border border-border p-2">
+                  <AbilityInfo ability={a} next={a.canLevelUp} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
       {shopOpen && <ShopPanel hud={hud} game={game} onClose={toggleShop} />}

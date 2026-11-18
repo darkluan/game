@@ -224,6 +224,8 @@ export const EN: Record<string, string> = {
   'Đồ họa: cao': 'Graphics: high',
   'Đồ họa: thấp (tự giảm vì máy chậm)': 'Graphics: low (lowered for a slow device)',
   'Đồ họa: thấp': 'Graphics: low',
+  'Đồ họa đã tự giảm vì máy chạy chậm. Bấm "Đồ họa: thấp" để bật lại mức cao.':
+    'Graphics were lowered because the device was running slowly. Tap "Graphics: low" to switch back to high.',
   Thoát: 'Exit',
   'Chuột: di chuyển, bấm vào địch để đánh.': 'Mouse: move, click an enemy to attack.',
   'Q W E R: chiêu theo con trỏ · Alt + phím: nâng chiêu': 'Q W E R: cast toward the cursor · Alt + key: level up',

@@ -60,7 +60,7 @@ export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSes
       onPointerDown={stayOpen}
       onWheel={stayOpen}
       aria-label={tr('Cửa hàng')}
-      className="pointer-events-auto absolute top-12 right-2 flex max-h-[70vh] w-80 max-w-[92vw] flex-col gap-2 rounded-lg hud-panel p-3"
+      className="pointer-events-auto absolute top-12 right-2 z-20 flex max-h-[70vh] w-80 max-w-[92vw] flex-col gap-2 rounded-lg hud-sheet p-3"
     >
       <header className="flex items-center justify-between">
         <h2 className="font-semibold">{tr('Cửa hàng')}</h2>

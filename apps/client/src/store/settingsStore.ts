@@ -54,7 +54,10 @@ interface SettingsStore extends Saved {
   toggleGraphics: () => void;
   /** True after the game lowered the graphics by itself because frames were slow. */
   autoLowered: boolean;
-  /** Switch to low graphics once, for a machine that cannot keep up. A later manual choice wins. */
+  /**
+   * Switch to low graphics once, for a machine that cannot keep up. A later manual choice wins.
+   * It lasts for this visit only: one bad moment must not leave the game looking poor for good.
+   */
   lowerGraphics: () => void;
   toggleMuted: () => void;
   setMusic: (music: ThemeId) => void;
@@ -87,8 +90,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => {
     autoLowered: false,
     lowerGraphics: () => {
       if (get().graphics !== 'high' || get().autoLowered) return;
-      update({ graphics: 'low' });
-      set({ autoLowered: true });
+      set({ graphics: 'low', autoLowered: true });
     },
     toggleMuted: () => {
       update({ muted: !get().muted });

@@ -83,7 +83,8 @@ export default function GameScene({ game, graphics }: { game: GameSession; graph
   return (
     <Canvas
       camera={{ fov: 38, near: 1, far: 300 }}
-      dpr={high ? [1, 2] : 1}
+      // Low still draws sharper than one pixel per point: on a phone that would look smeared.
+      dpr={high ? [1, 2] : [1, 1.5]}
       shadows={high ? 'percentage' : false}
       gl={{ antialias: high }}
     >
