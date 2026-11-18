@@ -1,7 +1,8 @@
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
-import { AdditiveBlending, type Mesh, type MeshStandardMaterial } from 'three';
+import { useMemo, useRef } from 'react';
+import { AdditiveBlending, type Group, type Mesh, type MeshStandardMaterial } from 'three';
 import type { MapDef } from '@game/core';
+import { oasisGeometry, propMaterial } from './egypt';
 import { COLORS } from './palette';
 
 const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
@@ -9,18 +10,21 @@ const STONE = '#dcc797';
 const STONE_DARK = '#a8875a';
 /** Matches HERO.fountainRadius: the paved circle is exactly where standing heals. */
 const FOUNTAIN_RADIUS = 6;
-const RUNES = 6;
+/** How high the ankh floats over the pool. */
+const ANKH_HEIGHT = 2.6;
 
-/** The healing fountain: a paved circle with a basin of glowing water and a crystal turning above it. */
+/** The healing oasis: a paved circle, a pool among palms and reeds, and a gold ankh turning over the water. */
 function Fountain({ x, z, color, lit }: { x: number; z: number; color: string; lit: boolean }) {
-  const crystal = useRef<Mesh>(null);
+  const ankh = useRef<Group>(null);
   const water = useRef<Mesh>(null);
+  const geometry = useMemo(() => oasisGeometry(), []);
+  const material = useMemo(() => propMaterial(), []);
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    if (crystal.current) {
-      crystal.current.rotation.y = t * 0.9;
-      crystal.current.position.y = 2.3 + Math.sin(t * 1.6) * 0.18;
+    if (ankh.current) {
+      ankh.current.rotation.y = t * 0.9;
+      ankh.current.position.y = ANKH_HEIGHT + Math.sin(t * 1.6) * 0.18;
     }
     if (water.current)
       (water.current.material as MeshStandardMaterial).emissiveIntensity = 0.45 + Math.sin(t * 2.2) * 0.15;
@@ -37,36 +41,27 @@ function Fountain({ x, z, color, lit }: { x: number; z: number; color: string; l
         <ringGeometry args={[FOUNTAIN_RADIUS - 0.35, FOUNTAIN_RADIUS, 48]} />
         <meshBasicMaterial color={color} transparent opacity={0.75} />
       </mesh>
-      <mesh rotation={FLAT} position={[0, 0.13, 0]}>
-        <ringGeometry args={[3.5, 3.62, 48]} />
-        <meshBasicMaterial color={color} transparent opacity={0.4} />
-      </mesh>
-      {Array.from({ length: RUNES }, (_, i) => {
-        const a = (i / RUNES) * Math.PI * 2;
-        return (
-          <mesh key={i} position={[Math.sin(a) * 4.7, 0.45, Math.cos(a) * 4.7]} rotation={[0, a, 0]} castShadow>
-            <boxGeometry args={[0.55, 0.9, 0.35]} />
-            <meshStandardMaterial color={STONE_DARK} emissive={color} emissiveIntensity={0.35} />
-          </mesh>
-        );
-      })}
-      {/* The basin wall, the water in it and the pedestal the crystal floats over. */}
-      <mesh rotation={FLAT} position={[0, 0.34, 0]} castShadow>
-        <torusGeometry args={[2.6, 0.3, 8, 28]} />
-        <meshStandardMaterial color={STONE} />
-      </mesh>
+      <mesh geometry={geometry} material={material} castShadow receiveShadow />
       <mesh ref={water} rotation={FLAT} position={[0, 0.42, 0]}>
         <circleGeometry args={[2.55, 32]} />
-        <meshStandardMaterial color="#2c7fb8" emissive={color} emissiveIntensity={0.45} transparent opacity={0.9} />
+        {/* The water glows in its own colour on both sides: lit in red it would look like blood. */}
+        <meshStandardMaterial color="#1f9aa8" emissive="#35c8d6" emissiveIntensity={0.45} transparent opacity={0.9} />
       </mesh>
-      <mesh position={[0, 0.8, 0]} castShadow>
-        <cylinderGeometry args={[0.35, 0.6, 1.2, 8]} />
-        <meshStandardMaterial color={STONE_DARK} />
-      </mesh>
-      <mesh ref={crystal} position={[0, 2.3, 0]}>
-        <octahedronGeometry args={[0.75]} />
-        <meshStandardMaterial color="#ffffff" emissive={color} emissiveIntensity={1.6} flatShading />
-      </mesh>
+      {/* The ankh: a loop over a cross, gold lit in the team's colour. */}
+      <group ref={ankh} position={[0, ANKH_HEIGHT, 0]}>
+        <mesh position={[0, 0.42, 0]} scale={[1, 1.3, 1]}>
+          <torusGeometry args={[0.3, 0.09, 6, 16]} />
+          <meshStandardMaterial color="#ffe9a8" emissive={color} emissiveIntensity={1.4} flatShading />
+        </mesh>
+        <mesh position={[0, -0.42, 0]}>
+          <boxGeometry args={[0.2, 0.95, 0.16]} />
+          <meshStandardMaterial color="#ffe9a8" emissive={color} emissiveIntensity={1.4} flatShading />
+        </mesh>
+        <mesh position={[0, -0.02, 0]}>
+          <boxGeometry args={[0.95, 0.2, 0.16]} />
+          <meshStandardMaterial color="#ffe9a8" emissive={color} emissiveIntensity={1.4} flatShading />
+        </mesh>
+      </group>
       {/* A soft shaft of light rising from the water. */}
       <mesh position={[0, 3.6, 0]}>
         <cylinderGeometry args={[0.5, 2.3, 6.4, 20, 1, true]} />

@@ -8,6 +8,7 @@ import {
   MeshStandardMaterial,
   Object3D,
   SphereGeometry,
+  TorusGeometry,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { COLORS } from './palette';
@@ -369,6 +370,133 @@ export function shrineGeometry(team: string): BufferGeometry {
   out.push(piece(box(2.9, 0.3, 2.3), STONE_DARK, [0, 6.4, 0]));
   out.push(piece(box(3.2, 0.2, 2.6), team, [0, 6.65, 0]));
   out.push(piece(box(2.6, 0.2, 2), STONE, [0, 4.5, 0]));
+  return prop(out);
+}
+
+/** Pieces built at the size of a prop, grown to their size on the field and moved to where they stand. */
+function grown(pieces: BufferGeometry[], size: number, at: Triple): BufferGeometry[] {
+  return pieces.map((made) => made.scale(size, size, size).translate(...at));
+}
+
+const LOTUS = '#f6c9dc';
+const RUIN = '#9c8660';
+const RUIN_DARK = '#75633f';
+
+/**
+ * The oasis a team heals at: a pool in a stone rim with lotus on the water, reeds and date palms
+ * round it, and a lotus column in the middle for the ankh to float over. The tall things stand on
+ * the far side only, so nothing hides a hero who is standing in the water's light.
+ */
+export function oasisGeometry(): BufferGeometry {
+  const out: BufferGeometry[] = [
+    piece(new TorusGeometry(2.6, 0.3, 6, 28), STONE, [0, 0.34, 0], [UP, 0, 0]),
+    piece(tube(0.3, 0.42, 1, 8), STONE, [0, 0.7, 0]),
+    piece(tube(0.62, 0.3, 0.32, 8), GOLD, [0, 1.3, 0]),
+    piece(tube(0.5, 0.56, 0.2, 8), STONE_DARK, [0, 0.2, 0]),
+  ];
+  // Palms lean out over the far half of the paving.
+  const palms: [number, number, number, number][] = [
+    [-2.2, 4.4, 0.5, 1],
+    [-0.9, 5.2, -0.35, 0.85],
+    [-2.9, 4.7, 0.3, 0.95],
+    [-0.2, 4, -0.5, 0.75],
+  ];
+  for (const [angle, size, lean, height] of palms)
+    out.push(...grown(palmPieces(height, lean), size, [Math.cos(angle) * 4, 0.12, Math.sin(angle) * 4]));
+  // Papyrus at the water's edge, thickest at the back.
+  for (let i = 0; i < 9; i++) {
+    const angle = -0.25 - (i / 8) * 2.6;
+    const reach = 3.05 + (i % 3) * 0.22;
+    out.push(
+      ...grown(
+        [
+          piece(tube(0.01, 0.014, 1, 4), FROND, [0, 0.5, 0]),
+          piece(cone(0.1, 0.22, 6), FROND_DARK, [0, 1.05, 0], [Math.PI, 0, 0]),
+        ],
+        1.1 + (i % 2) * 0.5,
+        [Math.cos(angle) * reach, 0.12, Math.sin(angle) * reach],
+      ),
+    );
+  }
+  // Lotus on the water: a pad, and on every other one a flower.
+  for (let i = 0; i < 6; i++) {
+    const angle = i * 1.05 + 0.4;
+    const reach = 1.25 + (i % 2) * 0.75;
+    const at: Triple = [Math.cos(angle) * reach, 0.44, Math.sin(angle) * reach];
+    out.push(piece(tube(0.26, 0.26, 0.02, 8), i % 2 ? FROND : FROND_DARK, at));
+    if (i % 2 === 0) {
+      out.push(piece(cone(0.13, 0.2, 6), LOTUS, [at[0], 0.55, at[2]], [Math.PI, 0, 0]));
+      out.push(piece(ball(0.05), GOLD, [at[0], 0.6, at[2]]));
+    }
+  }
+  // Stones of the old well, half sunk in the sand at the front.
+  for (const [x, z, turn] of [
+    [2.9, 2.3, 0.4],
+    [-3.3, 1.6, 1.1],
+    [0.6, 3.5, 0.2],
+  ])
+    out.push(piece(box(0.7, 0.4, 0.5), STONE_DARK, [x, 0.28, z], [0.1, turn, 0.08]));
+  return prop(out);
+}
+
+/** A relic's altar: a stepped foot, a lotus column that holds a dish of gold, a small obelisk at each corner. */
+export function altarGeometry(): BufferGeometry {
+  const out: BufferGeometry[] = [
+    piece(box(2.8, 0.24, 2.8), STONE_DARK, [0, 0.12, 0]),
+    piece(box(2.1, 0.24, 2.1), STONE, [0, 0.36, 0]),
+    piece(tube(0.5, 0.62, 0.8, 8), STONE, [0, 0.88, 0]),
+    piece(tube(0.56, 0.52, 0.1, 8), GOLD, [0, 0.72, 0]),
+    piece(tube(1, 0.5, 0.36, 8), GOLD, [0, 1.46, 0]),
+    piece(tube(0.86, 0.96, 0.08, 8), STONE_DARK, [0, 1.66, 0]),
+  ];
+  for (const x of [-1, 1])
+    for (const z of [-1, 1]) {
+      out.push(piece(tube(0.1, 0.17, 0.9, 4), STONE, [x * 1.12, 0.69, z * 1.12], SQUARE));
+      out.push(piece(cone(0.105, 0.22, 4), GOLD, [x * 1.12, 1.25, z * 1.12], SQUARE));
+    }
+  return prop(out);
+}
+
+/** Where the bowl of each brazier at the Beast's lair stands, for the flames to be lit over them. */
+export const LAIR_BRAZIERS: Triple[] = [
+  [-4.9, 1.5, 2.2],
+  [4.9, 1.5, 2.2],
+];
+
+/**
+ * The Ancient Beast's lair: the forecourt of a temple long fallen. A worn floor, a broken gate at
+ * the back, columns standing and lying round the far side, and a brazier either side of the way in.
+ */
+export function lairGeometry(): BufferGeometry {
+  const out: BufferGeometry[] = [piece(tube(3.9, 4.05, 0.06, 10), RUIN, [0, 0.03, 0])];
+  // The gate: one tower still at its height, the other broken off, the lintel lying before it.
+  out.push(piece(tube(1, 1.35, 4.6, 4), RUIN, [-3.1, 2.3, -5.4], SQUARE, [1, 1, 0.6]));
+  out.push(piece(box(1.7, 0.2, 1), RUIN_DARK, [-3.1, 4.7, -5.4]));
+  out.push(piece(tube(1.1, 1.35, 2.2, 4), RUIN, [3.1, 1.1, -5.4], SQUARE, [1, 1, 0.6]));
+  out.push(piece(box(1.2, 0.7, 0.8), RUIN_DARK, [3.6, 2.4, -5.3], [0.2, 0.5, 0.3]));
+  out.push(piece(box(3.6, 0.6, 0.9), RUIN_DARK, [0.6, 0.3, -4.5], [0, 0.22, 0.06]));
+  out.push(piece(box(0.9, 0.9, 0.06), GOLD, [-3.1, 3.2, -4.98]));
+  // Columns round the back: some whole with their capitals, some stumps.
+  const columns: [number, number][] = [
+    [-2.75, 3.4],
+    [-2.3, 1.3],
+    [-0.85, 2.6],
+    [-0.4, 3.4],
+  ];
+  for (const [angle, height] of columns) {
+    const at: Triple = [Math.cos(angle) * 5.6, 0, Math.sin(angle) * 5.6];
+    out.push(piece(box(1, 0.2, 1), RUIN_DARK, [at[0], 0.1, at[2]]));
+    out.push(piece(tube(0.34, 0.4, height, 8), RUIN, [at[0], 0.2 + height / 2, at[2]]));
+    if (height > 3) out.push(piece(tube(0.6, 0.34, 0.35, 8), RUIN_DARK, [at[0], 0.37 + height, at[2]]));
+  }
+  // A column that fell, in two drums.
+  out.push(piece(tube(0.36, 0.38, 1.9, 8), RUIN, [-5.3, 0.38, -1.2], [UP, 0, 0.5]));
+  out.push(piece(tube(0.34, 0.36, 1.1, 8), RUIN_DARK, [5.6, 0.36, -1.6], [UP, 0, -0.8]));
+  for (const [x, y, z] of LAIR_BRAZIERS) {
+    out.push(piece(box(0.9, 0.2, 0.9), RUIN_DARK, [x, 0.1, z]));
+    out.push(piece(tube(0.14, 0.26, y - 0.5, 6), RUIN, [x, 0.2 + (y - 0.5) / 2, z]));
+    out.push(piece(tube(0.5, 0.2, 0.34, 8), SHADE, [x, y - 0.17, z]));
+  }
   return prop(out);
 }
 

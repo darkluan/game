@@ -1,17 +1,30 @@
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
-import type { Mesh, MeshBasicMaterial, MeshStandardMaterial } from 'three';
+import { useMemo, useRef } from 'react';
+import type { BufferGeometry, Group, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial } from 'three';
 import { RELIC, type RelicType } from '@game/core';
 import type { GameSession } from '@/lib/session';
+import { altarGeometry, lairGeometry, LAIR_BRAZIERS, propMaterial } from './egypt';
 import { COLORS, teamColor } from './palette';
 
 const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
 const IDLE = '#6f7682';
+/** How high a relic floats over its altar. */
+const ORB_HEIGHT = 2.9;
 
 const RELIC_COLORS: Record<RelicType, string> = { thunder: '#ffe14d', shield: '#5cc8ff', fury: '#ff5a3c' };
 
-/** A relic pedestal. Dark until its turn; then it glows in the relic's colour and shows the capture filling up. */
-function Pedestal({ game, index }: { game: GameSession; index: number }) {
+/** A relic's altar. Dark until its turn; then it glows in the relic's colour and shows the capture filling up. */
+function Pedestal({
+  game,
+  index,
+  geometry,
+  material,
+}: {
+  game: GameSession;
+  index: number;
+  geometry: BufferGeometry;
+  material: Material;
+}) {
   const at = game.map.pedestals[index];
   const orb = useRef<Mesh>(null);
   const zone = useRef<Mesh>(null);
@@ -22,7 +35,7 @@ function Pedestal({ game, index }: { game: GameSession; index: number }) {
     const lit = relic?.pedestal === index ? relic : null;
     if (orb.current) {
       orb.current.visible = lit !== null;
-      orb.current.position.y = 2.4 + Math.sin(game.clock * 2.5) * 0.25;
+      orb.current.position.y = ORB_HEIGHT + Math.sin(game.clock * 2.5) * 0.25;
       orb.current.rotation.y = game.clock * 1.5;
       if (lit) {
         const material = orb.current.material as MeshStandardMaterial;
@@ -47,10 +60,7 @@ function Pedestal({ game, index }: { game: GameSession; index: number }) {
 
   return (
     <group position={[at.x, 0, at.z]}>
-      <mesh position={[0, 0.35, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[1, 1.3, 0.7, 8]} />
-        <meshStandardMaterial color={COLORS.wall} />
-      </mesh>
+      <mesh geometry={geometry} material={material} receiveShadow castShadow />
       <mesh ref={zone} rotation={FLAT} position={[0, 0.04, 0]}>
         <ringGeometry args={[RELIC.radius - 0.15, RELIC.radius, 48]} />
         <meshBasicMaterial transparent depthWrite={false} />
@@ -59,7 +69,7 @@ function Pedestal({ game, index }: { game: GameSession; index: number }) {
         <circleGeometry args={[1, 40]} />
         <meshBasicMaterial transparent opacity={0.4} depthWrite={false} />
       </mesh>
-      <mesh ref={orb} position={[0, 2.4, 0]} visible={false}>
+      <mesh ref={orb} position={[0, ORB_HEIGHT, 0]} visible={false}>
         <octahedronGeometry args={[0.7]} />
         <meshStandardMaterial emissiveIntensity={0.9} />
       </mesh>
@@ -67,18 +77,41 @@ function Pedestal({ game, index }: { game: GameSession; index: number }) {
   );
 }
 
-/** The relic pedestals and the mark of the Ancient Beast's cave. */
+/** The relic altars, and the ruined forecourt the Ancient Beast keeps, a fire burning either side of the way in. */
 export function Objectives({ game }: { game: GameSession }) {
   const cave = game.map.beastCave;
+  const altar = useMemo(() => altarGeometry(), []);
+  const lair = useMemo(() => lairGeometry(), []);
+  const material = useMemo(() => propMaterial(), []);
+  const flames = useRef<Group>(null);
+
+  useFrame(() => {
+    // The fires gutter, each to its own beat.
+    flames.current?.children.forEach((flame, i) => {
+      flame.scale.y = 1 + 0.22 * Math.sin(game.clock * 9 + i * 2.1) + 0.1 * Math.sin(game.clock * 23 + i);
+    });
+  });
+
   return (
     <>
       {game.map.pedestals.map((_, i) => (
-        <Pedestal key={i} game={game} index={i} />
+        <Pedestal key={i} game={game} index={i} geometry={altar} material={material} />
       ))}
-      <mesh rotation={FLAT} position={[cave.x, 0.03, cave.z]}>
-        <ringGeometry args={[4.2, 4.6, 48]} />
-        <meshBasicMaterial color={COLORS.enemy} transparent opacity={0.3} />
-      </mesh>
+      <group position={[cave.x, 0, cave.z]}>
+        <mesh geometry={lair} material={material} receiveShadow castShadow />
+        <mesh rotation={FLAT} position={[0, 0.03, 0]}>
+          <ringGeometry args={[4.2, 4.6, 48]} />
+          <meshBasicMaterial color={COLORS.enemy} transparent opacity={0.3} />
+        </mesh>
+        <group ref={flames}>
+          {LAIR_BRAZIERS.map(([x, y, z], i) => (
+            <mesh key={i} position={[x, y + 0.3, z]}>
+              <coneGeometry args={[0.34, 0.9, 6]} />
+              <meshStandardMaterial color="#ffd27a" emissive="#ff5a1c" emissiveIntensity={2.2} flatShading />
+            </mesh>
+          ))}
+        </group>
+      </group>
     </>
   );
 }
