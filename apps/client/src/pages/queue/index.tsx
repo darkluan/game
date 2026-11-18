@@ -87,6 +87,8 @@ function Idle({ status }: { status: QueueStatus }) {
   const find = useQueueStore((s) => s.find);
   const profile = useQueueStore((s) => s.profile);
   const config = useQueueStore((s) => s.config);
+  // Ratings are kept for good only on a server with a database; until its answer arrives, assume so.
+  const ranked = config?.ranked !== false;
   const result = useQueueStore((s) => s.result);
   const google = useQueueStore((s) => s.google);
   const heroId = useSettingsStore((s) => s.heroId);
@@ -97,9 +99,16 @@ function Idle({ status }: { status: QueueStatus }) {
   return (
     <>
       <div>
-        <p className={eyebrow}>{tr('Đấu xếp hạng')}</p>
+        <p className={eyebrow}>{ranked ? tr('Đấu xếp hạng') : tr('Ghép trận tự động')}</p>
         <h1 className={title}>{tr('Tìm trận')}</h1>
       </div>
+      {!ranked && (
+        <p className={note}>
+          {tr(
+            'Điểm trình độ hiện chỉ lưu tạm: máy chủ chưa có cơ sở dữ liệu nên điểm sẽ về lại ban đầu khi máy chủ khởi động lại.',
+          )}
+        </p>
+      )}
       <p className={`${panel} animate-rise [animation-delay:80ms]`}>
         <span>
           {tr('Điểm trình độ (MMR):')} <span className="font-bold text-primary tabular-nums">{status.mmr}</span>
@@ -314,7 +323,7 @@ export default function QueuePage() {
     return (
       <>
         <div>
-          <p className={eyebrow}>{tr('Đấu xếp hạng')}</p>
+          <p className={eyebrow}>{tr('Ghép trận tự động')}</p>
           <h1 className={title}>{partyCode ? tr('Vào nhóm') : tr('Tìm trận')}</h1>
         </div>
         <p className={note}>{tr('Ghép với người lạ có trình độ gần bạn. Chờ quá lâu thì máy sẽ lấp các ô trống.')}</p>

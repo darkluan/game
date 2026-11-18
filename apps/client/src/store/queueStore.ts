@@ -123,7 +123,6 @@ export const useQueueStore = create<QueueStore>((set, get) => {
       try {
         const config = await fetchServerConfig();
         set({ config });
-        if (!config.ranked) return fail(messageFor({ message: 'ranked_unavailable' }));
         let guest = await ensureGuest();
         const open = (t: string) => colyseus.joinOrCreate('queue', { token: t, nickname });
         let room: Room;

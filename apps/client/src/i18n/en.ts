@@ -51,7 +51,6 @@ export const EN: Record<string, string> = {
   'Tướng khi chơi thử với máy': 'Hero for practice against bots',
   'Đang tạo phòng…': 'Creating room…',
   'Tạo phòng': 'Create room',
-  'Tìm trận xếp hạng': 'Ranked match',
   'Chơi thử với máy': 'Practice vs bots',
   'MOBA 3v3 · Một đường · Chơi ngay trên trình duyệt': '3v3 MOBA · One lane · Plays in your browser',
   'Tạo phòng rồi gửi link cho bạn bè, ô trống sẽ do máy điều khiển. Phá đền địch để thắng.':
@@ -112,6 +111,9 @@ export const EN: Record<string, string> = {
   'Rời nhóm': 'Leave party',
   'Đấu xếp hạng': 'Ranked',
   'Tìm trận': 'Find match',
+  'Ghép trận tự động': 'Matchmaking',
+  'Điểm trình độ hiện chỉ lưu tạm: máy chủ chưa có cơ sở dữ liệu nên điểm sẽ về lại ban đầu khi máy chủ khởi động lại.':
+    'Your rating is only kept for now: this server has no database yet, so it resets when the server restarts.',
   'Điểm trình độ (MMR):': 'Skill rating (MMR):',
   '{count} trận xếp hạng': '{count} ranked matches',
   'Trận vừa rồi:': 'Last match:',
