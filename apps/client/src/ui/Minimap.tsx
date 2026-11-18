@@ -50,14 +50,35 @@ export function Minimap({ game }: { game: GameSession }) {
     ctx.globalAlpha = 1;
     ctx.fillStyle = colors.monster;
     for (const m of game.monsters()) {
-      if (!m.dead)
-        ctx.fillRect(
-          px(m.pos.x) - 2,
-          pz(m.pos.z) - 2,
-          m.monster.type === 'big' ? 5 : 3,
-          m.monster.type === 'big' ? 5 : 3,
-        );
+      if (m.dead) continue;
+      // The Ancient Beast is a big red square; camp monsters are small.
+      const beast = m.monster.type === 'beast';
+      const size = beast ? 10 : m.monster.type === 'big' ? 5 : 3;
+      ctx.fillStyle = beast ? colors.enemy : colors.monster;
+      ctx.fillRect(px(m.pos.x) - size / 2, pz(m.pos.z) - size / 2, size, size);
     }
+
+    // Relic pedestals: hollow when dark, filled and ringed while lit. The Beast's cave is a ring.
+    const lit = game.world().relic;
+    ctx.strokeStyle = colors.self;
+    ctx.fillStyle = colors.self;
+    game.map.pedestals.forEach((p, i) => {
+      const active = lit?.pedestal === i;
+      ctx.lineWidth = active ? 2 : 1;
+      ctx.beginPath();
+      ctx.arc(px(p.x), pz(p.z), active ? 5 : 3, 0, Math.PI * 2);
+      if (active) ctx.fill();
+      ctx.stroke();
+      if (!active) return;
+      ctx.beginPath();
+      ctx.arc(px(p.x), pz(p.z), 9, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = colors.enemy;
+    ctx.beginPath();
+    ctx.arc(px(game.map.beastCave.x), pz(game.map.beastCave.z), 5, 0, Math.PI * 2);
+    ctx.stroke();
 
     for (const b of game.buildings()) {
       if (!game.exists(b.id)) continue;
@@ -68,7 +89,9 @@ export function Minimap({ game }: { game: GameSession }) {
     for (const m of game.minions()) {
       if (m.dead) continue;
       ctx.fillStyle = side(m.team);
-      ctx.fillRect(px(m.pos.x) - 1.5, pz(m.pos.z) - 1.5, 3, 3);
+      // The marching Beast stands out among its wave.
+      const size = m.minion.type === 'beast' ? 9 : 3;
+      ctx.fillRect(px(m.pos.x) - size / 2, pz(m.pos.z) - size / 2, size, size);
     }
     for (const h of game.heroes()) {
       if (h.dead) continue;

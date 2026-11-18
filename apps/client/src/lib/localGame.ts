@@ -12,6 +12,7 @@ import {
   TICK_RATE,
   type UnitEntity,
   type Vec2,
+  worldSnapshotOf,
   youSnapshotOf,
 } from '@game/core';
 import { BaseSession } from './baseSession';
@@ -25,6 +26,7 @@ import type {
   SoundCue,
   UnitView,
   ViewEntity,
+  WorldView,
 } from './session';
 
 const TICK_SECONDS = 1 / TICK_RATE;
@@ -138,6 +140,10 @@ export class LocalGame extends BaseSession implements GameSession {
     return this.heroRoster;
   }
 
+  world(): WorldView {
+    return worldSnapshotOf(this.sim);
+  }
+
   find(id: number): ViewEntity | undefined {
     const e = this.sim.get(id);
     return e && this.sim.canSee(this.hero, e) ? e : undefined;
@@ -239,6 +245,8 @@ export class LocalGame extends BaseSession implements GameSession {
         assists: e.hero.assists,
       })),
       winner: sim.winner,
+      world: this.world(),
+      announcements: this.announcements(),
     });
   }
 }

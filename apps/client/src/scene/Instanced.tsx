@@ -23,13 +23,17 @@ export function Swarm({ game, simpleMinions }: { game: GameSession; simpleMinion
     const { dummy, color, pos } = scratch;
     const counts = { melee: 0, ranged: 0 };
     for (const m of simpleMinions ? game.minions() : []) {
-      const mesh = (m.minion.type === 'melee' ? melee : ranged).current;
-      if (!mesh || m.dead || counts[m.minion.type] >= MAX_MINIONS) continue;
+      // The marching Ancient Beast is drawn as an oversized melee minion.
+      const shape = m.minion.type === 'ranged' ? 'ranged' : 'melee';
+      const size = m.minion.type === 'beast' ? 3 : 1;
+      const mesh = (shape === 'melee' ? melee : ranged).current;
+      if (!mesh || m.dead || counts[shape] >= MAX_MINIONS) continue;
       const p = game.renderPos(m, pos);
-      dummy.position.set(p.x, m.minion.type === 'melee' ? 0.5 : 0.6, p.z);
+      dummy.position.set(p.x, (shape === 'melee' ? 0.5 : 0.6) * size, p.z);
       dummy.rotation.set(0, m.facing, 0);
+      dummy.scale.setScalar(size);
       dummy.updateMatrix();
-      const i = counts[m.minion.type]++;
+      const i = counts[shape]++;
       mesh.setMatrixAt(i, dummy.matrix);
       mesh.setColorAt(i, color.set(teamColor(m.team, game.hero.team)));
     }
@@ -47,6 +51,7 @@ export function Swarm({ game, simpleMinions }: { game: GameSession; simpleMinion
     if (!mesh) return;
     let n = 0;
     dummy.rotation.set(0, 0, 0);
+    dummy.scale.setScalar(1);
     for (const s of game.projectiles()) {
       if (s.dead || n >= MAX_PROJECTILES) continue;
       const p = game.renderPos(s, pos);
@@ -79,6 +84,7 @@ export function Swarm({ game, simpleMinions }: { game: GameSession; simpleMinion
   );
 }
 
+const BEAST_BAR = { y: 5.2, w: 3.6, h: 0.32 };
 const BAR: Record<string, { y: number; w: number; h: number }> = {
   hero: { y: 3, w: 1.9, h: 0.26 },
   minion: { y: 1.6, w: 1, h: 0.14 },
@@ -106,7 +112,8 @@ export function HealthBars({ game }: { game: GameSession }) {
     dummy.quaternion.copy(camera.quaternion);
     let n = 0;
     for (const e of game.units()) {
-      const bar = BAR[e.kind];
+      const beast = e.monster?.type === 'beast' || e.minion?.type === 'beast';
+      const bar = beast ? BEAST_BAR : BAR[e.kind];
       if (!bar || e.dead || n >= MAX_BARS) continue;
       const p = game.renderPos(e, pos);
       const pct = Math.max(0, Math.min(1, e.health.hp / e.health.maxHp));

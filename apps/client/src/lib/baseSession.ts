@@ -1,5 +1,10 @@
 import { type AbilityDef, type AbilitySlot, dist, type Faction, HEROES, type SimEvent, type Vec2 } from '@game/core';
-import type { ActorAction, Fx, FxColor, SoundCue, UnitView, ViewEntity } from './session';
+import { RELIC_EFFECTS, RELIC_NAMES } from '@/ui/relicText';
+import type { ActorAction, Announcement, Fx, FxColor, RosterHero, SoundCue, UnitView, ViewEntity } from './session';
+
+/** How long an announcement stays on screen. */
+const ANNOUNCEMENT_SECONDS = 5;
+const MAX_ANNOUNCEMENTS = 4;
 
 const HEAL_TEXT_MINIMUM = 20;
 
@@ -16,10 +21,13 @@ export abstract class BaseSession {
   fx: Fx[] = [];
   shakeUntil = 0;
   private readonly actions = new Map<number, ActorAction>();
+  private announced: Announcement[] = [];
+  private nextAnnouncementId = 1;
 
   constructor(private readonly onCue: (cue: SoundCue, volume: number) => void) {}
 
   abstract readonly hero: ViewEntity;
+  abstract roster(): readonly RosterHero[];
   abstract units(): readonly UnitView[];
   /** The entity with this id, when the player can see it. */
   abstract find(id: number): ViewEntity | undefined;
@@ -38,6 +46,27 @@ export abstract class BaseSession {
 
   protected expireFx(): void {
     this.fx = this.fx.filter((f) => this.clock - f.bornAt < f.duration);
+    this.announced = this.announced.filter((a) => this.clock - a.at < ANNOUNCEMENT_SECONDS);
+  }
+
+  /** Announcements still on screen, oldest first. */
+  protected announcements(): Announcement[] {
+    return this.announced;
+  }
+
+  private announce(text: string, tone: Announcement['tone']): void {
+    const next = { id: this.nextAnnouncementId++, text, tone, at: this.clock };
+    this.announced = [...this.announced, next].slice(-MAX_ANNOUNCEMENTS);
+  }
+
+  /** 'good' when something favours the player's team, 'bad' when it favours the enemy. */
+  private toneFor(team: Faction | null): Announcement['tone'] {
+    return team === null ? 'neutral' : team === this.hero.team ? 'good' : 'bad';
+  }
+
+  private heroNameOf(id: number | null): string | null {
+    const entry = this.roster().find((r) => r.id === id);
+    return entry ? (HEROES[entry.defId]?.name ?? null) : null;
   }
 
   lastAction(id: number): ActorAction | undefined {
@@ -124,8 +153,18 @@ export abstract class BaseSession {
               ? 2
               : 4;
         this.addFx({ kind: 'ring', x: event.x, z: event.z, radius, color: 'neutral', duration: 0.5 });
-        if (event.kind === 'hero') this.cue('heroDeath', event);
-        else if (event.kind === 'tower') this.cue('structureDown', null);
+        if (event.kind === 'hero') {
+          this.cue('heroDeath', event);
+          const victim = this.heroNameOf(event.id);
+          const killer = this.heroNameOf(event.killerId);
+          const mine = event.team === this.hero.team;
+          if (victim)
+            this.announce(killer ? `${killer} hạ gục ${victim}` : `${victim} bị hạ gục`, mine ? 'bad' : 'good');
+        } else if (event.kind === 'tower') {
+          this.cue('structureDown', null);
+          const mine = event.team === this.hero.team;
+          this.announce(mine ? 'Một trụ của đội bạn đã sụp!' : 'Đội bạn phá được một trụ địch!', mine ? 'bad' : 'good');
+        }
         return;
       }
       case 'gold': {
@@ -178,6 +217,54 @@ export abstract class BaseSession {
         this.cue('structureDown', who.pos);
         return;
       }
+      case 'relicSpawn':
+        this.announce(`Di vật ${RELIC_NAMES[event.relic]} đã sáng lên ở rừng dưới!`, 'neutral');
+        this.addFx({ kind: 'ring', x: event.x, z: event.z, radius: 6, color: 'gold', duration: 1.5 });
+        this.cue('matchStart', null);
+        return;
+      case 'relicCaptured': {
+        const mine = event.team === this.hero.team;
+        const who = mine ? 'Đội bạn' : 'Đội địch';
+        this.announce(
+          `${who} chiếm Di vật ${RELIC_NAMES[event.relic]}: ${RELIC_EFFECTS[event.relic]}`,
+          this.toneFor(event.team),
+        );
+        this.cue(mine ? 'levelUp' : 'heroDeath', null);
+        return;
+      }
+      case 'lightning':
+        this.addFx({
+          kind: 'line',
+          x: event.x1,
+          z: event.z1,
+          x2: event.x2,
+          z2: event.z2,
+          radius: 0.25,
+          color: 'gold',
+          duration: 0.25,
+        });
+        return;
+      case 'beastSpawn':
+        this.announce('Cổ thú đã xuất hiện trong hang ở rừng trên!', 'neutral');
+        this.addFx({ kind: 'ring', x: event.x, z: event.z, radius: 7, color: 'enemy', duration: 1.5 });
+        this.cue('matchStart', null);
+        return;
+      case 'beastSlain':
+        if (event.team === null) return;
+        this.announce(
+          event.team === this.hero.team ? 'Đội bạn đã hạ Cổ thú!' : 'Đội địch đã hạ Cổ thú!',
+          this.toneFor(event.team),
+        );
+        this.cue('structureDown', null);
+        return;
+      case 'beastMarch':
+        this.announce(
+          event.team === this.hero.team
+            ? 'Cổ thú đang cùng lính đội bạn tiến về đền địch!'
+            : 'Cổ thú đang tiến về đền của đội bạn!',
+          this.toneFor(event.team),
+        );
+        return;
       case 'gameOver':
         this.cue(event.winner === this.hero.team ? 'victory' : 'defeat', null);
         return;

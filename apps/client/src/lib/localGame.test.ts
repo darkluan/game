@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TICK_RATE } from '@game/core';
+import { RELIC, TICK_RATE } from '@game/core';
 import { LocalGame } from './localGame';
 
 const TICK = 1 / TICK_RATE;
@@ -65,5 +65,28 @@ describe('LocalGame', () => {
     game.update(TICK);
     expect(game.find(foe.id)).toBeUndefined();
     expect(game.heroes().some((h) => h.id === foe.id)).toBe(false);
+  });
+});
+
+describe('LocalGame objectives', () => {
+  it('announces the relic and reports it in the hud and the world view', () => {
+    const game = new LocalGame(4);
+    // Park every hero so nothing else happens before the two minute mark.
+    for (const h of game.sim.q.heroes.entities) h.hero.isBot = false;
+    for (let i = 0; i < RELIC.firstTick + 2; i++) game.update(TICK);
+    const relic = game.world().relic;
+    expect(relic).not.toBeNull();
+    const hud = game.hud();
+    expect(hud.relic).toMatchObject({ type: relic!.type, capturing: null, progress: 0 });
+    expect(hud.announcements.some((a) => a.text.includes('Di vật') && a.tone === 'neutral')).toBe(true);
+
+    const at = game.map.pedestals[relic!.pedestal];
+    game.hero.pos.x = at.x;
+    game.hero.pos.z = at.z;
+    for (let i = 0; i < RELIC.captureTicks + 2; i++) game.update(TICK);
+    const after = game.hud();
+    expect(after.relic).toBeNull();
+    expect(after.buffs).toMatchObject([{ type: relic!.type, mine: true }]);
+    expect(after.announcements.some((a) => a.text.startsWith('Đội bạn chiếm Di vật') && a.tone === 'good')).toBe(true);
   });
 });

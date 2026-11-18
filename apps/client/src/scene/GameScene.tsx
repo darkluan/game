@@ -12,6 +12,7 @@ import { Heroes } from './Heroes';
 import { HealthBars, Swarm } from './Instanced';
 import { Summons, Zones } from './Ground';
 import { Minions, Monsters } from './Minions';
+import { Objectives } from './Objectives';
 import { COLORS } from './palette';
 import { Terrain } from './Terrain';
 
@@ -89,6 +90,7 @@ export default function GameScene({ game, graphics }: { game: GameSession; graph
         {high && <Minions game={game} />}
         <Monsters game={game} />
       </Suspense>
+      <Objectives game={game} />
       <Zones game={game} />
       <Summons game={game} />
       <Swarm game={game} simpleMinions={!high} />

@@ -3,6 +3,7 @@ import type { AbilityHud, GameSession, HudState } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { RACE_TEXT, raceName } from './heroText';
+import { RELIC_EFFECTS, RELIC_NAMES } from './relicText';
 import { Minimap } from './Minimap';
 import { ItemBag, ShopPanel } from './Shop';
 
@@ -113,6 +114,40 @@ function ResourceBar({ hud }: { hud: HudState }) {
   );
 }
 
+const TONE_TEXT = { good: 'text-hp', bad: 'text-danger', neutral: 'text-gold' } as const;
+
+/** Relic status, team buffs and the latest announcements, stacked under the match clock. */
+function EventFeed({ hud }: { hud: HudState }) {
+  const relic = hud.relic;
+  return (
+    <div className="absolute top-14 left-1/2 flex w-[30rem] max-w-[92vw] -translate-x-1/2 flex-col items-center gap-1 text-center text-sm">
+      {relic && (
+        <p className="rounded-md border border-border bg-panel px-3 py-1 text-gold">
+          Di vật {RELIC_NAMES[relic.type]} đang sáng ở rừng dưới
+          {relic.capturing &&
+            ` · ${relic.capturing === 'mine' ? 'đội bạn' : 'đội địch'} đang chiếm ${Math.round(relic.progress * 100)}%`}
+        </p>
+      )}
+      {hud.buffs.map((buff) => (
+        <p
+          key={`${buff.type}${buff.mine}`}
+          title={RELIC_EFFECTS[buff.type]}
+          className={`rounded-md border border-border bg-panel px-3 py-1 tabular-nums ${buff.mine ? 'text-hp' : 'text-danger'}`}
+        >
+          {buff.mine ? 'Đội bạn' : 'Đội địch'} có Di vật {RELIC_NAMES[buff.type]} · {buff.seconds} giây
+        </p>
+      ))}
+      <ul aria-live="polite" className="flex flex-col items-center gap-1">
+        {hud.announcements.map((a) => (
+          <li key={a.id} className={`rounded-md bg-panel px-3 py-1 font-semibold ${TONE_TEXT[a.tone]}`}>
+            {a.text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Scoreboard({ hud }: { hud: HudState }) {
   return (
     <table className="rounded-md border border-border bg-panel text-xs tabular-nums">
@@ -166,6 +201,8 @@ export function Hud({ game, actions }: { game: GameSession; actions: HudActions 
       <div className="absolute top-3 left-1/2 -translate-x-1/2 rounded-md border border-border bg-panel px-4 py-1 text-lg font-semibold tabular-nums">
         {clock(hud.timeSeconds)}
       </div>
+
+      <EventFeed hud={hud} />
 
       <div className="absolute top-3 right-3 flex items-center gap-3">
         <span className="rounded-md border border-border bg-panel px-3 py-1 font-semibold text-gold tabular-nums">

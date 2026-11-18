@@ -23,6 +23,7 @@ import type {
   SoundCue,
   UnitView,
   ViewEntity,
+  WorldView,
 } from './session';
 
 const TICK_MS = 1000 / TICK_RATE;
@@ -192,6 +193,10 @@ export class OnlineGame extends BaseSession implements GameSession {
     return this.heroRoster;
   }
 
+  world(): WorldView {
+    return this.current?.world ?? { relic: null, buffs: [null, null] };
+  }
+
   find(id: number): ViewEntity | undefined {
     return this.views.get(id);
   }
@@ -297,6 +302,8 @@ export class OnlineGame extends BaseSession implements GameSession {
         };
       }),
       winner: snapshot.winner,
+      world: this.world(),
+      announcements: this.announcements(),
     });
   }
 }

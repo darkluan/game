@@ -6,6 +6,7 @@ import type {
   Faction,
   MapDef,
   Race,
+  RelicType,
   StatusType,
   Team,
   Vec2,
@@ -68,8 +69,28 @@ export interface HudState {
   items: string[];
   itemSlots: number;
   canShop: boolean;
+  /** The lit relic pedestal, if any. `mine` is whether the player's team is the one capturing. */
+  relic: { type: RelicType; capturing: 'mine' | 'enemy' | null; progress: number } | null;
+  /** Relic buffs in effect, the player's team first. */
+  buffs: { type: RelicType; mine: boolean; seconds: number }[];
+  /** Recent events worth telling the player about, oldest first. */
+  announcements: Announcement[];
   scores: HeroScore[];
   winner: Team | null;
+}
+
+export interface Announcement {
+  id: number;
+  text: string;
+  /** Good news for the player's team, bad news, or neither. */
+  tone: 'good' | 'bad' | 'neutral';
+  at: number; // seconds on the session clock
+}
+
+/** Match-wide state that is not an entity. */
+export interface WorldView {
+  relic: { pedestal: number; type: RelicType; team: Team | null; progress: number } | null;
+  buffs: ({ relic: RelicType; left: number } | null)[];
 }
 
 export type FxColor = 'ally' | 'enemy' | 'gold' | 'neutral' | 'heal';
@@ -125,8 +146,8 @@ export interface ViewEntity {
   facing: number;
   dead?: boolean;
   health?: { hp: number; maxHp: number };
-  minion?: { type: 'melee' | 'ranged' };
-  monster?: { type: 'big' | 'small' };
+  minion?: { type: 'melee' | 'ranged' | 'beast' };
+  monster?: { type: 'big' | 'small' | 'beast' };
   zone?: { effect: ZoneEffect };
   attacker?: { range: number };
   hero?: { defId: string; stage: number };
@@ -169,6 +190,8 @@ export interface GameSession {
   hud(): HudState;
 
   roster(): readonly RosterHero[];
+  /** The relic in play and the teams' relic buffs. */
+  world(): WorldView;
   /** The entity with this id, when it exists and the player can see it. */
   find(id: number): ViewEntity | undefined;
   heroes(): readonly ViewEntity[];

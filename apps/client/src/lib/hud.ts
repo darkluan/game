@@ -8,7 +8,7 @@ import {
   TICK_RATE,
   type YouSnap,
 } from '@game/core';
-import type { HeroScore, HudState } from './session';
+import type { Announcement, HeroScore, HudState, WorldView } from './session';
 
 export interface HudInput {
   tick: number;
@@ -25,6 +25,8 @@ export interface HudInput {
   you: YouSnap;
   scores: HeroScore[];
   winner: Team | null;
+  world: WorldView;
+  announcements: Announcement[];
 }
 
 const CONDITION_LABELS: [StatusType, string][] = [
@@ -90,6 +92,16 @@ export function buildHud(input: HudInput): HudState {
     items: you.items,
     itemSlots: raceOf(def.race).itemSlots,
     canShop: you.canShop,
+    relic: input.world.relic && {
+      type: input.world.relic.type,
+      capturing: input.world.relic.team === null ? null : input.world.relic.team === input.team ? 'mine' : 'enemy',
+      progress: input.world.relic.progress,
+    },
+    buffs: [input.team, input.team === 0 ? 1 : 0].flatMap((team) => {
+      const buff = input.world.buffs[team];
+      return buff ? [{ type: buff.relic, mine: team === input.team, seconds: Math.ceil(buff.left / TICK_RATE) }] : [];
+    }),
+    announcements: input.announcements,
     scores: [...input.scores].sort((a, b) => a.team - b.team || a.id - b.id),
     winner: input.winner,
   };
