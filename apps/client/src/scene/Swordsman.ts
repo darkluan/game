@@ -1235,23 +1235,32 @@ export class Swordsman {
       this.streamers.push(this.buildStreamer(tip, [0, 0, 0], 4, 0.16, 0.02, ribbon, 0.9, 0.8, spread));
   }
 
-  /** The healer's hood: a deep cowl over her hair, rimmed in metal round the face, peaked behind, a leaf of light at the brow. */
+  /** The healer's hood: a deep, lined cowl standing clear of her hair, its edge rolled in metal, a long point behind and a leaf of light at the brow. */
   private buildHood(): void {
-    const { cloth, trim, gem, hair } = this.materials;
+    const { cloth, trim, gem, hair, dark } = this.materials;
     this.buildFringe();
     for (const side of [-1, 1])
       this.streamers.push(
         this.buildStreamer(this.head, [side * 0.15, 0.12, 0.06], 6, 0.3, 0.05, hair, 0.4, 0.4, side * 0.1),
       );
-    // A shell round the head with a gap left open down the front for the face.
-    const gap = 0.95;
-    const shell = new SphereGeometry(1, 26, 16, UP + gap, Math.PI * 2 - gap * 2);
-    this.mesh(shell, cloth, this.head, [0, 0.19, -0.012], [0, 0, 0], [0.204, 0.205, 0.2]);
-    this.mesh(new TorusGeometry(0.166, 0.012, 8, 30), trim, this.head, [0, 0.19, 0.106], [0, 0, 0], [1, 1.16, 1]);
-    this.mesh(new ConeGeometry(0.1, 0.24, 12), cloth, this.head, [0, 0.31, -0.17], [-1.05, 0, 0]);
-    this.ball(gem, this.head, [0, 0.39, 0.1], [0.02, 0.03, 0.01]);
+    // A deep cowl: a full shell standing well clear of the hair, open down the front so the face sits
+    // back inside it, lined in shadow, its edge rolled in metal.
+    const gap = 0.72;
+    const reach = 0.234;
+    const centre: [number, number, number] = [0, 0.2, -0.02];
+    const shell = new SphereGeometry(1, 28, 18, UP + gap, Math.PI * 2 - gap * 2);
+    this.mesh(shell, cloth, this.head, centre, [0, 0, 0], [reach, reach, reach]);
+    this.mesh(shell, dark, this.head, centre, [0, 0, 0], [reach - 0.014, reach - 0.014, reach - 0.014]);
+    // The rolled edge runs from crown to chin down each side of the opening.
+    for (const turn of [gap - UP, -UP - gap])
+      this.mesh(new TorusGeometry(reach, 0.016, 8, 26, Math.PI), trim, this.head, centre, [0, turn, -UP]);
+    // The point of the hood falls behind, weighted with a bead.
+    this.mesh(new ConeGeometry(0.14, 0.32, 14), cloth, this.head, [0, 0.33, -0.2], [-1.2, 0, 0]);
+    this.ball(trim, this.head, [0, 0.265, -0.345], [0.02, 0.02, 0.02]);
+    // A leaf of light where the two edges meet over the brow.
+    this.ball(gem, this.head, [0, 0.425, 0.06], [0.022, 0.034, 0.012], [0.9, 0, 0]);
     for (const side of [-1, 1])
-      this.ball(trim, this.head, [side * 0.03, 0.38, 0.1], [0.022, 0.01, 0.008], [0, 0, side * 0.6]);
+      this.ball(trim, this.head, [side * 0.032, 0.42, 0.055], [0.024, 0.011, 0.009], [0.9, 0, side * 0.6]);
   }
 
   /** A staff taller than she is in the right hand, and a spell book floating open over the left. */
@@ -1439,6 +1448,16 @@ export class Swordsman {
       }
     }
     if (this.kind === 'healer') {
+      // The hood runs down into a short cape over the shoulders, edged in metal.
+      this.mesh(
+        new CylinderGeometry(0.085, 0.2, 0.1, 24, 1, true),
+        cloth,
+        this.chest,
+        [0, 0.2, -0.005],
+        [0, 0, 0],
+        [1, 1, 0.85],
+      );
+      this.mesh(new TorusGeometry(0.2, 0.009, 6, 32), trim, this.chest, [0, 0.152, -0.005], [UP, 0, 0], [1, 0.85, 1]);
       // A satchel on a strap across the body, and vials of light along the belt.
       this.mesh(
         new CylinderGeometry(0.012, 0.012, 0.3, 6),
