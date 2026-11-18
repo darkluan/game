@@ -83,10 +83,12 @@ interface Props {
   sides?: [ReactNode, ReactNode];
   /** The hero to put on show in the backdrop, when the screen is wide enough to leave room for it. */
   heroId?: string;
+  /** The page shows the game's name as its own big title, so the top bar keeps to the logo and does not say it twice. */
+  titled?: boolean;
 }
 
 /** Frame shared by every screen outside a match: the 3D backdrop, the top bar and the sound controls. */
-export function LobbyShell({ children, aside, actions, heroId, sides }: Props) {
+export function LobbyShell({ children, aside, actions, heroId, sides, titled = false }: Props) {
   const wide = useWideLayout();
   const squat = useSquatLayout();
   // On a wide screen the 3D hero stands in the backdrop, between the columns. A phone held sideways
@@ -124,7 +126,7 @@ export function LobbyShell({ children, aside, actions, heroId, sides }: Props) {
         >
           <Link to="/" className="flex items-center gap-3 text-sm font-extrabold tracking-[0.3em] uppercase">
             <img src="favicon.svg" alt="" className="size-9 squat:size-6" />
-            {tr('Tứ Tộc')}
+            {titled ? <span className="sr-only">{tr('Tứ Tộc')}</span> : tr('Tứ Tộc')}
             {/* The game is still being tried out: say so wherever its name is shown. */}
             <span className="rounded-full border border-primary px-2 py-0.5 text-[10px] tracking-widest text-primary">
               {tr('Bản thử nghiệm')}

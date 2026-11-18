@@ -31,6 +31,7 @@ function Menu() {
 
   return (
     <LobbyShell
+      titled
       heroId={heroId}
       aside={<HeroPicker label={tr('Tướng khi chơi thử với máy')} value={heroId} onChange={setHeroId} />}
       actions={
@@ -44,7 +45,7 @@ function Menu() {
             {creating ? tr('Đang tạo phòng…') : tr('Tạo phòng')}
           </button>
           <button type="button" onClick={() => void navigate('/q')} className="btn btn-ghost cut-corners text-sm">
-            {tr('Tìm trận xếp hạng')}
+            {tr('Tìm trận')}
           </button>
           <button type="button" onClick={startOffline} className="btn btn-ghost cut-corners text-sm">
             {tr('Chơi thử với máy')}
