@@ -1,7 +1,6 @@
 import { tr } from '@/i18n';
 import { lazy, Suspense, useState } from 'react';
 import { HERO_IDS, HEROES, type Race, RACES } from '@game/core';
-import { useNarrowLayout } from '@/hooks/useNarrowLayout';
 import { useSquatLayout } from '@/hooks/useSquatLayout';
 import { useWideLayout } from '@/hooks/useWideLayout';
 import { AbilityPanel } from './AbilityPanel';
@@ -20,9 +19,8 @@ const RACE_EDGE = {
   machine: 'border-race-machine',
 } as const;
 
-/** The races in the order their columns are shown, each with its heroes. */
+/** The races in the order their tabs are shown. */
 const RACE_ORDER: readonly Race[] = ['human', 'dragon', 'god', 'machine'];
-const BY_RACE = RACE_ORDER.map((race) => ({ race, heroIds: HERO_IDS.filter((id) => HEROES[id].race === race) }));
 
 interface Props {
   value: string;
@@ -33,22 +31,19 @@ interface Props {
 }
 
 /**
- * Pick one of the heroes and read what it does. The hero's abilities come first, each with all its
- * numbers; choosing one also has the 3D hero perform it. Below, the heroes stand in one column per
- * race, or on a phone under one tab per race. On a narrow screen the 3D hero is shown here too.
+ * Pick one of the heroes and read what it does. The heroes come first, four to a row under one tab
+ * per race; below them the picked hero's abilities, each with all its numbers. Choosing an ability
+ * also has the 3D hero perform it. On a narrow screen the 3D hero is shown here too.
  */
 export function HeroPicker({ value, onChange, taken = [], label }: Props) {
   const wide = useWideLayout();
   // A phone held sideways has no height to spare for the 3D hero.
   const squat = useSquatLayout();
-  const narrow = useNarrowLayout();
-  // On a wide screen the lobby frame shows the abilities over the 3D hero instead.
   const hero = HEROES[value] ?? HEROES[HERO_IDS[0]];
   const race = RACES[hero.race];
   // The race whose heroes are listed when the list is tabbed; it starts on the picked hero's own race.
   const [raceTab, setRaceTab] = useState<Race | null>(null);
   const shownRace = raceTab ?? hero.race;
-  const tabbed = squat || narrow;
 
   const heroCard = (id: string) => {
     const def = HEROES[id];
@@ -103,45 +98,29 @@ export function HeroPicker({ value, onChange, taken = [], label }: Props) {
         </p>
       </div>
 
-      <AbilityPanel heroId={hero.id} />
+      {/* One race at a time, chosen by tab: four heroes to a row, on every screen. */}
+      <div role="tablist" aria-label={tr('Tộc')} className="grid grid-cols-4 gap-1.5">
+        {RACE_ORDER.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={id === shownRace}
+            onClick={() => setRaceTab(id)}
+            className={`cursor-pointer truncate rounded-md border border-border px-1 py-1.5 text-xs font-bold tracking-wider uppercase transition-colors aria-selected:border-current aria-selected:bg-background/80 squat:py-1 squat:text-[11px] ${
+              id === shownRace ? RACE_TEXT[id] : 'text-muted-foreground'
+            }`}
+          >
+            {tr(RACES[id].name)}
+          </button>
+        ))}
+      </div>
+      <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-1.5">
+        {HERO_IDS.filter((id) => HEROES[id].race === shownRace).map(heroCard)}
+      </div>
 
-      {tabbed ? (
-        // On a phone there is no room for four columns: one race at a time, chosen by tab.
-        <>
-          <div role="tablist" aria-label={tr('Tộc')} className="grid grid-cols-4 gap-1.5">
-            {RACE_ORDER.map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={id === shownRace}
-                onClick={() => setRaceTab(id)}
-                className={`cursor-pointer truncate rounded-md border border-border px-1 py-1.5 text-xs font-bold tracking-wider uppercase transition-colors aria-selected:border-current aria-selected:bg-background/80 squat:py-1 squat:text-[11px] ${
-                  id === shownRace ? RACE_TEXT[id] : 'text-muted-foreground'
-                }`}
-              >
-                {tr(RACES[id].name)}
-              </button>
-            ))}
-          </div>
-          <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-1.5">
-            {HERO_IDS.filter((id) => HEROES[id].race === shownRace).map(heroCard)}
-          </div>
-        </>
-      ) : (
-        <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-2">
-          {BY_RACE.map(({ race: columnRace, heroIds }) => (
-            <div key={columnRace} className="flex min-w-0 flex-col gap-2">
-              <p
-                className={`truncate border-b border-border pb-1 text-center text-xs font-bold tracking-widest uppercase ${RACE_TEXT[columnRace]}`}
-              >
-                {tr(RACES[columnRace].name)}
-              </p>
-              {heroIds.map(heroCard)}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* What the picked hero does, with every number, under the choice of heroes. */}
+      <AbilityPanel heroId={hero.id} />
     </div>
   );
 }
