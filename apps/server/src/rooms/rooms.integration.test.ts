@@ -51,13 +51,14 @@ afterAll(async () => {
 describe('lobby', () => {
   it('uses a 5-character code as the room id and lists who joined', async () => {
     const [a, b] = [await guest(), await guest()];
-    const host = await inLobby(new Client(URL).create('lobby', { token: a.token, nickname: '  An  ' }));
+    const host = await inLobby(new Client(URL).create('lobby', { token: a.token, nickname: '  An  ', heroId: 'mira' }));
     const code = host.room.roomId;
     expect(code).toMatch(/^[A-Z2-9]{5}$/);
-    const other = await inLobby(new Client(URL).joinById(code, { token: b.token, nickname: 'Bình' }));
+    const other = await inLobby(new Client(URL).joinById(code, { token: b.token, nickname: 'Bình', heroId: 'nobody' }));
+    // Each arrives with the hero picked on the home screen; a pick that does not exist is ignored.
     expect(host.state().players).toMatchObject([
-      { nickname: 'An', team: 0, isHost: true },
-      { nickname: 'Bình', team: 1, isHost: false },
+      { nickname: 'An', team: 0, isHost: true, heroId: 'mira' },
+      { nickname: 'Bình', team: 1, isHost: false, heroId: 'kael' },
     ]);
 
     other.room.send('hero', 'vesper');

@@ -83,9 +83,13 @@ export class LobbyRoom extends Room {
     return { playerId };
   }
 
-  onJoin(client: Client, options: { nickname?: unknown } | undefined, auth: Auth): void {
+  onJoin(client: Client, options: { nickname?: unknown; heroId?: unknown } | undefined, auth: Auth): void {
     const nickname = cleanNickname(options?.nickname) || 'Khách';
+    const returning = this.roster.has(auth.playerId);
     if (!this.roster.add(auth.playerId, nickname)) throw new ServerError(409, 'lobby_full');
+    // A newcomer arrives with the hero they had picked on the home screen, if nobody on the team has it.
+    // Someone coming back keeps what they chose here.
+    if (!returning) this.roster.setHero(auth.playerId, options?.heroId);
     // The same player in a second tab takes over; the first tab is dropped.
     this.clientOf.get(auth.playerId)?.leave(4001);
     this.clientOf.set(auth.playerId, client);

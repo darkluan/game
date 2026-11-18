@@ -7,6 +7,7 @@ import { CLOSE_REPLACED, colyseus } from '@/net/colyseus';
 import { ensureGuest } from '@/net/guest';
 import { openMatch } from '@/net/match';
 import { useGameStore } from './gameStore';
+import { useSettingsStore } from './settingsStore';
 
 type Phase = 'idle' | 'connecting' | 'lobby' | 'match' | 'error';
 
@@ -83,18 +84,22 @@ export const useRoomStore = create<RoomStore>((set, get) => {
     });
   }
 
-  async function connect(open: (options: { token: string; nickname: string }) => Promise<Room>): Promise<boolean> {
+  async function connect(
+    open: (options: { token: string; nickname: string; heroId: string }) => Promise<Room>,
+  ): Promise<boolean> {
     set({ phase: 'connecting', error: null });
     try {
+      // The hero picked on the home screen comes along into the room.
+      const heroId = useSettingsStore.getState().heroId;
       let guest = await ensureGuest();
       let room: Room;
       try {
-        room = await open({ token: guest.token, nickname });
+        room = await open({ token: guest.token, nickname, heroId });
       } catch (err) {
         // A token the server no longer accepts (its secret changed): get a new identity once.
         if ((err as { code?: unknown } | null)?.code !== 401) throw err;
         guest = await ensureGuest(true);
-        room = await open({ token: guest.token, nickname });
+        room = await open({ token: guest.token, nickname, heroId });
       }
       token = guest.token;
       attachLobby(room, guest.playerId);
