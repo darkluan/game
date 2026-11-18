@@ -1,6 +1,5 @@
 import {
   BufferGeometry,
-  CanvasTexture,
   ConeGeometry,
   CylinderGeometry,
   DoubleSide,
@@ -13,13 +12,11 @@ import {
   MeshStandardMaterial,
   type MeshStandardMaterialParameters,
   OctahedronGeometry,
-  RepeatWrapping,
   SphereGeometry,
-  SRGBColorSpace,
-  type Texture,
   Vector3,
 } from 'three';
 import type { ActorAction } from '@/lib/session';
+import { skinned } from './scaleSkin';
 
 /** The colours of a hydra, by part. */
 export interface HydraColours {
@@ -30,6 +27,11 @@ export interface HydraColours {
   belly: string;
   horn: string;
   wing: string;
+  /**
+   * The fins along the neck, back and tail, the mane, and the whiskers and beard: thin, flame-like and
+   * always moving. The wings' colour when left out.
+   */
+  fin?: string;
   /** Eyes, crystals, the light inside the mouths and the fire showing between the plates. */
   glow: string;
   /** How many heads it has; three unless said otherwise. */
@@ -77,6 +79,13 @@ interface Head {
   holder: Group;
   jaw: Group;
   side: -1 | 0 | 1;
+}
+
+/** A whisker, a strand of beard or a tongue of flame: thin pieces, each hinged to the last, that never hang still. */
+interface Wisp {
+  pieces: Group[];
+  sway: number;
+  phase: number;
 }
 
 interface Leg {
@@ -158,128 +167,6 @@ export const HYDRA_ACTIONS: Record<string, { clip: string; seconds: number }> = 
 
 const DEATH_SECONDS = 0.9;
 
-/** How wide and tall one scale is drawn on the skin texture, in pixels. The texture holds 8 by 16 of them. */
-const SCALE_W = 32;
-const SCALE_H = 16;
-const SKIN_SIZE = 256;
-
-let skinMaps: { colour: Texture; bump: Texture; cracks: Texture } | null = null;
-
-/**
- * The dragon's skin, drawn once and shared by every dragon: rows of overlapping, pointed scales.
- * Three pictures of the same scales: their shading (multiplied into the body colour), their
- * height (so light catches each scale's edge), and thin cracks around some of them, which glow.
- */
-function skin(): { colour: Texture; bump: Texture; cracks: Texture } {
-  if (skinMaps) return skinMaps;
-  const canvases = [0, 1, 2].map(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = SKIN_SIZE;
-    return canvas;
-  });
-  const [colour, bump, cracks] = canvases.map((canvas) => canvas.getContext('2d')!);
-  colour.fillStyle = '#6a6a6a';
-  colour.fillRect(0, 0, SKIN_SIZE, SKIN_SIZE);
-  bump.fillStyle = '#000';
-  bump.fillRect(0, 0, SKIN_SIZE, SKIN_SIZE);
-  cracks.fillStyle = '#000';
-  cracks.fillRect(0, 0, SKIN_SIZE, SKIN_SIZE);
-  cracks.lineWidth = 1.6;
-  cracks.strokeStyle = '#fff';
-  cracks.lineCap = 'round';
-
-  /** One scale: a shield shape, round at the top and drawn to a point at the bottom. */
-  const outline = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
-    const w = SCALE_W * 0.56;
-    const h = SCALE_H * 2.1;
-    ctx.beginPath();
-    ctx.moveTo(x - w, y);
-    ctx.quadraticCurveTo(x - w, y + h * 0.55, x, y + h);
-    ctx.quadraticCurveTo(x + w, y + h * 0.55, x + w, y);
-    ctx.quadraticCurveTo(x, y - h * 0.3, x - w, y);
-    ctx.closePath();
-  };
-  // A fixed sequence, not Math.random: every dragon and every visit gets the same skin.
-  let seed = 7;
-  const chance = () => ((seed = (seed * 16807) % 2147483647) % 1000) / 1000;
-  const rows = SKIN_SIZE / SCALE_H;
-  const columns = SKIN_SIZE / SCALE_W;
-  // Bottom row first, so each row overlaps the one below it. One extra row and column each way so the edges tile.
-  for (let row = rows + 2; row >= -2; row--) {
-    for (let column = -1; column <= columns; column++) {
-      const x = column * SCALE_W + (row % 2 ? SCALE_W / 2 : 0);
-      const y = row * SCALE_H;
-      const lit = colour.createLinearGradient(x, y - 4, x, y + SCALE_H * 2.1);
-      // Each scale is light along its ridge and dark where it tucks under its neighbours.
-      lit.addColorStop(0, '#3c3c3c');
-      lit.addColorStop(0.45, '#e6e6e6');
-      lit.addColorStop(1, '#9a9a9a');
-      outline(colour, x, y);
-      colour.fillStyle = lit;
-      colour.fill();
-      colour.lineWidth = 1.4;
-      colour.strokeStyle = '#141414';
-      colour.stroke();
-      // A ridge down the middle of the scale.
-      colour.beginPath();
-      colour.moveTo(x, y + 5);
-      colour.lineTo(x, y + SCALE_H * 2.1 - 3);
-      colour.lineWidth = 1;
-      colour.strokeStyle = 'rgba(255,255,255,0.35)';
-      colour.stroke();
-
-      const height = bump.createLinearGradient(x, y - 4, x, y + SCALE_H * 2.1);
-      height.addColorStop(0, '#202020');
-      height.addColorStop(0.55, '#ffffff');
-      height.addColorStop(1, '#c8c8c8');
-      outline(bump, x, y);
-      bump.fillStyle = height;
-      bump.fill();
-      bump.lineWidth = 2;
-      bump.strokeStyle = '#000';
-      bump.stroke();
-
-      // Fire shows around the edge of about one scale in nine.
-      const cracked = chance() < 0.11;
-      outline(cracks, x, y);
-      cracks.fillStyle = '#000';
-      cracks.fill();
-      if (cracked) cracks.stroke();
-    }
-  }
-  const [colourMap, bumpMap, crackMap] = canvases.map((canvas) => {
-    const texture = new CanvasTexture(canvas);
-    texture.wrapS = texture.wrapT = RepeatWrapping;
-    texture.anisotropy = 4;
-    return texture;
-  });
-  colourMap.colorSpace = SRGBColorSpace;
-  crackMap.colorSpace = SRGBColorSpace;
-  skinMaps = { colour: colourMap, bump: bumpMap, cracks: crackMap };
-  return skinMaps;
-}
-
-/** The skin's three pictures, repeated `across` by `along` times over each part they cover. */
-function skinned(glow: string, across: number, along: number): MeshStandardMaterialParameters {
-  const tile = (texture: Texture) => {
-    const copy = texture.clone();
-    copy.repeat.set(across, along);
-    copy.needsUpdate = true;
-    return copy;
-  };
-  const maps = skin();
-  return {
-    map: tile(maps.colour),
-    bumpMap: tile(maps.bump),
-    bumpScale: 2.2,
-    emissiveMap: tile(maps.cracks),
-    emissive: glow,
-    emissiveIntensity: 1.4,
-    roughness: 0.48,
-    metalness: 0.4,
-  };
-}
-
 /**
  * How a rib is turned so that it leaves the spine going outward and a little up, and then curls
  * down and in round the body: a horn curls toward its own +z, so that axis is pointed downward.
@@ -306,6 +193,9 @@ export class Hydra {
   private readonly eyes: MeshBasicMaterial;
   private readonly materials: Record<'scale' | 'hide' | 'accent' | 'belly' | 'horn' | 'dark', MeshStandardMaterial>;
   private readonly wingMaterial: MeshStandardMaterial;
+  private readonly fin: MeshStandardMaterial;
+  private readonly wisps: Wisp[] = [];
+  private readonly motes: Mesh[] = [];
   private readonly castShadow: boolean;
   /** One head on a thick neck, not three on slender ones. */
   private readonly single: boolean;
@@ -351,6 +241,14 @@ export class Hydra {
       emissiveIntensity: 0.03,
     });
 
+    this.fin = smooth(colours.fin ?? colours.wing, {
+      side: DoubleSide,
+      emissive: colours.fin ?? colours.wing,
+      emissiveIntensity: 0.55,
+      roughness: 0.5,
+      metalness: 0.05,
+    });
+
     if (this.skeleton) this.buildBoneTorso();
     else this.buildTorso();
     for (const side of this.single ? ([0] as const) : SIDES) this.heads.push(this.buildNeckAndHead(side));
@@ -358,6 +256,7 @@ export class Hydra {
     for (const side of [-1, 1]) this.wings.push({ root: this.buildWing(side), side });
     this.buildLegs();
     if (this.heavy) this.buildBoneArmour();
+    if (!this.skeleton) this.buildMotes();
     // Thin bones for legs.
     if (this.skeleton) for (const leg of this.legs) leg.hip.scale.set(0.5, 1, 0.5);
 
@@ -477,8 +376,21 @@ export class Hydra {
       const z = 0.38 - i * 0.115;
       const tall = 1.3 - Math.abs(i - 1.5) * 0.13;
       const y = 0.83 - i * 0.012 - Math.abs(i - 2) * 0.012;
-      this.mesh(new ConeGeometry(0.04, 0.24, 10), horn, this.body, [0, y, z], [-0.35, 0, 0], [1, tall, 1]);
-      this.ball(horn, this.body, [0, y - 0.1 * tall, z + 0.035 * tall], [0.045, 0.03, 0.05]);
+      if (this.heavy) {
+        this.mesh(new ConeGeometry(0.04, 0.24, 10), horn, this.body, [0, y, z], [-0.35, 0, 0], [1, tall, 1]);
+        this.ball(horn, this.body, [0, y - 0.1 * tall, z + 0.035 * tall], [0.045, 0.03, 0.05]);
+      } else {
+        // A fin: thin as a blade, swept back, each a little different in height from the last.
+        const reach = 0.34 * tall * (1 + Math.sin(i * 1.9) * 0.18);
+        this.mesh(
+          new ConeGeometry(0.075, reach, 6),
+          this.fin,
+          this.body,
+          [0, y - 0.04 + reach * 0.32, z - reach * 0.22],
+          [-0.7, 0, 0],
+          [0.22, 1, 1],
+        );
+      }
     }
     // Shoulder plates with a glowing crystal set in each, and a horn curving up behind.
     const shard = new OctahedronGeometry(1, 0);
@@ -555,13 +467,25 @@ export class Hydra {
       this.ball(hide, segment, [0, 0, 0], [r1, r1, r1]);
       // Local -z is the back of the neck, +z the throat.
       if (i % spikes === 0)
-        this.mesh(
-          new ConeGeometry(r1 * 0.34, r1 * 2.9, 10),
-          horn,
-          segment,
-          [0, length * 0.5, -r1 * 1.4],
-          [-UP + 0.55, 0, 0],
-        );
+        if (this.heavy)
+          this.mesh(
+            new ConeGeometry(r1 * 0.34, r1 * 2.9, 10),
+            horn,
+            segment,
+            [0, length * 0.5, -r1 * 1.4],
+            [-UP + 0.55, 0, 0],
+          );
+        else {
+          const tall = r1 * (3.1 + Math.sin(i * 1.7) * 0.7);
+          this.mesh(
+            new ConeGeometry(r1 * 0.6, tall, 6),
+            this.fin,
+            segment,
+            [0, length * 0.45, -r1 * 0.85 - tall * 0.36],
+            [-UP + 0.7, 0, 0],
+            [0.22, 1, 1],
+          );
+        }
       // Broad plates down the throat, with the fire inside showing in the gaps between them.
       this.ball(belly, segment, [0, length * 0.55, r1 * 0.72], [r1 * 0.82, length * 0.42, r1 * 0.42]);
       this.ball(this.glowing, segment, [0, length * 0.05, r1 * 0.68], [r1 * 0.6, length * 0.14, r1 * 0.34]);
@@ -574,13 +498,24 @@ export class Hydra {
             [r1 * 0.24, length * 0.42, r1 * 0.5],
           );
           // A row of spikes down each side of the neck, raked back.
-          this.mesh(
-            new ConeGeometry(r1 * 0.2, r1 * 1.7, 8),
-            horn,
-            segment,
-            [side * r1 * 1.15, length * 0.3, -r1 * 0.55],
-            [-0.9, 0, -side * 1.15],
-          );
+          if (this.heavy)
+            this.mesh(
+              new ConeGeometry(r1 * 0.2, r1 * 1.7, 8),
+              horn,
+              segment,
+              [side * r1 * 1.15, length * 0.3, -r1 * 0.55],
+              [-0.9, 0, -side * 1.15],
+            );
+          else if (i % 2 === 0)
+            // A small fin on the flank of every other segment.
+            this.mesh(
+              new ConeGeometry(r1 * 0.34, r1 * 1.5, 5),
+              this.fin,
+              segment,
+              [side * r1 * 1.05, length * 0.3, -r1 * 0.3],
+              [-0.8, 0, -side * 1.3],
+              [1, 1, 0.2],
+            );
         }
       this.body.add(segment);
       segments.push(segment);
@@ -632,6 +567,11 @@ export class Hydra {
       this.ball(dark, head, [side * 0.055, 0.05, 0.815], [0.018, 0.014, 0.024]);
       // Two swept-back horns each side, a long one over a short one, and a spike curling off the cheek.
       this.horn(head, [side * 0.19, 0.2, -0.1], [-1.05, 0, -side * 0.32], 0.95, 0.078, 0.75);
+      // Two tines branch up off the long horn, as on an antler.
+      this.horn(head, [side * 0.23, 0.4, -0.38], [-0.25, 0, -side * 0.35], 0.3, 0.034, -0.7);
+      this.horn(head, [side * 0.27, 0.52, -0.6], [-0.1, 0, -side * 0.55], 0.24, 0.028, -0.6);
+      // A long whisker from beside the nose.
+      this.wisp(head, [side * 0.1, 0.0, 0.76], [0.95, 0, -side * 1.1], 9, this.heavy ? 0.7 : 1.05, 0.03, this.fin, 1);
       this.horn(head, [side * 0.27, 0.08, -0.12], [-1.3, 0, -side * 0.75], 0.55, 0.052, 0.6);
       this.horn(head, [side * 0.26, -0.08, 0.04], [-1.6, 0, -side * 1.25], 0.32, 0.042, 0.9);
       // A fin behind the jaw.
@@ -665,17 +605,33 @@ export class Hydra {
         this.ball(belly, head, [side * 0.2, -0.03, 0.2], [0.05, 0.1, 0.18]);
       }
     }
-    // A mane of spikes fanning back from behind the skull.
-    for (let i = 0; i < 9; i++) {
-      const a = (i / 8 - 0.5) * 2.5;
-      this.horn(
-        head,
-        [Math.sin(a) * 0.23, 0.02 + Math.cos(a) * 0.15, -0.2],
-        [-1.35 - Math.cos(a) * 0.2, 0, -Math.sin(a) * 0.95],
-        0.44,
-        0.034,
-        0.3,
-      );
+    if (this.heavy) {
+      // A mane of spikes fanning back from behind the skull.
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 8 - 0.5) * 2.5;
+        this.horn(
+          head,
+          [Math.sin(a) * 0.23, 0.02 + Math.cos(a) * 0.15, -0.2],
+          [-1.35 - Math.cos(a) * 0.2, 0, -Math.sin(a) * 0.95],
+          0.44,
+          0.034,
+          0.3,
+        );
+      }
+    } else {
+      // A mane of flame: three rows of thin fins swept back over the skull and down the neck.
+      for (let row = 0; row < 3; row++)
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 5 - 0.5) * 2.5;
+          this.mesh(
+            new ConeGeometry(0.06, 0.5 - row * 0.06, 5),
+            this.fin,
+            head,
+            [Math.sin(a) * 0.22, 0.06 + Math.cos(a) * 0.14 - row * 0.03, -0.24 - row * 0.13],
+            [-1.25 - row * 0.1, 0, -Math.sin(a) * 0.85],
+            [0.4, 1, 1],
+          );
+        }
     }
     // A crest of spikes over the skull and a crystal in the forehead.
     for (let i = 0; i < 4; i++)
@@ -693,6 +649,11 @@ export class Hydra {
       for (let i = 0; i < 5; i++)
         this.mesh(new ConeGeometry(0.018, 0.08, 8), belly, jaw, [side * (0.135 - i * 0.02), 0.04, 0.46 + i * 0.1]);
     this.horn(jaw, [0, -0.07, 0.86], [Math.PI * 0.85, 0, 0], 0.16, 0.03, 0.6);
+    // A beard under the chin; a dragon with three heads also drips light from each mouth.
+    for (const x of [-0.05, 0, 0.05]) this.wisp(jaw, [x, -0.08, 0.62], [2.6, 0, x * 4], 5, 0.4, 0.045, this.fin, 0.8);
+    if (!this.single)
+      for (const x of [-0.06, 0.06])
+        this.wisp(jaw, [x, -0.02, 0.8], [Math.PI, 0, 0], 5, 0.34, 0.022, this.glowing, 0.5);
     head.add(jaw);
     return jaw;
   }
@@ -703,7 +664,7 @@ export class Hydra {
       : this.buildChain(new Vector3(0, 0.5, -0.56), TAIL_SEGMENTS, 0.1, 0.15, 0.022, 2, false);
     // A blade at the tip, with barbs and a crystal at its heart.
     const tip = chain.segments[TAIL_SEGMENTS - 1];
-    const { horn, belly } = this.materials;
+    const { belly } = this.materials;
     if (this.heavy) {
       // A club of bone at the end of the tail, studded with spikes.
       this.ball(belly, tip, [0, 0.16, 0], [0.13, 0.15, 0.13]);
@@ -720,7 +681,10 @@ export class Hydra {
       }
       return chain;
     }
-    this.ball(horn, tip, [0, 0.2, 0], [0.028, 0.18, 0.11]);
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2;
+      this.wisp(tip, [0, 0.1, 0], [Math.cos(a) * 0.5, 0, Math.sin(a) * 0.5], 5, 0.36, 0.055, this.fin, 1.2);
+    }
     this.mesh(new OctahedronGeometry(1, 0), this.glowing, tip, [0, 0.18, 0], [0, 0, 0], [0.035, 0.07, 0.035]);
     for (const side of [-1, 1]) this.horn(tip, [0, 0.08, side * 0.05], [side * 1.2, 0, 0], 0.16, 0.022, -side * 0.8);
     // Spikes out to both sides along the last third of the tail.
@@ -759,7 +723,10 @@ export class Hydra {
     // A hooked claw at the wrist.
     this.horn(wing, [wrist.x, wrist.y + 0.03, wrist.z + 0.04], [0.5, 0, -side * 0.2], 0.4, 0.045, 1.9);
     // Each finger ends in a claw hooking down past the edge of the skin.
-    for (const tip of tips) this.horn(wing, [tip.x, tip.y, tip.z], [2.2, 0, side * 0.9], 0.16, 0.014, 0.8);
+    for (const tip of tips) {
+      this.horn(wing, [tip.x, tip.y, tip.z], [2.2, 0, side * 0.9], 0.16, 0.014, 0.8);
+      this.wisp(wing, [tip.x, tip.y, tip.z], [2.6, 0, side * 0.5], 4, 0.26, 0.03, this.fin, 1.1);
+    }
 
     // Skin: fans between the fingers, the trailing edge curving in between each pair of tips.
     const points: number[] = [];
@@ -891,6 +858,59 @@ export class Hydra {
     this.body.scale.set(1.18, 1.04, 1.04);
   }
 
+  /** A thin strand rising from a point, to be waved about. */
+  private wisp(
+    parent: Group,
+    position: [number, number, number],
+    rotation: [number, number, number],
+    count: number,
+    length: number,
+    width: number,
+    material: MeshStandardMaterial,
+    sway: number,
+  ): void {
+    const pieces: Group[] = [];
+    const step = length / count;
+    const base = new Group();
+    base.position.set(...position);
+    base.rotation.set(...rotation);
+    parent.add(base);
+    let holder = new Group();
+    base.add(holder);
+    for (let i = 0; i < count; i++) {
+      const taper = 1 - (i / count) * 0.8;
+      const strand = new CylinderGeometry((width * taper * 0.7) / 2, (width * taper) / 2, step * 1.1, 6);
+      strand.translate(0, step / 2, 0);
+      this.mesh(strand, material, holder);
+      pieces.push(holder);
+      const next = new Group();
+      next.position.y = step;
+      holder.add(next);
+      holder = next;
+    }
+    this.wisps.push({ pieces, sway, phase: Math.random() * 6 });
+  }
+
+  /** Shards that circle the dragon: lit crystals, or for the heavy build splinters of bone with a light in each. */
+  private buildMotes(): void {
+    const shard = new OctahedronGeometry(1, 0);
+    const count = this.heavy ? 5 : 7;
+    for (let i = 0; i < count; i++) {
+      const size = 0.03 + (i % 3) * 0.012;
+      const mote = this.mesh(
+        shard,
+        this.heavy ? this.materials.belly : this.glowing,
+        this.body,
+        [0, 0, 0],
+        [i, i * 2, 0],
+        [size * 0.6, size * 1.6, size * 0.6],
+      );
+      mote.castShadow = false;
+      if (this.heavy) this.ball(this.glowing, this.body, [0, 0, 0], [size * 0.35, size * 0.35, size * 0.35]);
+      this.motes.push(mote);
+    }
+  }
+
   // ---- moving ----
 
   /** Forget everything a previous owner did. */
@@ -999,6 +1019,30 @@ export class Hydra {
     this.materials.hide.emissiveIntensity = embers;
     this.wingMaterial.emissiveIntensity = 0.03 + flare * 0.4;
     this.eyes.color.copy(this.glowing.emissive).multiplyScalar(alive * 0.85 + 0.15);
+    this.fin.emissiveIntensity = (0.5 + Math.sin(t * 4.1) * 0.12 + flare * 1.3) * alive + 0.04;
+
+    // Whiskers, beard and flame are never still.
+    for (const wisp of this.wisps) {
+      const count = wisp.pieces.length;
+      wisp.pieces.forEach((piece, i) => {
+        const f = (i + 1) / count;
+        piece.rotation.x =
+          Math.sin(t * 3.2 + wisp.phase - i * 0.8) * 0.22 * wisp.sway * f + (i === 0 ? 0 : -0.06 - walk * 0.1);
+        piece.rotation.z = Math.cos(t * 2.3 + wisp.phase - i * 0.6) * 0.18 * wisp.sway * f;
+      });
+    }
+    // The shards circle the body at different heights and speeds, drawing in when it gathers power.
+    this.motes.forEach((mote, i) => {
+      const a = t * (0.5 + (i % 3) * 0.18) + (i / this.motes.length) * Math.PI * 2;
+      const reach = (0.78 + Math.sin(t * 0.9 + i) * 0.1) * (1 - flare * 0.35);
+      mote.position.set(
+        Math.sin(a) * reach,
+        0.55 + Math.sin(t * 1.3 + i * 1.7) * 0.22 + flare * 0.25,
+        Math.cos(a) * reach * 1.15,
+      );
+      mote.rotation.set(t * 1.1 + i, t * 1.7 + i * 2, 0);
+      mote.visible = alive > 0.5;
+    });
   }
 
   /** Bend the body for this frame: stand, walk, act or die. */

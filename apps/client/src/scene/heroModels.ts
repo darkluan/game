@@ -1,5 +1,6 @@
 import type { ActorOptions, Rig } from './Actor';
 import { HYDRA_ACTIONS, type HydraColours } from './Hydra';
+import { LONG_DRAGON_ACTIONS, type LongDragonColours } from './LongDragon';
 import { SWORDSMAN_ACTIONS, type SwordsmanColours } from './Swordsman';
 import { MODELS } from './models';
 
@@ -24,10 +25,12 @@ export interface HeroLook {
   brightness?: number;
   /** Multiplies the size on the hero-picking screens only, for a hero that fills too much of the stage there. */
   showcaseScale?: number;
-  /** Set for a hero drawn as a dragon built in code; `model` is then empty. */
+  /** Set for a hero drawn as a winged or many-headed dragon built in code; `model` is then empty. */
   hydra?: HydraColours;
   /** Set for a hero drawn as the wandering swordsman built in code; `model` is then empty. */
   swordsman?: SwordsmanColours;
+  /** Set for a hero drawn as the long eastern dragon built in code; `model` is then empty. */
+  longDragon?: LongDragonColours;
 }
 
 export interface HeroModel extends HeroLook {
@@ -115,27 +118,19 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     },
     rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
-  // Fire: the red skeleton of a dragon with a fire burning in its ribs, built in code. It has one body
-  // and simply grows as it evolves.
+  // Fire: a dragon of the eastern kind, built in code: a long crimson body swimming through the air, a
+  // mane and whiskers of flame, antlers, and a burning pearl. It has one body and simply grows as it evolves.
   ignar: {
     model: '',
     hide: [],
     scale: 1,
-    height: 2.1,
-    showcaseScale: 0.9,
-    hydra: {
-      heads: 1,
-      skeleton: true,
-      scale: '#b8322a',
-      accent: '#7c1d1a',
-      belly: '#d8574a',
-      horn: '#5a1614',
-      wing: '#5c1410',
-      glow: '#ffae3b',
-    },
-    rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
+    height: 2.2,
+    showcaseScale: 0.85,
+    longDragon: { scale: '#b3261e', belly: '#e9b44a', mane: '#ff8a1e', horn: '#f2e2b8', glow: '#ffd24a' },
+    rig: { idle: '', run: '', death: '', actions: LONG_DRAGON_ACTIONS },
   },
-  // Stone: a heavy dragon armoured in pale bone, built in code. It has one body and simply grows as it evolves.
+  // Stone: a heavy dragon armoured in pale bone, with ram's horns and a club on its tail, splinters of
+  // bone circling it. Built in code; it has one body and simply grows as it evolves.
   baru: {
     model: '',
     hide: [],
@@ -151,6 +146,7 @@ export const HERO_MODELS: Record<string, HeroModel> = {
       belly: '#a8a192',
       horn: '#8e887b',
       wing: '#8f95a3',
+      fin: '#c9c2ae',
       glow: '#4fe3b0',
     },
     rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
@@ -206,8 +202,8 @@ export const HERO_MODELS: Record<string, HeroModel> = {
       },
     },
   },
-  // Storm: a black dragon with fire showing between its plates, built in code. It has one body and
-  // simply grows as it evolves.
+  // Storm: a black winged dragon with fire showing between its scales, fins and a mane of flame, and
+  // burning shards circling it. Built in code; it has one body and simply grows as it evolves.
   zerak: {
     model: '',
     hide: [],
@@ -221,6 +217,7 @@ export const HERO_MODELS: Record<string, HeroModel> = {
       belly: '#3c3e48',
       horn: '#5a5c68',
       wing: '#17171c',
+      fin: '#b8321c',
       glow: '#ff4a1a',
     },
     rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
@@ -259,8 +256,8 @@ export const HERO_MODELS: Record<string, HeroModel> = {
       },
     },
   },
-  // Venom: a three-headed dragon in black-green scales with violet wings, its venom glowing between
-  // the scales and in all three throats. Built in code; it has one body and simply grows as it evolves.
+  // Venom: a three-headed dragon in black-green scales with violet wings and fins, venom glowing between
+  // the scales and dripping from all three mouths. Built in code; it has one body and simply grows as it evolves.
   nyx: {
     model: '',
     hide: [],
@@ -273,6 +270,7 @@ export const HERO_MODELS: Record<string, HeroModel> = {
       belly: '#6f7d3a',
       horn: '#2c2338',
       wing: '#3d2470',
+      fin: '#8a4be0',
       glow: '#b4ff3a',
     },
     rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },

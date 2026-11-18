@@ -1,4 +1,8 @@
 import {
+  CanvasTexture,
+  RepeatWrapping,
+  SRGBColorSpace,
+  type Texture,
   ConeGeometry,
   CylinderGeometry,
   DoubleSide,
@@ -12,6 +16,7 @@ import {
 } from 'three';
 import type { BufferGeometry } from 'three';
 import type { ActorAction } from '@/lib/session';
+import { skinned } from './scaleSkin';
 
 /** The colours of a young blade-master, by part. */
 export interface SwordsmanColours {
@@ -47,6 +52,99 @@ export interface SwordsmanColours {
 const UP = Math.PI / 2;
 const BALL = new SphereGeometry(1, 20, 14);
 const DEATH_SECONDS = 0.8;
+/**
+ * The parts are built short and round, then drawn out: long legs, a longer body, a smaller head. These are
+ * how far each is stretched, and where that puts the hips.
+ */
+const LEG_STRETCH = 1.75;
+const BODY_STRETCH = 1.28;
+const BODY_SLIM = 0.86;
+const ARM_STRETCH = 1.3;
+const HEAD_SIZE = 0.66;
+const HIP_HEIGHT = 0.3 * LEG_STRETCH - 0.03;
+
+let brocadeMaps: { colour: Texture; thread: Texture } | null = null;
+
+/**
+ * Embroidered cloth, drawn once and shared: a fine weave with curling cloud motifs worked over it.
+ * Two pictures of the same cloth: its shading (multiplied into the cloth's colour) and the
+ * embroidery thread alone, which is made to glow.
+ */
+function brocade(): { colour: Texture; thread: Texture } {
+  if (brocadeMaps) return brocadeMaps;
+  const size = 256;
+  const [colourCanvas, threadCanvas] = [0, 1].map(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    return canvas;
+  });
+  const colour = colourCanvas.getContext('2d')!;
+  const thread = threadCanvas.getContext('2d')!;
+  colour.fillStyle = '#b4b4b4';
+  colour.fillRect(0, 0, size, size);
+  thread.fillStyle = '#000';
+  thread.fillRect(0, 0, size, size);
+  // The weave: fine diagonal lines both ways.
+  colour.lineWidth = 1;
+  for (let i = -size; i < size * 2; i += 6) {
+    colour.strokeStyle = 'rgba(0,0,0,0.16)';
+    colour.beginPath();
+    colour.moveTo(i, 0);
+    colour.lineTo(i + size, size);
+    colour.stroke();
+    colour.strokeStyle = 'rgba(255,255,255,0.12)';
+    colour.beginPath();
+    colour.moveTo(i, size);
+    colour.lineTo(i + size, 0);
+    colour.stroke();
+  }
+  /** One cloud: three curls of thread spiralling out of a point. */
+  const cloud = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+    for (const [dx, dy, turn] of [
+      [0, 0, 0],
+      [r * 0.9, r * 0.25, 2.1],
+      [-r * 0.8, r * 0.35, 4.2],
+    ]) {
+      ctx.beginPath();
+      for (let a = 0; a < Math.PI * 2.6; a += 0.2) {
+        const reach = r * (0.15 + a * 0.085);
+        const px = x + dx + Math.cos(a + turn) * reach;
+        const py = y + dy + Math.sin(a + turn) * reach * 0.8;
+        if (a === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+  };
+  for (const ctx of [colour, thread]) {
+    ctx.lineCap = 'round';
+    ctx.lineWidth = ctx === colour ? 3.2 : 2;
+    ctx.strokeStyle = ctx === colour ? '#f4f4f4' : '#fff';
+    // Motifs on a staggered grid; those near an edge are drawn again on the far side so the cloth tiles.
+    for (let row = 0; row < 4; row++)
+      for (let column = 0; column < 4; column++) {
+        const x = column * 64 + (row % 2 ? 32 : 0) + 16;
+        const y = row * 64 + 24;
+        for (const ox of [-size, 0, size]) cloud(ctx, x + ox, y, 13);
+      }
+    // A border line with dots along one edge, which falls on hems.
+    ctx.lineWidth = ctx === colour ? 4 : 3;
+    ctx.beginPath();
+    ctx.moveTo(0, size - 8);
+    ctx.lineTo(size, size - 8);
+    ctx.stroke();
+  }
+  const [colourMap, threadMap] = [colourCanvas, threadCanvas].map((canvas) => {
+    const texture = new CanvasTexture(canvas);
+    texture.wrapS = texture.wrapT = RepeatWrapping;
+    texture.anisotropy = 4;
+    texture.colorSpace = SRGBColorSpace;
+    texture.repeat.set(2, 1.5);
+    return texture;
+  });
+  brocadeMaps = { colour: colourMap, thread: threadMap };
+  return brocadeMaps;
+}
 
 /** How long each action lasts, in seconds; the same table an animated model's rig carries. */
 export const SWORDSMAN_ACTIONS: Record<string, { clip: string; seconds: number }> = {
@@ -318,20 +416,29 @@ export class Swordsman {
     const make = (color: string, extra: MeshStandardMaterialParameters = {}) =>
       new MeshStandardMaterial({ color, roughness: 0.75, metalness: 0, ...extra });
     this.materials = {
-      cloth: make(colours.cloth, { side: DoubleSide }),
-      armour: make(colours.armour, { roughness: 0.4, metalness: 0.5 }),
+      // Embroidered cloth, its thread glowing in the colour of the metal trim.
+      cloth: make(colours.cloth, {
+        side: DoubleSide,
+        map: brocade().colour,
+        emissiveMap: brocade().thread,
+        emissive: colours.trim,
+        emissiveIntensity: 0.9,
+        roughness: 0.65,
+      }),
+      // Armour of small overlapping plates, light showing between some of them: the dragons' own scales, in metal.
+      armour: make(colours.armour, { ...skinned(colours.gem, 1.6, 1), roughness: 0.35, metalness: 0.65 }),
       trim: make(colours.trim, { roughness: 0.3, metalness: 0.8 }),
-      ribbon: make(colours.ribbon, { side: DoubleSide, emissive: colours.ribbon, emissiveIntensity: 0.35 }),
+      ribbon: make(colours.ribbon, { side: DoubleSide, emissive: colours.ribbon, emissiveIntensity: 0.9 }),
       skin: make(colours.skin, { roughness: 0.6 }),
       hair: make(colours.hair, { roughness: 0.45 }),
       blade: make(colours.blade, { roughness: 0.2, metalness: 0.9 }),
-      gem: make(colours.gem, { roughness: 0.2, emissive: colours.gem, emissiveIntensity: 0.9 }),
+      gem: make(colours.gem, { roughness: 0.2, emissive: colours.gem, emissiveIntensity: 1.6 }),
       dark: make('#14161c'),
     };
 
     this.model.scale.setScalar(height);
     this.root.add(this.model);
-    this.hips.position.y = 0.3;
+    this.hips.position.y = HIP_HEIGHT;
     this.model.add(this.hips);
 
     for (const side of [-1, 1]) this.legs.push(this.buildLeg(side));
@@ -341,10 +448,38 @@ export class Swordsman {
     if (this.archer) this.buildBowAndQuiver();
     else this.buildSabre();
     this.buildHead();
+    this.buildCape();
+    // Draw the short round figure out into a tall, lean one. Each part is stretched in itself, joint by
+    // joint: scaling a whole limb at its root would skew whatever bends below it.
+    for (const leg of this.legs) {
+      this.stretch(leg.upper, LEG_STRETCH, 0.82);
+      this.stretch(leg.lower, LEG_STRETCH, 0.82);
+    }
+    this.stretch(this.chest, BODY_STRETCH, BODY_SLIM);
+    for (const arm of [this.swordArm, this.freeArm]) {
+      this.stretch(arm.upper, ARM_STRETCH, 0.88);
+      this.stretch(arm.lower, ARM_STRETCH, 0.88);
+    }
+    for (const flap of this.tabard) flap.scale.y = LEG_STRETCH;
+    this.head.scale.setScalar(HEAD_SIZE);
     this.applyPose(this.archer ? ARCHER_REST : REST);
   }
 
   // ---- building ----
+
+  /**
+   * Lengthens and thins what hangs directly on one joint: its own shapes are stretched, and the joints
+   * below it are moved to where the longer part now ends, but left unscaled themselves.
+   */
+  private stretch(joint: Group, tall: number, thin: number): void {
+    for (const child of joint.children) {
+      child.position.set(child.position.x * thin, child.position.y * tall, child.position.z * thin);
+      if (!(child instanceof Mesh)) continue;
+      // A shape that has been turned is only thinned: stretching it would pull it along the wrong axis.
+      const turned = child.rotation.x !== 0 || child.rotation.z !== 0;
+      child.scale.set(child.scale.x * thin, child.scale.y * (turned ? thin : tall), child.scale.z * thin);
+    }
+  }
 
   private mesh(
     geometry: BufferGeometry,
@@ -524,6 +659,13 @@ export class Swordsman {
       [0, Math.PI / 4, 0],
       [0.13, 1, 1],
     );
+    // Runes burn along the fuller, and the blade trails fire from its back.
+    for (let i = 0; i < 5; i++)
+      this.ball(gem, this.sword, [0, 0.16 + i * 0.1, 0.006], [0.017, 0.022, 0.012], [0, 0, i * 0.7]);
+    for (let i = 0; i < 4; i++)
+      this.streamers.push(
+        this.buildStreamer(this.sword, [0, 0.28 + i * 0.14, -0.05], 4, 0.2, 0.035, ribbon, 1.4, 1.6, 0, true),
+      );
     // The clipped point sweeps up to the back of the blade.
     this.mesh(
       new ConeGeometry(0.105, 0.17, 4),
@@ -602,7 +744,14 @@ export class Swordsman {
     // The string runs from tip to tip.
     const tipY = 0.035 + (limb * Math.sin(curl - 0.25)) / curl + 0.07;
     const tipZ = (limb * (1 - Math.cos(curl))) / curl - 0.08;
-    this.mesh(new CylinderGeometry(0.0025, 0.0025, tipY * 2, 4), this.white, bow, [0, 0, tipZ]);
+    this.mesh(new CylinderGeometry(0.004, 0.004, tipY * 2, 4), ribbon, bow, [0, 0, tipZ]);
+    // An arrow of light lies on the string, its head a burning point.
+    this.mesh(new CylinderGeometry(0.006, 0.006, 0.5, 6), gem, bow, [0, 0, tipZ - 0.22], [UP, 0, 0]);
+    this.mesh(new ConeGeometry(0.022, 0.09, 6), gem, bow, [0, 0, tipZ - 0.5], [-UP, 0, 0]);
+    for (let i = 0; i < 3; i++)
+      this.streamers.push(
+        this.buildStreamer(bow, [0, 0, tipZ - 0.45], 3, 0.14, 0.022, ribbon, 1.5, 0.9, (i - 1) * 0.9, true),
+      );
     this.streamers.push(this.buildStreamer(bow, [0, -tipY, tipZ], 4, 0.18, 0.02, ribbon, 0.8, 0.4, 0));
 
     // The quiver hangs across her back, arrows fletched in the colour of her ribbons standing out of it.
@@ -670,6 +819,36 @@ export class Swordsman {
       // Long lashes at the corner of each eye, and a touch of colour on the cheek.
       this.mesh(new ConeGeometry(0.008, 0.04, 4), dark, this.head, [side * 0.102, 0.176, 0.128], [0, 0, -side * 1.1]);
       this.ball(this.materials.ribbon, this.head, [side * 0.1, 0.1, 0.132], [0.024, 0.012, 0.006]);
+    }
+  }
+
+  /** A long cape from the shoulders: panels of embroidered cloth that billow and fly, lined in the colour of the ribbons. */
+  private buildCape(): void {
+    const { cloth, ribbon, trim, gem } = this.materials;
+    // A clasp at each shoulder and a chain between them.
+    for (const side of [-1, 1]) this.ball(trim, this.chest, [side * 0.09, 0.225, -0.055], [0.024, 0.024, 0.018]);
+    this.ball(gem, this.chest, [0, 0.215, -0.085], [0.016, 0.016, 0.01]);
+    const panels = this.archer ? 3 : 5;
+    const length = this.archer ? 0.34 : 0.5;
+    for (let i = 0; i < panels; i++) {
+      const across = (i / (panels - 1) - 0.5) * 2;
+      this.streamers.push(
+        this.buildStreamer(this.chest, [across * 0.085, 0.21, -0.085], 7, length, 0.085, cloth, 0.5, 1, across * 0.3),
+      );
+      // A thin lining shows at the edge of each panel.
+      this.streamers.push(
+        this.buildStreamer(
+          this.chest,
+          [across * 0.092, 0.2, -0.09],
+          7,
+          length * 1.04,
+          0.022,
+          ribbon,
+          0.5,
+          1,
+          across * 0.32,
+        ),
+      );
     }
   }
 
@@ -805,7 +984,7 @@ export class Swordsman {
 
     const breath = Math.sin(t * 2) * 0.006;
     const lean = pose.lean + walk * 0.28;
-    this.hips.position.y = 0.3 + (breath + Math.abs(Math.sin(step)) * 0.03 * walk + pose.lift) * alive;
+    this.hips.position.y = HIP_HEIGHT + (breath + Math.abs(Math.sin(step)) * 0.03 * walk + pose.lift) * alive;
     this.hips.rotation.x = lean;
     this.hips.rotation.y = pose.twist * 0.4 * (1 - walk) + Math.sin(step) * 0.1 * walk;
     this.chest.rotation.y = pose.twist * 0.6 * (1 - walk * 0.5) - Math.sin(step) * 0.15 * walk;

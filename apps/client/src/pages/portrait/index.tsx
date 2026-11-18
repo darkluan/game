@@ -31,7 +31,7 @@ const FRAMING = {
 
 function framingOf(heroId: string): (typeof FRAMING)[keyof typeof FRAMING] {
   const race = HEROES[heroId]?.race;
-  if (HERO_MODELS[heroId]?.hydra) return FRAMING.hydra;
+  if (HERO_MODELS[heroId]?.hydra || HERO_MODELS[heroId]?.longDragon) return FRAMING.hydra;
   // The wind spirit is all hat: show the whole of it, like the mechs.
   if (HERO_MODELS[heroId]?.model === MODELS.windSpirit) return FRAMING.mech;
   return race === 'machine' ? FRAMING.mech : FRAMING.person;

@@ -24,4 +24,4 @@ quaternius-showcase project and the spirit from poly.pizza, which host each mode
 | `mech_mike.glb`, `mech_leela.glb`, `mech_stan.glb`, `mech_george.glb` | Animated Mech Pack             | https://quaternius.com/packs/animatedmech.html |
 
 The mech files were reduced: unused animations were removed and the texture was scaled down to
-512 pixels. The dragon heroes have no model files: they are built in code (src/scene/Hydra.ts).
+512 pixels. The dragon heroes have no model files: they are built in code (src/scene/LongDragon.ts).

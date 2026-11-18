@@ -4,6 +4,7 @@ import type { ActorAction } from '@/lib/session';
 import { Actor } from './Actor';
 import { actorOptions, type HeroLook } from './heroModels';
 import { Hydra } from './Hydra';
+import { LongDragon } from './LongDragon';
 import { Swordsman } from './Swordsman';
 import { useModels } from './models';
 
@@ -25,9 +26,11 @@ export function useHeroActors(looks: readonly HeroLook[], castShadow: boolean): 
     return looks.map((look) =>
       look.hydra
         ? new Hydra(look.hydra, look.height ?? 2.6, castShadow)
-        : look.swordsman
-          ? new Swordsman(look.swordsman, look.height ?? 1.9, castShadow)
-          : new Actor(gltfs[next++], look.rig, actorOptions(look, castShadow)),
+        : look.longDragon
+          ? new LongDragon(look.longDragon, look.height ?? 2.2, castShadow)
+          : look.swordsman
+            ? new Swordsman(look.swordsman, look.height ?? 1.9, castShadow)
+            : new Actor(gltfs[next++], look.rig, actorOptions(look, castShadow)),
     );
   }, [gltfs, looks, castShadow]);
 }
