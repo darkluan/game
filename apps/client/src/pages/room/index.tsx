@@ -2,7 +2,8 @@ import { tr } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { LobbyShell } from '@/components/LobbyShell';
-import { HEROES, type LobbyPlayer, type Team, TEAM_SIZE } from '@game/core';
+import { HEROES, LOBBY_CHAT_IDS, type LobbyPlayer, type Team, TEAM_SIZE } from '@game/core';
+import { LOBBY_CHAT_TEXT } from '@/lib/chatText';
 import { useGameStore } from '@/store/gameStore';
 import { useRoomStore } from '@/store/roomStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -12,6 +13,8 @@ import { HeroStrip } from '@/ui/HeroStrip';
 import { ROLE_NAMES } from '@/ui/heroText';
 import { NicknameField } from '@/ui/NicknameField';
 import { useLobbyMusic } from '@/ui/useLobbyMusic';
+import { ChatInput } from '@/ui/ChatInput';
+import { useTouchLayout } from '@/hooks/useTouchLayout';
 
 const TEAM_NAMES = [tr('Đội Xanh'), tr('Đội Đỏ')] as const;
 
@@ -57,7 +60,13 @@ function TeamColumn({ team, players, myId }: { team: Team; players: LobbyPlayer[
                   {hero?.name ?? p.heroId}
                   {hero && <span className="squat:hidden"> · {ROLE_NAMES[hero.role]}</span>}
                 </p>
-                {p.isHost && <p className="text-[11px] font-semibold text-primary">{tr('Chủ phòng')}</p>}
+                {p.isHost ? (
+                  <p className="text-[11px] font-semibold text-primary">{tr('Chủ phòng')}</p>
+                ) : (
+                  <p className={`text-[11px] font-semibold ${p.ready ? 'text-hp' : 'text-muted-foreground'}`}>
+                    {p.ready ? tr('Sẵn sàng') : tr('Chưa sẵn sàng')}
+                  </p>
+                )}
               </div>
             </li>
           );
@@ -116,6 +125,57 @@ function ShareLink({ code }: { code: string }) {
   );
 }
 
+/** Ready-made phrases for the pick room: a button that opens them, and what was said lately floating above the dock. */
+function RoomChat({ players }: { players: LobbyPlayer[] }) {
+  const chat = useRoomStore((s) => s.chat);
+  const sendChat = useRoomStore((s) => s.sendChat);
+  const [open, setOpen] = useState(false);
+  const touch = useTouchLayout();
+  return (
+    <div className="absolute bottom-full left-0 mb-2 flex flex-col items-start gap-1.5 text-xs">
+      <ul aria-live="polite" className="pointer-events-none flex flex-col items-start gap-1">
+        {chat.map((line) => (
+          <li key={line.key} className="glass-panel max-w-xs rounded-md px-2.5 py-1 break-words">
+            <span className="font-bold text-primary">
+              {players.find((p) => p.playerId === line.playerId)?.nickname ?? '…'}:
+            </span>{' '}
+            {'id' in line ? LOBBY_CHAT_TEXT[line.id] : line.text}
+          </li>
+        ))}
+      </ul>
+      {open && (
+        <div className="glass-panel flex w-64 flex-col gap-1.5 rounded-lg p-2">
+          {/* Stays open after a typed line: a conversation is several of them. */}
+          <ChatInput autoFocus={!touch} onCancel={() => setOpen(false)} onSend={(text) => sendChat({ text })} />
+          <div className="grid grid-cols-2 gap-1.5">
+            {LOBBY_CHAT_IDS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  sendChat({ id });
+                  setOpen(false);
+                }}
+                className="cursor-pointer rounded-md border border-border px-2 py-1.5 text-left hover:border-primary"
+              >
+                {LOBBY_CHAT_TEXT[id]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="glass-panel cursor-pointer rounded-full px-3 py-1.5 font-bold"
+      >
+        {tr('Chat')}
+      </button>
+    </div>
+  );
+}
+
 /** The middle of the pick room, under the hero: the room's code, the hero choice and the button that starts the match. */
 function PickPanel({ code, onLeave }: { code: string; onLeave: () => void }) {
   const lobby = useRoomStore((s) => s.lobby);
@@ -123,15 +183,18 @@ function PickPanel({ code, onLeave }: { code: string; onLeave: () => void }) {
   const matchInProgress = useRoomStore((s) => s.matchInProgress);
   const startMatch = useRoomStore((s) => s.startMatch);
   const setHero = useRoomStore((s) => s.setHero);
+  const setReady = useRoomStore((s) => s.setReady);
   useLobbyMusic(true);
   if (!lobby) return <p className={note}>{tr('Đang vào phòng…')}</p>;
   const me = lobby.players.find((p) => p.playerId === myId);
+  const allReady = lobby.players.every((p) => p.ready);
   const teammatePicks = lobby.players.filter((p) => p.team === me?.team && p.playerId !== myId).map((p) => p.heroId);
 
   return (
     // On a wide screen this is a low dock along the bottom: the room on the left, the heroes in the
     // middle, the start button on the right. On a phone the three stack.
-    <div className="glass-panel flex w-full animate-rise flex-col gap-3 rounded-xl p-3 xl:flex-row xl:items-center xl:gap-6 xl:pr-28 xl:pl-5 squat:gap-2 squat:p-2">
+    <div className="glass-panel relative flex w-full animate-rise flex-col gap-3 rounded-xl p-3 xl:flex-row xl:items-center xl:gap-6 xl:pr-28 xl:pl-5 squat:gap-2 squat:p-2">
+      <RoomChat players={lobby.players} />
       <ShareLink code={code} />
       {me && !matchInProgress && (
         <div className="min-w-0 xl:max-w-[60rem] xl:flex-1">
@@ -142,15 +205,31 @@ function PickPanel({ code, onLeave }: { code: string; onLeave: () => void }) {
         {matchInProgress ? (
           <p className={note}>{tr('Trận đang diễn ra. Bạn sẽ chơi được khi trận này kết thúc.')}</p>
         ) : me?.isHost ? (
-          <button
-            type="button"
-            onClick={startMatch}
-            className="btn btn-primary cut-corners px-14 py-3! text-lg squat:py-2! squat:text-base"
-          >
-            {tr('Bắt đầu')}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={startMatch}
+              disabled={!allReady}
+              className="btn btn-primary cut-corners px-14 py-3! text-lg disabled:cursor-not-allowed disabled:opacity-50 squat:py-2! squat:text-base"
+            >
+              {tr('Bắt đầu')}
+            </button>
+            {!allReady && <p className={note}>{tr('Chờ mọi người bấm Sẵn sàng…')}</p>}
+          </>
         ) : (
-          <p className={note}>{tr('Chờ chủ phòng bấm Bắt đầu…')}</p>
+          <>
+            <button
+              type="button"
+              onClick={() => setReady(!me?.ready)}
+              aria-pressed={me?.ready === true}
+              className={`btn cut-corners px-10 py-3! text-lg squat:py-2! squat:text-base ${me?.ready ? 'btn-ghost' : 'btn-primary'}`}
+            >
+              {me?.ready ? tr('Hủy sẵn sàng') : tr('Sẵn sàng')}
+            </button>
+            <p className={note}>
+              {me?.ready ? tr('Chờ chủ phòng bấm Bắt đầu…') : tr('Bấm Sẵn sàng khi đã chọn xong tướng.')}
+            </p>
+          </>
         )}
         <button type="button" onClick={onLeave} className={`${note} cursor-pointer underline hover:text-foreground`}>
           {tr('Rời phòng')}

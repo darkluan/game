@@ -311,7 +311,7 @@ export function AbilityInfo({
   );
 }
 
-const TONE_TEXT = { good: 'text-hp', bad: 'text-danger', neutral: 'text-gold' } as const;
+const TONE_TEXT = { good: 'text-hp', bad: 'text-danger', neutral: 'text-gold', chat: 'text-ally' } as const;
 
 /** Relic status, team buffs and the latest announcements, stacked under the match clock. */
 export function EventFeed({ hud, className }: { hud: HudState; className: string }) {
@@ -344,7 +344,7 @@ export function EventFeed({ hud, className }: { hud: HudState; className: string
       ))}
       <ul aria-live="polite" className="flex flex-col items-center gap-1">
         {hud.announcements.map((a) => (
-          <li key={a.id} className={`hud-panel rounded-md px-3 py-1 font-semibold ${TONE_TEXT[a.tone]}`}>
+          <li key={a.id} className={`hud-panel rounded-md px-3 py-1 font-semibold break-words ${TONE_TEXT[a.tone]}`}>
             {a.text}
           </li>
         ))}

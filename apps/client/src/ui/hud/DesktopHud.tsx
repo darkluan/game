@@ -7,6 +7,8 @@ import { HeroPortrait } from '../HeroPortrait';
 import { RACE_TEXT, raceName } from '../heroText';
 import { Minimap } from '../Minimap';
 import { GameIcon } from '../icons/GameIcon';
+import { PingWheel } from './Pings';
+import { QuickChat } from './QuickChat';
 import { ItemBag, ShopPanel } from '../Shop';
 import {
   AbilityInfo,
@@ -99,7 +101,7 @@ function AbilityButton({ ability, game }: { ability: AbilityHud; game: GameSessi
 /** A helper spell: smaller than an ability, with nothing to level up. */
 function SpellButton({ spell, game }: { spell: SpellHud; game: GameSession }) {
   return (
-    <div className="relative flex flex-col items-center gap-1">
+    <div className="relative self-center">
       <button
         type="button"
         aria-label={`${spell.name} (${spell.key})`}
@@ -137,7 +139,6 @@ function SpellButton({ spell, game }: { spell: SpellHud; game: GameSession }) {
           </p>
         )}
       </div>
-      <span className="max-w-16 truncate text-[10px] text-muted-foreground">{spell.name}</span>
     </div>
   );
 }
@@ -184,18 +185,23 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
       <div className="absolute bottom-2 left-2">
         <Minimap game={game} />
       </div>
+      {/* Above the minimap; its panel opens upward. */}
+      <QuickChat game={game} className="bottom-44 left-2" panelClassName="bottom-full left-0 mb-1.5" />
+      <PingWheel />
 
-      <p className="absolute right-2 bottom-2 max-w-52 text-right text-[11px] leading-snug text-muted-foreground">
+      <p className="absolute right-2 bottom-2 hidden max-w-52 text-right min-[1400px]:block text-[11px] leading-snug text-muted-foreground">
         {tr('Chuột: di chuyển, bấm vào địch để đánh.')}
         <br />
         {tr('Q W E R: chiêu theo con trỏ · Alt + phím: nâng chiêu')}
         <br />
-        {tr('D: hồi máu · F: tốc biến · T: biến về · S: dừng · B: cửa hàng · giữ Tab: bảng điểm')}
+        {tr(
+          'D: hồi máu · F: tốc biến · T: biến về · S: dừng · B: cửa hàng · giữ Tab: bảng điểm · Enter: chat · Alt + bấm: tín hiệu',
+        )}
       </p>
 
       {/* The console. Three blocks: who you are, what you can do, what you carry. */}
-      <div className="pointer-events-auto absolute bottom-0 left-1/2 flex max-w-[calc(100vw-560px)] min-w-[690px] -translate-x-1/2 items-stretch gap-3 rounded-t-lg hud-panel border-b-0 border-t-primary/60 px-3 pt-2 pb-2">
-        <div className="flex w-56 flex-col justify-between gap-1 text-xs">
+      <div className="pointer-events-auto absolute bottom-0 left-[262px] flex min-w-[860px] items-stretch gap-3 min-[1400px]:left-1/2 min-[1400px]:-translate-x-1/2 rounded-t-lg hud-panel border-b-0 border-t-primary/60 px-3 pt-2 pb-2">
+        <div className="flex w-48 shrink-0 flex-col justify-between gap-1 text-xs">
           <div className="flex items-center gap-2">
             <HeroPortrait
               heroId={hud.heroDefId}
@@ -231,8 +237,8 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
           </div>
         </div>
 
-        <div className="flex min-w-72 flex-1 flex-col gap-1.5">
-          <div className="flex items-end justify-center gap-3">
+        <div className="flex min-w-[28.5rem] flex-1 flex-col gap-1.5">
+          <div className="flex items-end justify-center gap-2">
             {hud.abilities.map((a) => (
               <AbilityButton key={a.slot} ability={a} game={game} />
             ))}
@@ -257,7 +263,7 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
           )}
         </div>
 
-        <div className="flex w-44 flex-col justify-between gap-2">
+        <div className="flex w-44 shrink-0 flex-col justify-between gap-2">
           <ItemBag hud={hud} game={game} columns={3} />
           <div className="flex items-center justify-between gap-2">
             <span className="font-semibold text-gold tabular-nums">

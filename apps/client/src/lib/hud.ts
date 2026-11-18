@@ -176,6 +176,7 @@ export function buildHud(input: HudInput): HudState {
       recallLeft > 0
         ? { seconds: Math.ceil(recallLeft / TICK_RATE), fraction: 1 - recallLeft / RECALL.channelTicks }
         : null,
+    recommended: BOT_BUILDS[def.role],
     suggestion: nextItem
       ? { id: nextItem, name: tr(ITEMS[nextItem].name), price: nextPrice, affordable: you.gold >= nextPrice }
       : null,

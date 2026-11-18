@@ -1,6 +1,7 @@
 import { tr } from '@/i18n';
 import { useEffect, useRef } from 'react';
 import type { GameSession } from '@/lib/session';
+import { minimapPoint } from '@/lib/minimapPoint';
 import { useGameStore } from '@/store/gameStore';
 
 const WIDTH = 250;
@@ -101,6 +102,17 @@ export function Minimap({ game }: { game: GameSession }) {
       ctx.fillStyle = h === game.hero ? colors.self : side(h.team);
       ctx.fill();
     }
+    // Signals from teammates, each in its colour: a ring that spreads and fades.
+    ctx.lineWidth = 2;
+    for (const ping of game.pings) {
+      ctx.strokeStyle = ping.type === 'attack' ? colors.enemy : ping.type === 'retreat' ? colors.monster : colors.ally;
+      const age = (game.clock - ping.at) % 1;
+      ctx.globalAlpha = 1 - age;
+      ctx.beginPath();
+      ctx.arc(px(ping.x), pz(ping.z), 4 + age * 10, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }, [hud, game, halfWidth, halfDepth, scale, height]);
 
   return (
@@ -110,14 +122,14 @@ export function Minimap({ game }: { game: GameSession }) {
       height={height}
       role="img"
       aria-label={tr('Bản đồ nhỏ. Bấm để di chuyển tới đó.')}
+      // Lets a signal button dragged onto the map find it.
+      data-minimap
       className="pointer-events-auto cursor-pointer rounded-md hud-panel"
       onPointerDown={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        game.send({
-          t: 'move',
-          x: ((e.clientX - rect.left) / rect.width) * halfWidth * 2 - halfWidth,
-          z: ((e.clientY - rect.top) / rect.height) * halfDepth * 2 - halfDepth,
-        });
+        const { x, z } = minimapPoint(e.currentTarget, e.clientX, e.clientY, game.map);
+        // Alt+click calls the team to the spot instead of walking there.
+        if (game.chatEnabled && e.altKey) game.sendChat({ k: 'ping', type: 'gather', x, z });
+        else game.send({ t: 'move', x, z });
       }}
     />
   );

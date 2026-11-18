@@ -1,12 +1,36 @@
 import { tr } from '@/i18n';
-import { type AbilityDef, type AbilitySlot, dist, type Faction, HEROES, type SimEvent, type Vec2 } from '@game/core';
+import {
+  type AbilityDef,
+  type AbilitySlot,
+  dist,
+  type Faction,
+  HEROES,
+  type MatchChatMessage,
+  type MatchChatSend,
+  type PingType,
+  type SimEvent,
+  type Vec2,
+} from '@game/core';
 import { RELIC_EFFECTS, RELIC_NAMES } from '@/ui/relicText';
 import { ABILITY_FX } from './abilityFx';
 import { ABILITY_SOUND, HERO_ATTACK_SOUND } from './abilitySounds';
-import type { ActorAction, Announcement, Fx, FxColor, RosterHero, SoundCue, UnitView, ViewEntity } from './session';
+import { CHAT_SIGNAL, MATCH_CHAT_TEXT, PING_COLOR, PING_TEXT } from './chatText';
+import type {
+  ActorAction,
+  Announcement,
+  Fx,
+  FxColor,
+  MapPing,
+  RosterHero,
+  SoundCue,
+  UnitView,
+  ViewEntity,
+} from './session';
 
 /** How long an announcement stays on screen. */
 const ANNOUNCEMENT_SECONDS = 5;
+/** How long a teammate's mark stays on the map. */
+const PING_SECONDS = 4;
 const MAX_ANNOUNCEMENTS = 4;
 
 const HEAL_TEXT_MINIMUM = 20;
@@ -27,6 +51,10 @@ export abstract class BaseSession {
   clock = 0;
   fx: Fx[] = [];
   shakeUntil = 0;
+  /** Offline there is nobody to talk to; the online game turns this on. */
+  readonly chatEnabled: boolean = false;
+  pings: MapPing[] = [];
+  private readonly mutedHeroes = new Set<number>();
   private readonly actions = new Map<number, ActorAction>();
   private announced: Announcement[] = [];
   private nextAnnouncementId = 1;
@@ -59,6 +87,54 @@ export abstract class BaseSession {
   /** Announcements still on screen, oldest first. */
   protected announcements(): Announcement[] {
     return this.announced;
+  }
+
+  /** Offline there is nobody to tell; the online game sends it to the server. */
+  sendChat(message: MatchChatSend): void {
+    void message;
+  }
+
+  isMuted(heroId: number): boolean {
+    return this.mutedHeroes.has(heroId);
+  }
+
+  toggleMuted(heroId: number): void {
+    if (!this.mutedHeroes.delete(heroId)) this.mutedHeroes.add(heroId);
+  }
+
+  /** Shows what a teammate said or marked. `silenced` drops it: the player has turned chat off. */
+  receiveChat(message: MatchChatMessage, silenced: boolean): void {
+    if (silenced || this.isMuted(message.heroId)) return;
+    const entry = this.roster().find((r) => r.id === message.heroId);
+    if (!entry || entry.team !== this.hero.team) return;
+    const name = entry.playerName || (HEROES[entry.defId]?.name ?? '');
+    if (message.k === 'ping') {
+      this.mark(message.type, message.x, message.z);
+      this.announce(`${name}: ${PING_TEXT[message.type]}`, 'chat');
+      return;
+    }
+    if (message.k === 'text') {
+      this.announce(`${name}: ${message.text}`, 'chat');
+      this.cue('levelUp', null, 0.35);
+      return;
+    }
+    this.announce(`${name}: ${MATCH_CHAT_TEXT[message.id]}`, 'chat');
+    const sender = this.find(message.heroId);
+    const signal = CHAT_SIGNAL[message.id];
+    if (sender && signal) this.mark(signal, sender.pos.x, sender.pos.z);
+    else this.cue('levelUp', null, 0.35);
+  }
+
+  /** A signal on the map: rings on the ground in its colour, a blip on the minimap and a sound. */
+  private mark(type: PingType, x: number, z: number): void {
+    this.pings = [...this.pings.filter((p) => this.clock - p.at < PING_SECONDS), { type, x, z, at: this.clock }];
+    const color = PING_COLOR[type];
+    for (const delay of [0, 0.45, 0.9]) {
+      // "Come here" closes in on the spot; the others spread out from it.
+      this.addFx({ kind: 'ring', x, z, radius: 3, color, inward: type === 'gather', duration: 0.8 }, delay);
+    }
+    this.addFx({ kind: 'pillar', x, z, radius: 0.8, color, duration: 1.6 });
+    this.cue(type === 'retreat' ? 'structureDown' : 'levelUp', null, 0.6);
   }
 
   private announce(text: string, tone: Announcement['tone']): void {

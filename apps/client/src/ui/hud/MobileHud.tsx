@@ -1,6 +1,6 @@
 import { tr } from '@/i18n';
 import { useCallback, useState } from 'react';
-import { ITEMS, type Vec2 } from '@game/core';
+import { type AbilitySlot, ITEMS, type Vec2 } from '@game/core';
 import { attackNearest, castSlot, castSpell, moveInDirection } from '@/input/commands';
 import type { AbilityHud, GameSession, HudState, SpellHud } from '@/lib/session';
 import { useFullscreen } from '@/hooks/useFullscreen';
@@ -24,6 +24,8 @@ import {
   TeamBar,
 } from './parts';
 import { Joystick } from './Joystick';
+import { PingButtons } from './Pings';
+import { QuickChat } from './QuickChat';
 
 /** How far the attack button looks for a target. */
 const ATTACK_SEARCH_RANGE = 12;
@@ -75,7 +77,16 @@ function RoundSpell({ spell, game }: { spell: SpellHud; game: GameSession }) {
   );
 }
 
-function RoundAbility({ ability, game }: { ability: AbilityHud; game: GameSession }) {
+function RoundAbility({
+  ability,
+  game,
+  onPreview,
+}: {
+  ability: AbilityHud;
+  game: GameSession;
+  /** The player tapped +: show what the next level brings before spending the point. */
+  onPreview: (slot: AbilitySlot) => void;
+}) {
   const spot = ABILITY_SPOTS[ability.slot];
   const cooling = ability.level > 0 && ability.cooldownLeft > 0;
   return (
@@ -110,7 +121,7 @@ function RoundAbility({ ability, game }: { ability: AbilityHud; game: GameSessio
         <button
           type="button"
           aria-label={tr('Nâng cấp {name}', { name: ability.name })}
-          onPointerDown={() => game.send({ t: 'levelUp', slot: ability.slot })}
+          onPointerDown={() => onPreview(ability.slot)}
           className="pointer-events-auto absolute -top-2 -left-2 size-7 touch-none rounded-full bg-primary text-base leading-none font-bold text-primary-foreground"
         >
           +
@@ -195,6 +206,9 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
   const shopOpen = useGameStore((s) => s.shopOpen);
   const toggleShop = useGameStore((s) => s.toggleShop);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [previewSlot, setPreviewSlot] = useState<AbilitySlot | null>(null);
+  // Gone once the point is spent or the ability can no longer be raised.
+  const preview = hud.abilities.find((a) => a.slot === previewSlot && a.canLevelUp);
   const fullscreen = useFullscreen();
   // An installed app already fills the screen and is already sideways.
   const installed = launchedAsApp;
@@ -210,6 +224,10 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
       <div className="absolute top-1 left-1 origin-top-left scale-[0.62]">
         <Minimap game={game} />
       </div>
+
+      {/* Under the minimap; its panel opens beside it. */}
+      <QuickChat game={game} className="top-[4.75rem] left-1" panelClassName="top-full left-0 mt-1.5" />
+      <PingButtons game={game} className="top-[4.75rem] left-16" />
 
       <TeamBar hud={hud} compact />
       <EventFeed hud={hud} className="top-12 text-[11px]" />
@@ -311,6 +329,32 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
         <Joystick onMove={walk} onRelease={halt} />
       </div>
 
+      {/* There is no hovering on a touch screen: + first shows what the next level brings, then asks. */}
+      {preview && (
+        <div className="pointer-events-auto absolute right-[16.5rem] bottom-24 z-20 flex max-h-[calc(100dvh-7rem)] w-64 flex-col gap-2 overflow-y-auto rounded-lg hud-sheet p-2 text-xs">
+          <AbilityInfo ability={preview} next />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onPointerDown={() => {
+                game.send({ t: 'levelUp', slot: preview.slot });
+                setPreviewSlot(null);
+              }}
+              className="flex-1 touch-none rounded-md bg-primary px-3 py-2 font-bold text-primary-foreground"
+            >
+              {tr('Nâng cấp')}
+            </button>
+            <button
+              type="button"
+              onPointerDown={() => setPreviewSlot(null)}
+              className="touch-none rounded-md border border-border px-3 py-2"
+            >
+              {tr('Đóng')}
+            </button>
+          </div>
+        </div>
+      )}
+
       <Vitals hud={hud} />
       <QuickBuy hud={hud} game={game} className="absolute bottom-[5.5rem] left-1/2 -translate-x-1/2" />
       <RecallNotice hud={hud} />
@@ -326,7 +370,7 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
           <GameIcon id="attack" className="mx-auto size-12" />
         </button>
         {hud.abilities.map((a) => (
-          <RoundAbility key={a.slot} ability={a} game={game} />
+          <RoundAbility key={a.slot} ability={a} game={game} onPreview={setPreviewSlot} />
         ))}
         {hud.spells.map((s) => (
           <RoundSpell key={s.id} spell={s} game={game} />

@@ -7,6 +7,7 @@ import {
   HERO,
   HEROES,
   MAP,
+  type MatchChatSend,
   type MatchWelcome,
   NavGrid,
   SHRINE,
@@ -64,6 +65,7 @@ interface View extends ViewEntity {
 /** The connection to a match, reduced to what this class needs (a Colyseus room in practice). */
 export interface MatchConnection {
   send(type: 'cmd', cmd: Command): void;
+  send(type: 'chat', message: MatchChatSend): void;
 }
 
 /**
@@ -108,6 +110,7 @@ export class OnlineGame extends BaseSession implements GameSession {
   /** The move being predicted: the way-points still ahead, or null when the hero simply follows the server. */
   private predicted: { path: Vec2[]; arrivedAt: number } | null = null;
   private lastFrameAt = 0;
+  override readonly chatEnabled = true;
   private readonly lastScore = new Map<number, { level: number; kda: number[]; hpFraction: number; dead: boolean }>();
 
   constructor(
@@ -146,6 +149,10 @@ export class OnlineGame extends BaseSession implements GameSession {
     if (cmd.t === 'move') this.predictMove(cmd.x, cmd.z);
     // Anything else (an attack, a cast, a stop) is the server's to play out.
     else if (cmd.t !== 'levelUp' && cmd.t !== 'buy' && cmd.t !== 'sell') this.predicted = null;
+  }
+
+  override sendChat(message: MatchChatSend): void {
+    this.connection.send('chat', message);
   }
 
   /** True when the server would refuse to let the hero walk right now. */

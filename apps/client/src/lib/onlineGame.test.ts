@@ -26,7 +26,7 @@ function setup() {
   let now = 1000;
   const sent: Command[] = [];
   const game = new OnlineGame(
-    { send: (_type, cmd) => sent.push(cmd) },
+    { send: (type: string, cmd: unknown) => void (type === 'cmd' && sent.push(cmd as Command)) },
     welcome,
     () => {},
     () => now,

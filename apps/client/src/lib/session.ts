@@ -7,6 +7,8 @@ import type {
   HeroStats,
   MapDef,
   Race,
+  MatchChatSend,
+  PingType,
   RelicType,
   SpellId,
   StatusType,
@@ -49,6 +51,15 @@ export interface SpellHud {
   usable: boolean;
   /** Seconds between casts. */
   cooldown: number;
+}
+
+/** A signal a teammate put on the map. */
+export interface MapPing {
+  type: PingType;
+  x: number;
+  z: number;
+  /** Seconds on the session clock. */
+  at: number;
 }
 
 export interface HeroScore {
@@ -99,6 +110,8 @@ export interface HudState {
   spells: SpellHud[];
   /** The recall in progress: seconds left and how far along it is (0..1); null when not recalling. */
   recall: { seconds: number; fraction: number } | null;
+  /** The items recommended for this hero, in the order to buy them. */
+  recommended: string[];
   /** The next item worth buying for this hero, when its bag has room; null otherwise. */
   suggestion: { id: string; name: string; price: number; affordable: boolean } | null;
   /** The hero's fighting numbers; null while the server has not sent them. */
@@ -124,7 +137,7 @@ export interface Announcement {
   id: number;
   text: string;
   /** Good news for the player's team, bad news, or neither. */
-  tone: 'good' | 'bad' | 'neutral';
+  tone: 'good' | 'bad' | 'neutral' | 'chat';
   at: number; // seconds on the session clock
 }
 
@@ -282,6 +295,15 @@ export interface GameSession {
   /** Advance by real elapsed seconds. Returns true when game state changed. */
   update(deltaSeconds: number): boolean;
   send(cmd: Command): void;
+  /** Whether there is a team to talk to: true in an online match, false against bots. */
+  readonly chatEnabled: boolean;
+  /** Says a ready-made phrase to the team, or marks a point on the map for it. */
+  sendChat(message: MatchChatSend): void;
+  /** Marks teammates put on the map a moment ago. */
+  readonly pings: readonly MapPing[];
+  /** A teammate whose chat this player chose not to see. */
+  isMuted(heroId: number): boolean;
+  toggleMuted(heroId: number): void;
   setCursor(x: number, z: number): void;
   /** `delay`: seconds to wait before the visual appears. */
   addFx(fx: Omit<Fx, 'bornAt'>, delay?: number): void;

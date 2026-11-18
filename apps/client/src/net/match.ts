@@ -1,5 +1,6 @@
 import type { Room } from '@colyseus/sdk';
-import type { MatchWelcome, Snapshot } from '@game/core';
+import type { MatchChatMessage, MatchWelcome, Snapshot } from '@game/core';
+import { useSettingsStore } from '@/store/settingsStore';
 import { playCue } from '@/lib/audio';
 import { OnlineGame } from '@/lib/onlineGame';
 import { colyseus } from './colyseus';
@@ -14,6 +15,9 @@ export async function openMatch(
     let pending: { game: OnlineGame; welcome: MatchWelcome } | null = null;
     room.onMessage('welcome', (welcome: MatchWelcome) => {
       pending = { game: new OnlineGame(room, welcome, playCue), welcome };
+    });
+    room.onMessage('chat', (message: MatchChatMessage) => {
+      pending?.game.receiveChat(message, useSettingsStore.getState().chatOff);
     });
     room.onMessage('s', (snapshot: Snapshot) => {
       pending?.game.receive(snapshot);

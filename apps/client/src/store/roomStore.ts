@@ -1,6 +1,6 @@
 import { tr } from '@/i18n';
 import type { Room } from '@colyseus/sdk';
-import type { LobbyState, Team } from '@game/core';
+import type { LobbyChatMessage, LobbyChatSend, LobbyState, Team } from '@game/core';
 import { create } from 'zustand';
 import { playCue } from '@/lib/audio';
 import { CLOSE_REPLACED, colyseus } from '@/net/colyseus';
@@ -25,6 +25,11 @@ interface RoomStore {
   setTeam: (team: Team) => void;
   setHero: (heroId: string) => void;
   startMatch: () => void;
+  setReady: (ready: boolean) => void;
+  /** The latest phrases said in the pick room, oldest first. */
+  chat: (LobbyChatMessage & { key: number })[];
+  /** Says a ready-made phrase, by id, or typed words. */
+  sendChat: (message: LobbyChatSend) => void;
   /** After a match: leave it and go back to the lobby it started from. */
   backToLobby: () => Promise<void>;
   leave: () => void;
@@ -38,6 +43,11 @@ let nickname = '';
 let enteringMatch = false;
 /** A match that refused this player; do not retry it on every lobby update. */
 let refusedMatchId: string | null = null;
+let nextChatKey = 1;
+/** How many pick-room phrases stay on screen. */
+const CHAT_LINES = 4;
+/** How long a pick-room phrase stays on screen. */
+const CHAT_LINE_MS = 7000;
 
 function messageFor(err: unknown): string {
   const code = (err as { code?: unknown } | null)?.code;
@@ -53,12 +63,18 @@ export const useRoomStore = create<RoomStore>((set, get) => {
   function attachLobby(room: Room, playerId: string): void {
     lobbyRoom = room;
     refusedMatchId = null;
-    set({ phase: 'lobby', code: room.roomId, playerId, lobby: null, error: null, matchInProgress: false });
+    set({ phase: 'lobby', code: room.roomId, playerId, lobby: null, error: null, matchInProgress: false, chat: [] });
     room.onMessage('lobby', (state: LobbyState) => {
       if (lobbyRoom !== room) return;
       set({ lobby: state, matchInProgress: state.matchRoomId !== null && state.matchRoomId === refusedMatchId });
       if (state.matchRoomId === null) refusedMatchId = null;
       else if (state.matchRoomId !== refusedMatchId) void enterMatch(state.matchRoomId);
+    });
+    room.onMessage('chat', (message: LobbyChatMessage) => {
+      if (lobbyRoom !== room) return;
+      const line = { key: nextChatKey++, ...message };
+      set({ chat: [...get().chat, line].slice(-CHAT_LINES) });
+      window.setTimeout(() => set({ chat: get().chat.filter((c) => c.key !== line.key) }), CHAT_LINE_MS);
     });
     room.onLeave((code) => {
       if (lobbyRoom !== room) return; // we left on purpose
@@ -138,6 +154,7 @@ export const useRoomStore = create<RoomStore>((set, get) => {
     playerId: null,
     error: null,
     matchInProgress: false,
+    chat: [],
     createRoom: async (name) => {
       closeConnections();
       nickname = name;
@@ -153,6 +170,8 @@ export const useRoomStore = create<RoomStore>((set, get) => {
     setTeam: (team) => lobbyRoom?.send('team', team),
     setHero: (heroId) => lobbyRoom?.send('hero', heroId),
     startMatch: () => lobbyRoom?.send('start'),
+    setReady: (ready) => lobbyRoom?.send('ready', ready),
+    sendChat: (message) => lobbyRoom?.send('chat', 'id' in message ? message.id : message),
     backToLobby: async () => {
       const code = get().code;
       closeConnections();
@@ -160,7 +179,7 @@ export const useRoomStore = create<RoomStore>((set, get) => {
     },
     leave: () => {
       closeConnections();
-      set({ phase: 'idle', code: null, lobby: null, error: null, matchInProgress: false });
+      set({ phase: 'idle', code: null, lobby: null, error: null, matchInProgress: false, chat: [] });
     },
   };
 });

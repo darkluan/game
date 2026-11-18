@@ -41,6 +41,9 @@ const IDLE_CLOSE_MS = 3000;
 /** The item shop. Buying only works at the fountain or while waiting to respawn. */
 export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSession; onClose: () => void }) {
   const full = hud.items.length >= hud.itemSlots;
+  // Opens on what suits this hero, like the shops of other games of the kind; everything is one tab away.
+  const [tab, setTab] = useState<'recommended' | 'all'>('recommended');
+  const listed = tab === 'recommended' ? hud.recommended.map((id) => ITEMS[id]) : ITEM_LIST;
   // Closes itself when left alone, so it never sits over the fight. Every touch starts the wait again.
   const [activity, setActivity] = useState(0);
   const lastActivity = useRef(0);
@@ -80,18 +83,40 @@ export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSes
             : tr('Đang ở đền: mua được.')
           : tr('Chỉ mua bán được khi đứng ở đền của đội mình.')}
       </p>
+      <div role="tablist" className="flex gap-1.5 text-xs">
+        {(['recommended', 'all'] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={`flex-1 cursor-pointer rounded-md border px-2 py-1 font-semibold ${tab === id ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}
+          >
+            {id === 'recommended' ? tr('Gợi ý cho {hero}', { hero: hud.heroName.split(',')[0] }) : tr('Tất cả')}
+          </button>
+        ))}
+      </div>
       <ul onScroll={stayOpen} className="flex flex-col gap-1 overflow-y-auto">
-        {ITEM_LIST.map((item) => {
+        {listed.map((item, i) => {
           const price = itemPrice(item.id, hud.discount);
-          const can = hud.canShop && !full && hud.gold >= price;
+          const owned = tab === 'recommended' && hud.items.includes(item.id);
+          const next = tab === 'recommended' && hud.suggestion?.id === item.id;
+          const can = hud.canShop && !full && !owned && hud.gold >= price;
           return (
             <li key={item.id}>
               <button
                 type="button"
                 disabled={!can}
                 onClick={() => game.send({ t: 'buy', itemId: item.id })}
-                className="flex w-full items-center justify-between gap-2 rounded-sm border border-border bg-background px-2 py-1 text-left text-xs enabled:cursor-pointer enabled:hover:border-primary disabled:opacity-50"
+                className={`flex w-full items-center justify-between gap-2 rounded-sm border bg-background px-2 py-1 text-left text-xs enabled:cursor-pointer enabled:hover:border-primary disabled:opacity-50 ${next ? 'border-gold' : 'border-border'}`}
               >
+                {/* The build is bought in order: the number is the step, the tick an item already owned. */}
+                {tab === 'recommended' && (
+                  <span className={`w-4 text-center font-bold ${owned ? 'text-hp' : 'text-muted-foreground'}`}>
+                    {owned ? '✓' : i + 1}
+                  </span>
+                )}
                 <GameIcon id={item.id} className="size-8 shrink-0 text-gold" />
                 <span className="flex-1">
                   <span className="font-semibold">{tr(item.name)}</span>
