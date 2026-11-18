@@ -5,6 +5,7 @@ import { Actor } from './Actor';
 import { actorOptions, type HeroLook } from './heroModels';
 import { Hydra } from './Hydra';
 import { LongDragon } from './LongDragon';
+import { Mech } from './Mech';
 import { Swordsman } from './Swordsman';
 import { useModels } from './models';
 
@@ -30,7 +31,9 @@ export function useHeroActors(looks: readonly HeroLook[], castShadow: boolean): 
           ? new LongDragon(look.longDragon, look.height ?? 2.2, castShadow)
           : look.swordsman
             ? new Swordsman(look.swordsman, look.height ?? 1.9, castShadow)
-            : new Actor(gltfs[next++], look.rig, actorOptions(look, castShadow)),
+            : look.mech
+              ? new Mech(look.mech, look.height ?? 2.6, castShadow)
+              : new Actor(gltfs[next++], look.rig, actorOptions(look, castShadow)),
     );
   }, [gltfs, looks, castShadow]);
 }

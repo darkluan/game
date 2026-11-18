@@ -1,11 +1,8 @@
 import type { ActorOptions, Rig } from './Actor';
 import { HYDRA_ACTIONS, type HydraColours } from './Hydra';
 import { LONG_DRAGON_ACTIONS, type LongDragonColours } from './LongDragon';
+import { MECH_ACTIONS, type MechColours } from './Mech';
 import { SWORDSMAN_ACTIONS, type SwordsmanColours } from './Swordsman';
-import { MODELS } from './models';
-
-const BASE = { idle: 'Idle', run: 'Running_A', death: 'Death_A' } as const;
-const clip = (name: string, seconds = 0.6) => ({ clip: name, seconds });
 
 export interface HeroLook {
   model: string;
@@ -31,6 +28,8 @@ export interface HeroLook {
   swordsman?: SwordsmanColours;
   /** Set for a hero drawn as the long eastern dragon built in code; `model` is then empty. */
   longDragon?: LongDragonColours;
+  /** Set for a hero drawn as a war machine built in code; `model` is then empty. */
+  mech?: MechColours;
 }
 
 export interface HeroModel extends HeroLook {
@@ -43,34 +42,6 @@ export function actorOptions(look: HeroLook, castShadow: boolean): ActorOptions 
   const { scale, height, turn, hide, tint, palette, brightness } = look;
   return { scale, height, turn, hide, tint, palette, brightness, castShadow };
 }
-
-/** Eye colours for the models that are coloured by material. */
-const EYE = { Eye_White: '#ffffff', Eye_Black: '#14181f' };
-
-/** A mech from the Quaternius pack. A melee mech swings instead of shooting. */
-function mech(model: string, height: number, melee = false): HeroLook {
-  const strike = melee ? 'SwordSlash' : 'Shoot';
-  return {
-    model,
-    hide: [],
-    scale: 1,
-    height,
-    rig: {
-      idle: 'Idle',
-      run: 'Run',
-      death: 'Death',
-      actions: {
-        attack: clip(melee ? 'Punch' : 'Shoot', 0.5),
-        Q: clip(strike),
-        W: clip(melee ? 'Jump' : 'Pickup', 0.8),
-        E: clip(melee ? strike : 'Kick'),
-        R: clip(melee ? 'Kick' : 'Jump', 0.8),
-      },
-    },
-  };
-}
-
-const MAGE_HIDDEN = ['Spellbook', 'Spellbook_open', '1H_Wand'];
 
 /**
  * How each hero looks. The dragons are built in code and grow as they evolve;
@@ -151,40 +122,68 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     },
     rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
   },
+  // The dawn goddess: white and gold, a sun turning behind her head, wings of light, floating. Built in code.
   sola: {
-    model: MODELS.mage,
-    hide: MAGE_HIDDEN,
-    tint: '#fff0b8',
-    scale: 0.95,
-    rig: {
-      ...BASE,
-      actions: {
-        attack: clip('Spellcast_Shoot'),
-        Q: clip('Spellcast_Raise'),
-        W: clip('Spellcast_Raise'),
-        E: clip('Spellcast_Shoot'),
-        R: clip('Spellcast_Long', 1),
-      },
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.05,
+    showcaseScale: 0.9,
+    swordsman: {
+      kind: 'mage',
+      divine: 'sun',
+      cloth: '#e6d6b4',
+      armour: '#c9a24a',
+      trim: '#ffd76a',
+      ribbon: '#ffe9a0',
+      skin: '#f6d6bc',
+      hair: '#f2c868',
+      blade: '#fff6dc',
+      gem: '#ffb347',
     },
+    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
+  // The god of shadow: hooded in deep violet, a dark crescent behind him, wisps of shadow trailing. Built in code.
   vesper: {
-    model: MODELS.rogueHooded,
-    hide: ['1H_Crossbow', '2H_Crossbow', 'Throwable'],
-    tint: '#b9a2e8',
-    scale: 0.92,
-    rig: {
-      ...BASE,
-      actions: {
-        attack: clip('Dualwield_Melee_Attack_Slice', 0.5),
-        Q: clip('Dualwield_Melee_Attack_Stab'),
-        W: clip('Spellcast_Raise'),
-        E: clip('Throw'),
-        R: clip('Spellcast_Raise', 0.8),
-      },
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.05,
+    showcaseScale: 0.9,
+    swordsman: {
+      kind: 'blade',
+      divine: 'moon',
+      cloth: '#2a1c4a',
+      armour: '#1d1933',
+      trim: '#8a7ab8',
+      ribbon: '#b98cff',
+      skin: '#d9c9e8',
+      hair: '#e8e0ff',
+      blade: '#cfc6ee',
+      gem: '#c084ff',
     },
+    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
-  bolt7: mech(MODELS.mechMike, 3),
-  mekka: mech(MODELS.mechLeela, 2.7),
+  // A gun walker in steel blue: a long cannon on one shoulder, twin barrels for an arm. Built in code.
+  bolt7: {
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.5,
+    showcaseScale: 0.9,
+    mech: { kind: 'gunner', hull: '#3d5a80', plate: '#c9d6e8', glow: '#5ad7ff' },
+    rig: { idle: '', run: '', death: '', actions: MECH_ACTIONS },
+  },
+  // A round little builder in workshop yellow, a crane over its back and a drone circling it. Built in code.
+  mekka: {
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.2,
+    showcaseScale: 0.9,
+    mech: { kind: 'engineer', hull: '#c98a2b', plate: '#f2d9a0', glow: '#7dffb0' },
+    rig: { idle: '', run: '', death: '', actions: MECH_ACTIONS },
+  },
   // A star mage in a long indigo robe and a tall bent hat, a crescent staff in one hand and a book
   // floating over the other. Built in code.
   mira: {
@@ -226,23 +225,37 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     },
     rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
   },
+  // The god of the mountain: a broad old giant crowned and horned in stone, a great hammer, boulders circling him. Built in code.
   orun: {
-    model: MODELS.barbarian,
-    hide: ['1H_Axe_Offhand', 'Barbarian_Round_Shield', '1H_Axe', 'Mug'],
-    tint: '#ffe9b0',
-    scale: 1.12,
-    rig: {
-      ...BASE,
-      actions: {
-        attack: clip('2H_Melee_Attack_Chop', 0.7),
-        Q: clip('2H_Melee_Attack_Chop'),
-        W: clip('Block', 0.8),
-        E: clip('2H_Melee_Attack_Spin', 0.7),
-        R: clip('Jump_Full_Short', 0.7),
-      },
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.35,
+    showcaseScale: 0.9,
+    swordsman: {
+      kind: 'blade',
+      divine: 'mountain',
+      cloth: '#8a6a44',
+      armour: '#b9b3a6',
+      trim: '#d8b170',
+      ribbon: '#e0b070',
+      skin: '#c99a72',
+      hair: '#ece6da',
+      blade: '#b9b2a6',
+      gem: '#ffb45a',
     },
+    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
-  raze3: mech(MODELS.mechStan, 2.8, true),
+  // A lean black killer, a blade on each arm and a saw that never stops, lit in red. Built in code.
+  raze3: {
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.6,
+    showcaseScale: 0.9,
+    mech: { kind: 'striker', hull: '#2b2f3a', plate: '#8b93a7', glow: '#ff3b5c' },
+    rig: { idle: '', run: '', death: '', actions: MECH_ACTIONS },
+  },
   // A field medic in a deep green hooded cloak, a satchel at her hip, a hand crossbow and a mending
   // light she carries over her other hand. Built in code.
   elna: {
@@ -284,24 +297,35 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
   },
   // The wind god is a small robed spirit, in sky white and gold.
+  // The god of wind: pale teal, floating, ringed by turning hoops of air, feathers in her hair and long scarves flying. Built in code.
   aeris: {
-    model: MODELS.windSpirit,
+    model: '',
     hide: [],
-    palette: { ...EYE, Wizard_Main: '#dff3ff', Wizard_Secondary: '#f2c94c' },
     scale: 1,
-    height: 2.1,
-    rig: {
-      idle: 'CharacterArmature|Idle',
-      run: 'CharacterArmature|Walk',
-      death: 'CharacterArmature|Death',
-      actions: {
-        attack: clip('CharacterArmature|Bite_Front', 0.5),
-        Q: clip('CharacterArmature|Bite_Front'),
-        W: clip('CharacterArmature|Yes', 0.7),
-        E: clip('CharacterArmature|Jump', 0.6),
-        R: clip('CharacterArmature|Dance', 1),
-      },
+    height: 2.05,
+    showcaseScale: 0.9,
+    swordsman: {
+      kind: 'mage',
+      divine: 'wind',
+      cloth: '#cfeae4',
+      armour: '#7fb7b0',
+      trim: '#e8fbff',
+      ribbon: '#b8f3ff',
+      skin: '#f2d9c6',
+      hair: '#a9e6dc',
+      blade: '#e8fbff',
+      gem: '#7fe7ff',
     },
+    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
-  titan9: mech(MODELS.mechGeorge, 3.3, true),
+  // A wall on legs in olive armour: huge shoulders, a shield, fists like anvils, stacks that burn. Built in code.
+  titan9: {
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 3.0,
+    showcaseScale: 0.9,
+    mech: { kind: 'fortress', hull: '#4a5548', plate: '#aab79a', glow: '#ffb347' },
+    rig: { idle: '', run: '', death: '', actions: MECH_ACTIONS },
+  },
 };
