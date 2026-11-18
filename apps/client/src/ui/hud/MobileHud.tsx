@@ -1,5 +1,5 @@
 import { tr } from '@/i18n';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { type AbilitySlot, ITEMS, type Vec2 } from '@game/core';
 import { attackNearest, castSlot, castSpell, moveInDirection } from '@/input/commands';
 import type { AbilityHud, GameSession, HudState, SpellHud } from '@/lib/session';
@@ -77,6 +77,9 @@ function RoundSpell({ spell, game }: { spell: SpellHud; game: GameSession }) {
   );
 }
 
+/** Holding + this long shows the next level instead of buying it. */
+const HOLD_TO_PREVIEW_MS = 350;
+
 function RoundAbility({
   ability,
   game,
@@ -84,10 +87,11 @@ function RoundAbility({
 }: {
   ability: AbilityHud;
   game: GameSession;
-  /** The player tapped +: show what the next level brings before spending the point. */
+  /** The player is holding +: show what the next level brings. */
   onPreview: (slot: AbilitySlot) => void;
 }) {
   const spot = ABILITY_SPOTS[ability.slot];
+  const hold = useRef<number | undefined>(undefined);
   const cooling = ability.level > 0 && ability.cooldownLeft > 0;
   return (
     <div className="absolute" style={{ right: spot.right, bottom: spot.bottom, width: spot.size, height: spot.size }}>
@@ -121,7 +125,24 @@ function RoundAbility({
         <button
           type="button"
           aria-label={tr('Nâng cấp {name}', { name: ability.name })}
-          onPointerDown={() => onPreview(ability.slot)}
+          // A tap spends the point at once, as in other games of the kind; holding shows what it would buy.
+          onPointerDown={() => {
+            hold.current = window.setTimeout(() => {
+              hold.current = undefined;
+              onPreview(ability.slot);
+            }, HOLD_TO_PREVIEW_MS);
+          }}
+          onPointerUp={() => {
+            if (hold.current === undefined) return;
+            window.clearTimeout(hold.current);
+            hold.current = undefined;
+            game.send({ t: 'levelUp', slot: ability.slot });
+          }}
+          onPointerCancel={() => {
+            window.clearTimeout(hold.current);
+            hold.current = undefined;
+          }}
+          onContextMenu={(e) => e.preventDefault()}
           className="pointer-events-auto absolute -top-2 -left-2 size-7 touch-none rounded-full bg-primary text-base leading-none font-bold text-primary-foreground"
         >
           +
@@ -329,10 +350,11 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
         <Joystick onMove={walk} onRelease={halt} />
       </div>
 
-      {/* There is no hovering on a touch screen: + first shows what the next level brings, then asks. */}
+      {/* There is no hovering on a touch screen: holding + shows what the next level brings. */}
       {preview && (
         <div className="pointer-events-auto absolute right-[16.5rem] bottom-24 z-20 flex max-h-[calc(100dvh-7rem)] w-64 flex-col gap-2 overflow-y-auto rounded-lg hud-sheet p-2 text-xs">
           <AbilityInfo ability={preview} next />
+          <p className="text-[11px] text-muted-foreground">{tr('Chạm + để nâng ngay · giữ + để xem trước')}</p>
           <div className="flex gap-2">
             <button
               type="button"

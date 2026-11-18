@@ -97,6 +97,10 @@ export function LobbyShell({ children, aside, actions, heroId, sides }: Props) {
           <Link to="/" className="flex items-center gap-3 text-sm font-extrabold tracking-[0.3em] uppercase">
             <img src="favicon.svg" alt="" className="size-9 squat:size-6" />
             {tr('Tứ Tộc')}
+            {/* The game is still being tried out: say so wherever its name is shown. */}
+            <span className="rounded-full border border-primary px-2 py-0.5 text-[10px] tracking-widest text-primary">
+              {tr('Bản thử nghiệm')}
+            </span>
           </Link>
           <ServerStatusChip />
         </header>
