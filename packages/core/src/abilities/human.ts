@@ -1,6 +1,10 @@
+import { seconds } from '../data/balance.js';
 import type { AbilityEffect } from '../systems/ability.js';
+import { spawnZone } from '../systems/summons.js';
 
 const MAX_TRAPS = 3;
+/** Mira's starfall hits twice a second. */
+const STARFALL_PULSE_TICKS = seconds(0.5);
 
 export const humanEffects: Record<string, AbilityEffect> = {
   // ---- Kael ----
@@ -76,5 +80,36 @@ export const humanEffects: Record<string, AbilityEffect> = {
     for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
       damage(e, param('damage') * (sim.hasStatus(e, 'mark') ? param('markedMult') : 1));
     }
+  },
+
+  // ---- Mira ----
+
+  /** A piercing bolt of starlight. */
+  mira_bolt({ caster, point, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) damage(e, param('damage'));
+  },
+
+  /** Root every enemy in a small area. */
+  mira_bind({ sim, caster, point, param, damage }) {
+    for (const e of sim.enemiesWithin(caster.team, point, param('radius'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'root', param('rootTicks'));
+    }
+  },
+
+  /** A short teleport. */
+  mira_blink({ point, blink }) {
+    blink(point);
+  },
+
+  /** Stars keep falling on a wide area. */
+  mira_starfall({ sim, caster, point, param, power }) {
+    spawnZone(sim, caster, point, {
+      effect: 'burn',
+      radius: param('radius'),
+      lifeTicks: param('lifeTicks'),
+      everyTicks: STARFALL_PULSE_TICKS,
+      value: (param('burn') * power) / 2,
+    });
   },
 };

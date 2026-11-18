@@ -240,3 +240,86 @@ describe('buildings', () => {
     expect(tower.health.hp).toBeLessThan(hp);
   });
 });
+
+describe('Mira', () => {
+  it('abilities hit 30% harder on a target below 35% health', () => {
+    const bolt = (hpFraction: number) => {
+      const { b, cast } = arena('mira', 'ignar', 5);
+      b.health.hp = b.health.maxHp * hpFraction;
+      const before = b.health.hp;
+      cast('Q');
+      return before - b.health.hp;
+    };
+    expect(bolt(0.3) / bolt(0.9)).toBeCloseTo(HEROES.mira.passive!.params.mult, 1);
+  });
+
+  it('roots enemies in an area and blinks away', () => {
+    const { sim, a, b, cast } = arena('mira', 'kael', 5);
+    cast('W');
+    expect(sim.hasStatus(b, 'root')).toBe(true);
+    cast('E', { x: -10, z: 0 });
+    expect(a.pos.x).toBeCloseTo(-HEROES.mira.abilities.E.range, 0);
+  });
+});
+
+describe('Zerak', () => {
+  it('dives onto a far target, stuns it, and buffs his own attacks', () => {
+    const { sim, a, b, cast } = arena('zerak', 'kael', 6.5);
+    cast('R');
+    expect(Math.hypot(a.pos.x - b.pos.x, a.pos.z - b.pos.z)).toBeLessThan(2);
+    expect(sim.hasStatus(b, 'stun')).toBe(true);
+    const before = sim.statusSum(a, 'attack');
+    cast('W');
+    expect(sim.statusSum(a, 'attack')).toBeGreaterThan(before);
+    expect(sim.hasStatus(a, 'haste')).toBe(true);
+  });
+
+  it('evolves like the other dragons', () => {
+    const { a } = arena('zerak', 'kael');
+    expect(a.hero.stage).toBe(2);
+    expect(a.hero.maxMana).toBe(0);
+  });
+});
+
+describe('Orun', () => {
+  it('drags enemies on a line toward himself', () => {
+    const { b, cast } = arena('orun', 'kael', 6);
+    cast('E');
+    expect(b.pos.x).toBeLessThan(3.5);
+    expect(b.pos.x).toBeGreaterThan(0.5);
+  });
+
+  it('armours himself and nearby allied minions', () => {
+    const { sim, a, cast } = arena('orun', 'kael', 30);
+    run(sim, MINION.firstWaveTick + 1);
+    const minion = sim.q.minions.entities.find((m) => m.team === 0)!;
+    place(minion, a.pos.x + 2, 0);
+    cast('W');
+    expect(sim.statusSum(a, 'armor')).toBe(HEROES.orun.abilities.W.params.armor[0]);
+    expect(sim.hasStatus(minion, 'armor')).toBe(true);
+    const armoured = sim.dealDamage(a, 200, null);
+    sim.removeStatus(a, 'armor');
+    expect(sim.dealDamage(a, 200, null)).toBeGreaterThan(armoured);
+  });
+});
+
+describe('Raze-3', () => {
+  it('executes: appears behind the target and hits 50% harder when it is low', () => {
+    const strike = (hpFraction: number) => {
+      const { a, b, cast } = arena('raze3', 'ignar', 4);
+      b.health.hp = b.health.maxHp * hpFraction;
+      const before = b.health.hp;
+      cast('R');
+      expect(a.pos.x).toBeGreaterThan(b.pos.x); // b faces west
+      return before - b.health.hp;
+    };
+    expect(strike(0.3) / strike(0.9)).toBeCloseTo(HEROES.raze3.abilities.R.params.lowMult[0], 1);
+  });
+
+  it('runs on Heat and marks with its thrown blade', () => {
+    const { sim, a, b, cast } = arena('raze3', 'kael', 5);
+    cast('E');
+    expect(sim.hasStatus(b, 'mark')).toBe(true);
+    expect(a.hero.heat).toBe(HEROES.raze3.abilities.E.cost[0]);
+  });
+});

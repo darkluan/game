@@ -8,6 +8,7 @@ import { angleTo, dist, distToSegment } from '../math.js';
 import { HEAT } from '../races/index.js';
 import type { HeroEntity, Sim, UnitEntity } from '../sim/Sim.js';
 import type { AbilityDef, AbilitySlot, Command, Vec2 } from '../types.js';
+import { abilityDamageBonus } from './passives.js';
 import { abilityPower } from './stats.js';
 
 const DASH_STEP = 0.25;
@@ -128,7 +129,8 @@ export function castAbility(sim: Sim, caster: HeroEntity, cmd: Extract<Command, 
     wasStealthed,
     power,
     param: (name) => def.params[name][level - 1],
-    damage: (victim, amount) => sim.dealDamage(victim, amount * power, caster),
+    damage: (victim, amount) =>
+      sim.dealDamage(victim, amount * power * abilityDamageBonus(sim, caster, victim), caster),
     enemiesOnLine: (from, to, width) =>
       sim
         .enemiesWithin(caster.team, { x: (from.x + to.x) / 2, z: (from.z + to.z) / 2 }, dist(from, to) / 2 + width)

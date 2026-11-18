@@ -59,6 +59,36 @@ export function raceOf(race: Race): RaceDef {
   return RACES[race];
 }
 
+/**
+ * Race synergy. A team of three different races moves faster. A team with two heroes of one race
+ * has that race's own mechanic strengthened.
+ */
+export const SYNERGY = {
+  /** Three different races: fraction of extra move speed for the whole team. */
+  speed: 0.06,
+  /** Two humans: the shop discount becomes this. */
+  humanDiscount: 0.2,
+  /** Two dragons: evolutions come this many levels earlier. */
+  dragonEarlyLevels: 1,
+  /** Two gods: each follower counts for this much more. */
+  godFollowerMult: 1.5,
+  /** Two machines: Heat falls this much faster. */
+  machineDecayMult: 1.5,
+} as const;
+
+/** What a team's line-up earns it. */
+export interface TeamSynergy {
+  /** Three different races. */
+  speed: boolean;
+  /** The race two of the team's heroes share, if any. */
+  race: Race | null;
+}
+
+export function synergyOf(races: Race[]): TeamSynergy {
+  const shared = races.find((race, i) => races.indexOf(race) !== i) ?? null;
+  return { speed: races.length >= 3 && new Set(races).size === races.length, race: shared };
+}
+
 /** Gods grow stronger with allied minions ("followers") close by. */
 export const FOLLOWERS = {
   range: 8,

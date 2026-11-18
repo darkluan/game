@@ -83,4 +83,38 @@ export const godEffects: Record<string, AbilityEffect> = {
       value: 0,
     });
   },
+
+  // ---- Orun ----
+
+  /** A hammer blow that damages and slows hard. */
+  orun_hammer({ sim, caster, target, param, damage }) {
+    if (!target) return;
+    damage(target, param('damage'));
+    sim.addStatus(target, 'slow', param('slowTicks'), param('slow'));
+    if (sim.isTargetable(target)) caster.hero.order = { t: 'attack', targetId: target.id };
+  },
+
+  /** Armour for himself and every allied hero and minion close by. */
+  orun_bulwark({ sim, caster, def, param }) {
+    for (const e of sim.alliesWithin(caster.team, caster.pos, def.range)) {
+      if (e.hero || e.minion) sim.addStatus(e, 'armor', param('buffTicks'), param('armor'));
+    }
+  },
+
+  /** Tear the ground along a line and drag the enemies on it toward him. */
+  orun_pull({ sim, caster, point, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
+      damage(e, param('damage'));
+      // Pushing away from the point mirrored through the enemy moves it toward the caster.
+      sim.knockback(e, { x: 2 * e.pos.x - caster.pos.x, z: 2 * e.pos.z - caster.pos.z }, param('pull'));
+    }
+  },
+
+  /** The ground shakes: damage and a stun for everything around him. */
+  orun_quake({ sim, caster, param, damage }) {
+    for (const e of sim.enemiesWithin(caster.team, caster.pos, param('radius'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'stun', param('stunTicks'));
+    }
+  },
 };

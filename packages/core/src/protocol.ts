@@ -1,6 +1,7 @@
 import { RELIC, xpToNext } from './data/balance.js';
 import type { HeroEntity, Sim } from './sim/Sim.js';
-import { canShop } from './systems/shop.js';
+import type { TeamSynergy } from './races/index.js';
+import { canShop, discountOf } from './systems/shop.js';
 import {
   ABILITY_SLOTS,
   type Entity,
@@ -94,6 +95,10 @@ export interface YouSnap {
   items: string[];
   /** The shop is open (at the fountain, or waiting to respawn). */
   canShop: boolean;
+  /** Fraction this hero gets off shop prices. */
+  discount: number;
+  /** What the team's mix of races earns it. */
+  synergy: TeamSynergy;
 }
 
 export interface Snapshot {
@@ -229,6 +234,8 @@ export function youSnapshotOf(sim: Sim, h: HeroEntity): YouSnap {
     shield: Math.ceil(sim.statusSum(h, 'shield')),
     items: [...hero.items],
     canShop: canShop(sim, h),
+    discount: discountOf(sim.heroDef(hero.defId), sim.synergy[h.team]),
+    synergy: sim.synergy[h.team],
   };
 }
 

@@ -31,6 +31,13 @@ export function modifyDamageTaken(sim: Sim, victim: Entity, source: Entity | nul
   return hook ? hook(victim, source, amount, passive.params) : amount;
 }
 
+/** Multiplier a hero's passive gives its ability damage against this victim. */
+export function abilityDamageBonus(sim: Sim, caster: Entity, victim: Entity): number {
+  const passive = caster.hero && sim.heroDef(caster.hero.defId).passive;
+  if (passive?.effect !== 'finisher' || !victim.health) return 1;
+  return victim.health.hp / victim.health.maxHp < passive.params.threshold ? passive.params.mult : 1;
+}
+
 /** Extra gold a hero's passive pays for killing an enemy hero. */
 export function bonusKillGold(sim: Sim, killer: Entity): number {
   const passive = killer.hero && sim.heroDef(killer.hero.defId).passive;

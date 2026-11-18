@@ -1,4 +1,5 @@
 import { seconds } from '../data/balance.js';
+import { angleTo } from '../math.js';
 import type { AbilityEffect } from '../systems/ability.js';
 import { mostWounded } from './god.js';
 
@@ -81,5 +82,37 @@ export const machineEffects: Record<string, AbilityEffect> = {
       sim.heal(e, param('repair'));
       sim.addStatus(e, 'attack', param('buffTicks'), param('attack'));
     }
+  },
+
+  // ---- Raze-3 ----
+
+  /** Slide straight through enemies, cutting all of them. */
+  raze_saw({ caster, def, param, damage, dash, enemiesOnLine }) {
+    const from = dash(def.range);
+    for (const e of enemiesOnLine(from, caster.pos, param('width'))) damage(e, param('damage'));
+  },
+
+  /** Overpressure: faster, and harder basic attacks, for a few seconds. */
+  raze_boost({ sim, caster, param }) {
+    sim.addStatus(caster, 'haste', param('buffTicks'), param('haste'));
+    sim.addStatus(caster, 'attack', param('buffTicks'), param('attack'));
+  },
+
+  /** A thrown blade that damages and marks its target. */
+  raze_blade({ sim, target, param, damage }) {
+    if (!target) return;
+    damage(target, param('damage'));
+    sim.addStatus(target, 'mark', param('markTicks'), param('mark'));
+  },
+
+  /** Appear behind a target and strike; much harder when it is already low. */
+  raze_execute({ sim, caster, target, param, damage, blink }) {
+    if (!target) return;
+    const gap = target.radius + caster.radius + 0.3;
+    blink({ x: target.pos.x - Math.sin(target.facing) * gap, z: target.pos.z - Math.cos(target.facing) * gap });
+    caster.facing = angleTo(caster.pos, target.pos);
+    const low = target.health.hp / target.health.maxHp < param('threshold');
+    damage(target, param('damage') * (low ? param('lowMult') : 1));
+    if (sim.isTargetable(target)) caster.hero.order = { t: 'attack', targetId: target.id };
   },
 };

@@ -92,4 +92,36 @@ export const dragonEffects: Record<string, AbilityEffect> = {
       sim.knockback(e, caster.pos, param('knockback'));
     }
   },
+
+  // ---- Zerak ----
+
+  /** A short lunge that claws everything in its path. */
+  zerak_claw({ caster, def, param, damage, dash, enemiesOnLine }) {
+    const from = dash(def.range);
+    for (const e of enemiesOnLine(from, caster.pos, param('width'))) damage(e, param('damage'));
+  },
+
+  /** Charged scales: stronger basic attacks and more speed for a while. */
+  zerak_charge({ sim, caster, param }) {
+    sim.addStatus(caster, 'attack', param('buffTicks'), param('attack'));
+    sim.addStatus(caster, 'haste', param('buffTicks'), param('haste'));
+  },
+
+  /** A roar that hurts and silences everything nearby. */
+  zerak_roar({ sim, caster, param, damage }) {
+    for (const e of sim.enemiesWithin(caster.team, caster.pos, param('radius'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'silence', param('silenceTicks'));
+    }
+  },
+
+  /** Dive onto one enemy: heavy damage and a stun, then keep attacking it. */
+  zerak_strike({ sim, caster, target, dir, param, damage, blink }) {
+    if (!target) return;
+    const gap = target.radius + caster.radius + 0.2;
+    blink({ x: target.pos.x - dir.x * gap, z: target.pos.z - dir.z * gap });
+    damage(target, param('damage'));
+    sim.addStatus(target, 'stun', param('stunTicks'));
+    if (sim.isTargetable(target)) caster.hero.order = { t: 'attack', targetId: target.id };
+  },
 };

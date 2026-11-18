@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HEROES, ITEMS, itemPrice } from '../src/index.js';
+import { discountOf, HEROES, ITEMS, itemPrice } from '../src/index.js';
 import { arena, place, run } from './helpers.js';
 
 /** A hero standing on its own fountain with plenty of gold. */
@@ -55,7 +55,7 @@ describe('shop', () => {
     };
     expect(fill('ignar')).toEqual({ count: 4, spent: 4 * ITEMS.leather_armor.cost });
     expect(fill('kael')).toEqual({ count: 5, spent: 5 * ITEMS.leather_armor.cost * 0.9 });
-    expect(itemPrice(HEROES.lyra, 'great_blade')).toBe(675);
+    expect(itemPrice('great_blade', discountOf(HEROES.lyra, { speed: false, race: null }))).toBe(675);
   });
 
   it('buys an item back for half its price', () => {

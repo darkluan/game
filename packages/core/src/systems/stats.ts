@@ -1,6 +1,6 @@
 import { HERO } from '../data/balance.js';
 import { itemTotals } from '../data/items.js';
-import { FOLLOWERS, HEAT } from '../races/index.js';
+import { FOLLOWERS, HEAT, SYNERGY } from '../races/index.js';
 import type { HeroEntity, Sim } from '../sim/Sim.js';
 import type { EvolutionDef, HeroDef } from '../types.js';
 
@@ -21,13 +21,16 @@ export function recomputeStats(sim: Sim, h: HeroEntity): void {
   const levels = hero.level - 1;
   const items = itemTotals(hero.items);
 
-  const stage = (def.evolutions ?? []).filter((e) => hero.level >= e.level).length;
+  const synergy = sim.synergy[h.team];
+  const paired = synergy.race === def.race;
+  const early = paired && def.race === 'dragon' ? SYNERGY.dragonEarlyLevels : 0;
+  const stage = (def.evolutions ?? []).filter((e) => hero.level >= e.level - early).length;
   if (stage !== hero.stage) {
     hero.stage = stage;
     sim.emit({ t: 'evolve', id: h.id, stage });
   }
   const evolution = evolutionOf(def, stage);
-  const followers = def.race === 'god' ? hero.followers : 0;
+  const followers = def.race === 'god' ? hero.followers * (paired ? SYNERGY.godFollowerMult : 1) : 0;
   const siege = hero.siege ? def.abilities.W.params : undefined;
   const siegeLevel = Math.max(0, hero.abilityLevels.W - 1);
 
@@ -46,7 +49,7 @@ export function recomputeStats(sim: Sim, h: HeroEntity): void {
   h.attacker.damage = attack * (1 + followers * FOLLOWERS.attackPerFollower + (siege?.attack[siegeLevel] ?? 0));
   h.attacker.range = def.base.attackRange + (siege?.range[siegeLevel] ?? 0);
   h.attacker.intervalTicks = Math.max(4, Math.round(def.base.attackInterval / (1 + items.attackSpeed)));
-  h.mover.speed = def.base.moveSpeed + items.moveSpeed;
+  h.mover.speed = (def.base.moveSpeed + items.moveSpeed) * (synergy.speed ? 1 + SYNERGY.speed : 1);
   h.radius = HERO.radius * evolution.scale;
 }
 

@@ -21,7 +21,7 @@ export const MINION = {
 } as const;
 
 export const TOWER = {
-  hp: 2700,
+  hp: 2900,
   armor: 40,
   attack: 95,
   range: 9,
@@ -33,7 +33,7 @@ export const TOWER = {
   goldPerEnemyHero: 120,
 } as const;
 
-export const SHRINE = { hp: 4200, armor: 40, radius: 2.5 } as const;
+export const SHRINE = { hp: 4500, armor: 40, radius: 2.5 } as const;
 
 export const HERO = {
   radius: 0.6,

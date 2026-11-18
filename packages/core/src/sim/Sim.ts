@@ -14,6 +14,7 @@ import { minionSpawnSystem, minionSystem } from '../systems/minion.js';
 import { heroOrderSystem, separationSystem } from '../systems/movement.js';
 import { modifyDamageTaken } from '../systems/passives.js';
 import { relicSystem, teamRelic } from '../systems/relic.js';
+import { synergyOf, type TeamSynergy } from '../races/index.js';
 import { recomputeStats } from '../systems/stats.js';
 import { summonSystem } from '../systems/summons.js';
 import { towerSystem } from '../systems/tower.js';
@@ -79,6 +80,8 @@ export class Sim {
   };
   /** Per jungle camp: monsters still alive and when the camp comes back. */
   readonly camps: { alive: number; respawnAt: number }[];
+  /** What each team's mix of races earns it, by team. */
+  readonly synergy: [TeamSynergy, TeamSynergy];
   /** The relic waiting on a pedestal: who is capturing it and for how many ticks. */
   relic: { pedestal: number; type: RelicType; team: Team | null; progress: number } | null = null;
   /** The relic buff each team holds, by team. */
@@ -132,6 +135,9 @@ export class Sim {
         tower: { tier: t.tier },
       });
     }
+    this.synergy = [0, 1].map((team) =>
+      synergyOf(options.players.filter((p) => p.team === team).map((p) => this.heroDef(p.heroId).race)),
+    ) as [TeamSynergy, TeamSynergy];
     const perTeam = [0, 0];
     for (const p of options.players) this.spawnHero(p, perTeam[p.team]++);
   }

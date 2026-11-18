@@ -1,7 +1,7 @@
 import { BEAST, HERO, JUNGLE, MAX_LEVEL, MINION, TICK_RATE, TOWER, xpToNext } from '../data/balance.js';
 import { itemTotals } from '../data/items.js';
 import { dist } from '../math.js';
-import { FOLLOWERS, HEAT, raceOf } from '../races/index.js';
+import { FOLLOWERS, HEAT, raceOf, SYNERGY } from '../races/index.js';
 import type { HeroEntity, Sim } from '../sim/Sim.js';
 import type { Entity } from '../types.js';
 import { onBeastSlain, onMarchingBeastDeath } from './beast.js';
@@ -138,7 +138,8 @@ export function heroUpkeepSystem(sim: Sim): void {
         hero.overloadUntil = 0;
         hero.heat = 0;
       } else if (hero.overloadUntil === 0 && sim.tick - hero.lastCastTick > HEAT.decayDelayTicks) {
-        hero.heat = Math.max(0, hero.heat - HEAT.decayPerSecond / TICK_RATE);
+        const faster = sim.synergy[h.team].race === 'machine' ? SYNERGY.machineDecayMult : 1;
+        hero.heat = Math.max(0, hero.heat - (HEAT.decayPerSecond * faster) / TICK_RATE);
       }
     }
 
