@@ -117,7 +117,12 @@ export class OnlineGame extends BaseSession implements GameSession {
     private readonly now: () => number = () => performance.now(),
   ) {
     super(onCue);
-    this.heroRoster = welcome.roster.map((r) => ({ id: r.heroId, team: r.team, defId: r.heroDefId }));
+    this.heroRoster = welcome.roster.map((r) => ({
+      id: r.heroId,
+      team: r.team,
+      defId: r.heroDefId,
+      playerName: r.isBot ? undefined : r.nickname,
+    }));
     // Stand-in until the first snapshot arrives; replaced by the real view then.
     this.hero = { id: welcome.heroId, kind: 'hero', team: 0, pos: { x: 0, z: 0 }, radius: 0.6, facing: 0 };
   }

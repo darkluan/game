@@ -89,7 +89,12 @@ export class LocalGame extends BaseSession implements GameSession {
     if (!hero) throw new Error('local hero missing');
     this.hero = hero;
     this.startBuildings = this.sim.world.entities.filter((e) => e.kind === 'tower' || e.kind === 'shrine');
-    this.heroRoster = this.sim.q.heroes.entities.map((h) => ({ id: h.id, team: h.team, defId: h.hero.defId }));
+    this.heroRoster = this.sim.q.heroes.entities.map((h) => ({
+      id: h.id,
+      team: h.team,
+      defId: h.hero.defId,
+      playerName: h.hero.isBot ? undefined : tr('Bạn'),
+    }));
     this.look();
   }
 

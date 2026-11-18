@@ -8,7 +8,7 @@ import type { GameSession } from '@/lib/session';
 const NAME_HEIGHT = 3.7;
 
 /**
- * Each hero's name over its head, in its side's colour. Plain DOM laid over the canvas and placed
+ * A name over each hero's head, in its side's colour: the player's for a person, the hero's for a bot. Plain DOM laid over the canvas and placed
  * by projecting the hero's position, like the floating numbers: crisp at any resolution.
  */
 export function HeroNames({ game }: { game: GameSession }) {
@@ -25,7 +25,8 @@ export function HeroNames({ game }: { game: GameSession }) {
       const tone =
         entry.id === game.hero.id ? 'text-foreground' : entry.team === game.hero.team ? 'text-ally' : 'text-enemy';
       label.className = `absolute top-0 left-0 text-[11px] font-bold whitespace-nowrap opacity-0 [text-shadow:0_1px_2px_#000,0_0_3px_#000] ${tone}`;
-      label.textContent = HEROES[entry.defId]?.name ?? '';
+      // A person is known by their own name; a bot has none, so it goes by its hero's.
+      label.textContent = entry.playerName || (HEROES[entry.defId]?.name ?? '');
       layer.appendChild(label);
       made.set(entry.id, label);
     }

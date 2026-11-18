@@ -256,6 +256,8 @@ export interface RosterHero {
   id: number;
   team: Team;
   defId: string;
+  /** The name of the person playing this hero; absent for a bot. */
+  playerName?: string;
 }
 
 /**
