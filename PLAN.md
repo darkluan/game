@@ -74,7 +74,7 @@ Chi tiết tộc Người máy:
 
 ### 2.7 Danh sách tướng
 
-Tên là tạm đặt. Đội hình ra mắt 8 tướng, MVP làm 4 tướng đánh dấu (MVP).
+Tên là tạm đặt. Đội hình ra mắt 8 tướng, MVP làm 4 tướng đánh dấu (MVP). Bốn tướng cuối bảng được thêm sau, mỗi tộc một tướng, để mỗi tộc có 3 tướng và mỗi vai trò có 2 tướng.
 
 | Tướng | Tộc | Vai trò | Nét riêng |
 |---|---|---|---|
@@ -86,6 +86,10 @@ Tên là tạm đặt. Đội hình ra mắt 8 tướng, MVP làm 4 tướng đ�
 | Vesper, Thần Bóng tối | Thần | Sát thủ | Tàng hình, làm mù tầm nhìn một vùng |
 | Bolt-7, Pháo thủ cơ giới (MVP) | Người máy | Xạ thủ | Chuyển sang dạng pháo cố định: tầm xa hơn, không di chuyển được |
 | Mekka, Thợ máy chiến trường | Người máy | Hỗ trợ | Dựng tháp pháo mini, sửa trụ phe mình |
+| Mira, Học giả tinh tú | Người | Pháp sư | Chiêu mạnh hơn lên mục tiêu yếu máu; trói chân, dịch chuyển |
+| Zerak, Lôi long | Rồng | Đấu sĩ | Bổ nhào vào một mục tiêu, tự cường hóa đòn đánh, gầm làm câm lặng |
+| Orun, Thần Núi | Thần | Đỡ đòn | Kéo kẻ địch về phía mình, tăng giáp cho cả đội |
+| Raze-3, Thích khách cơ giới | Người máy | Sát thủ | Lướt xuyên kẻ địch, kết liễu mục tiêu yếu máu |
 
 ### 2.8 Cộng hưởng tộc (bật sau khi 8 tướng đã cân bằng)
 
@@ -357,12 +361,12 @@ CMD ["node", "apps/server/dist/index.js"]
 
 ### Giai đoạn 6: Hoàn thiện (3-4 tuần)
 
-- [ ] Model 3D và hoạt ảnh cho 8 tướng (Rồng cần model riêng cho từng dạng tiến hóa) *(đã có: Kael, lính, trụ, đền, cây, đá, dùng bộ KayKit CC0; 7 tướng còn lại chờ giai đoạn 3)*
-- [ ] Hiệu ứng chiêu, âm thanh *(đã có cho 4 chiêu của Kael và các sự kiện chung; âm thanh tổng hợp bằng WebAudio)*
+- [x] Model 3D và hoạt ảnh cho 8 tướng (Rồng cần model riêng cho từng dạng tiến hóa) *(KayKit và Quaternius, đều CC0; Rồng là khủng long đổi loài theo từng lần tiến hóa)*
+- [x] Hiệu ứng chiêu, âm thanh *(hiệu ứng theo kiểu ngắm của chiêu, chưa vẽ riêng cho từng chiêu; âm thanh tổng hợp bằng WebAudio)*
 - [x] Bản đồ nhỏ, bảng điểm, màn kết thúc trận
-- [ ] Cân bằng qua chơi thử
-- [ ] Chế độ đồ họa thấp, tối ưu cho máy yếu *(đã có nút bật chế độ thấp; chưa đo trên máy yếu thật)*
-- [ ] Cộng hưởng tộc (nếu 8 tướng đã cân bằng)
+- [ ] Cân bằng qua chơi thử *(đã cân bằng bằng 140 trận bot: tỉ lệ thắng mỗi tướng 41–58%; chưa có người chơi thử)*
+- [x] Chế độ đồ họa thấp, tối ưu cho máy yếu *(tự chuyển sang thấp khi dưới 28 khung hình/giây; đo bằng CPU giả lập chậm 4–6 lần, chưa đo trên máy yếu thật)*
+- [x] Cộng hưởng tộc (nếu 8 tướng đã cân bằng)
 
 ## 6. Rủi ro
 
