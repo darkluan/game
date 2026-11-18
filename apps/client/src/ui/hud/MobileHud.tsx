@@ -10,6 +10,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { HeroPortrait } from '../HeroPortrait';
 import { Minimap } from '../Minimap';
 import { GameIcon } from '../icons/GameIcon';
+import { ItemIcon } from '../icons/ItemIcon';
 import { ItemBag, ShopPanel } from '../Shop';
 import {
   AbilityInfo,
@@ -178,7 +179,7 @@ function Vitals({ hud }: { hud: HudState }) {
                   item ? 'border-border text-gold' : 'border-dashed border-border/60'
                 }`}
               >
-                {item && <GameIcon id={item.id} className="size-5" />}
+                {item && <ItemIcon id={item.id} className="size-full" />}
               </span>
             );
           })}

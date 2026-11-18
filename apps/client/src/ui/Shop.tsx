@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ITEM_LIST, itemPrice, ITEMS } from '@game/core';
 import type { GameSession, HudState } from '@/lib/session';
 import { describeItem } from './heroText';
-import { GameIcon } from './icons/GameIcon';
+import { ItemIcon } from './icons/ItemIcon';
 
 /** The hero's bag. Items can be sold back by clicking them while the shop is open. */
 export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSession; columns: number }) {
@@ -27,7 +27,7 @@ export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSessi
             onClick={() => game.send({ t: 'sell', slotIndex: i })}
             className="flex h-9 items-center justify-center rounded-sm text-gold border border-border bg-background px-1 text-[10px] enabled:cursor-pointer enabled:hover:border-danger"
           >
-            <GameIcon id={item.id} className="size-7" />
+            <ItemIcon id={item.id} className="size-8" />
           </button>
         );
       })}
@@ -117,7 +117,7 @@ export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSes
                     {owned ? '✓' : i + 1}
                   </span>
                 )}
-                <GameIcon id={item.id} className="size-8 shrink-0 text-gold" />
+                <ItemIcon id={item.id} className="size-10 shrink-0" />
                 <span className="flex-1">
                   <span className="font-semibold">{tr(item.name)}</span>
                   <span className="block text-muted-foreground">{describeItem(item.stats)}</span>
