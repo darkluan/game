@@ -13,10 +13,6 @@ export const EN: Record<string, string> = {
   ', giấy phép': ', licensed',
   '. Icon được tô lại màu, hình vẽ giữ nguyên.': '. The icons are recoloured; the drawings are unchanged.',
   'Model 3D': '3D models',
-  'Nhân vật, lính, trụ, đền, nhà cửa, núi, cây và đá: bộ KayKit của':
-    'Characters, minions, towers, shrines, houses, mountains, trees and rocks: KayKit by',
-  '. Rồng và người máy:': '. Dragons and machines:',
-  '. Cả hai phát hành theo CC0.': '. Both are released under CC0.',
   'Âm thanh': 'Sound',
   'Tiếng vũ khí, va chạm, lửa, đá và tiền xu: các gói CC0 của': 'Weapons, impacts, fire, stone and coins: CC0 packs by',
   và: 'and',
@@ -249,6 +245,10 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  'Lính, trụ, đền, nhà cửa, núi, cây và đá: bộ KayKit của':
+    'Minions, towers, shrines, houses, mountains, trees and rocks: the KayKit set by',
+  ', phát hành theo CC0. Mười sáu tướng không dùng model có sẵn: tất cả được dựng bằng code cho riêng game này.':
+    ', released under CC0. The sixteen heroes use no ready-made models: all are built in code for this game.',
   'Kỹ năng': 'Abilities',
   'Quyền riêng tư': 'Privacy',
   'Về trang chính': 'Back to the home screen',

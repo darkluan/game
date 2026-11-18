@@ -5,7 +5,6 @@ import { Box3, type Group, Vector3 } from 'three';
 import { HEROES } from '@game/core';
 import { useHeroActors } from '@/scene/heroActors';
 import { HERO_MODELS } from '@/scene/heroModels';
-import { MODELS } from '@/scene/models';
 import { heroColor } from '@/scene/palette';
 
 /**
@@ -33,7 +32,6 @@ function framingOf(heroId: string): (typeof FRAMING)[keyof typeof FRAMING] {
   const race = HEROES[heroId]?.race;
   if (HERO_MODELS[heroId]?.hydra || HERO_MODELS[heroId]?.longDragon) return FRAMING.hydra;
   // The wind spirit is all hat: show the whole of it, like the mechs.
-  if (HERO_MODELS[heroId]?.model === MODELS.windSpirit) return FRAMING.mech;
   return race === 'machine' ? FRAMING.mech : FRAMING.person;
 }
 

@@ -4,16 +4,8 @@ import { type GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 const url = (file: string) => `${import.meta.env.BASE_URL}models/${file}`;
 
-/** CC0 models by Kay Lousberg (KayKit) and Quaternius; see public/models/CREDITS.md. */
+/** CC0 models by Kay Lousberg (KayKit); see public/models/CREDITS.md. The heroes have no model files: they are built in code. */
 export const MODELS = {
-  rogueHooded: url('rogue_hooded.glb'),
-  mage: url('mage.glb'),
-  barbarian: url('barbarian.glb'),
-  mechMike: url('mech_mike.glb'),
-  mechLeela: url('mech_leela.glb'),
-  mechStan: url('mech_stan.glb'),
-  mechGeorge: url('mech_george.glb'),
-  windSpirit: url('wind_spirit.glb'),
   minionMelee: url('skeleton_minion.glb'),
   minionRanged: url('skeleton_mage.glb'),
   towerAlly: url('building_tower_A_blue.gltf'),

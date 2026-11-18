@@ -55,15 +55,13 @@ export default function CreditsPage() {
       <section className="glass-panel flex w-full flex-col gap-2 rounded-xl p-4 text-left text-sm">
         <h2 className="font-semibold">{tr('Model 3D')}</h2>
         <p className="text-muted-foreground">
-          {tr('Nhân vật, lính, trụ, đền, nhà cửa, núi, cây và đá: bộ KayKit của')}{' '}
+          {tr('Lính, trụ, đền, nhà cửa, núi, cây và đá: bộ KayKit của')}{' '}
           <a href="https://www.kaylousberg.com" target="_blank" rel="noreferrer" className={link}>
             Kay Lousberg
           </a>
-          {tr('. Rồng và người máy:')}{' '}
-          <a href="https://quaternius.com" target="_blank" rel="noreferrer" className={link}>
-            Quaternius
-          </a>
-          {tr('. Cả hai phát hành theo CC0.')}
+          {tr(
+            ', phát hành theo CC0. Mười sáu tướng không dùng model có sẵn: tất cả được dựng bằng code cho riêng game này.',
+          )}
         </p>
       </section>
 
