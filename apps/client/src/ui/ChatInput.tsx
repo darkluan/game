@@ -2,7 +2,7 @@ import { tr } from '@/i18n';
 import { CHAT_TEXT_MAX } from '@game/core';
 import { useState } from 'react';
 
-/** One line to type a chat message into. Enter or the button sends it; Escape gives up. */
+/** One line to type a chat message into. Enter or the button sends it; Escape, or Enter with nothing typed, gives up. */
 export function ChatInput({
   onSend,
   onCancel,
@@ -20,7 +20,9 @@ export function ChatInput({
       onSubmit={(e) => {
         e.preventDefault();
         const line = text.trim();
+        // Enter on an empty box means "never mind".
         if (line) onSend(line);
+        else onCancel?.();
         setText('');
       }}
     >

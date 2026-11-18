@@ -247,6 +247,7 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  'Chat (Enter)': 'Chat (Enter)',
   'Nâng cấp': 'Level up',
   'Tấn công chỗ này!': 'Attack here!',
   'Rút lui!': 'Retreat!',

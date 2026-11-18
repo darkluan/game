@@ -2,7 +2,7 @@ import { tr } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { LobbyShell } from '@/components/LobbyShell';
-import { HEROES, LOBBY_CHAT_IDS, type LobbyPlayer, type Team, TEAM_SIZE } from '@game/core';
+import { HEROES, type LobbyPlayer, type Team, TEAM_SIZE } from '@game/core';
 import { LOBBY_CHAT_TEXT } from '@/lib/chatText';
 import { useGameStore } from '@/store/gameStore';
 import { useRoomStore } from '@/store/roomStore';
@@ -14,7 +14,6 @@ import { ROLE_NAMES } from '@/ui/heroText';
 import { NicknameField } from '@/ui/NicknameField';
 import { useLobbyMusic } from '@/ui/useLobbyMusic';
 import { ChatInput } from '@/ui/ChatInput';
-import { useTouchLayout } from '@/hooks/useTouchLayout';
 
 const TEAM_NAMES = [tr('Đội Xanh'), tr('Đội Đỏ')] as const;
 
@@ -125,12 +124,24 @@ function ShareLink({ code }: { code: string }) {
   );
 }
 
-/** Ready-made phrases for the pick room: a button that opens them, and what was said lately floating above the dock. */
+/**
+ * Chat in the pick room: what was said lately floats above the dock, and Enter (or the button) opens
+ * a box to type in. Enter sends; Enter with nothing typed closes the box again.
+ */
 function RoomChat({ players }: { players: LobbyPlayer[] }) {
   const chat = useRoomStore((s) => s.chat);
   const sendChat = useRoomStore((s) => s.sendChat);
   const [open, setOpen] = useState(false);
-  const touch = useTouchLayout();
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Typing somewhere already (the box itself, a name field): that Enter is not for us.
+      if (e.key !== 'Enter' || e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement) return;
+      e.preventDefault();
+      setOpen(true);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
   return (
     <div className="absolute bottom-full left-0 mb-2 flex flex-col items-start gap-1.5 text-xs">
       <ul aria-live="polite" className="pointer-events-none flex flex-col items-start gap-1">
@@ -143,35 +154,20 @@ function RoomChat({ players }: { players: LobbyPlayer[] }) {
           </li>
         ))}
       </ul>
-      {open && (
-        <div className="glass-panel flex w-64 flex-col gap-1.5 rounded-lg p-2">
-          {/* Stays open after a typed line: a conversation is several of them. */}
-          <ChatInput autoFocus={!touch} onCancel={() => setOpen(false)} onSend={(text) => sendChat({ text })} />
-          <div className="grid grid-cols-2 gap-1.5">
-            {LOBBY_CHAT_IDS.map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  sendChat({ id });
-                  setOpen(false);
-                }}
-                className="cursor-pointer rounded-md border border-border px-2 py-1.5 text-left hover:border-primary"
-              >
-                {LOBBY_CHAT_TEXT[id]}
-              </button>
-            ))}
-          </div>
+      {open ? (
+        <div className="glass-panel w-64 rounded-lg p-2">
+          {/* Stays open after a line is sent: a conversation is several of them. */}
+          <ChatInput autoFocus onCancel={() => setOpen(false)} onSend={(text) => sendChat({ text })} />
         </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="glass-panel cursor-pointer rounded-full px-3 py-1.5 font-bold"
+        >
+          {tr('Chat (Enter)')}
+        </button>
       )}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="glass-panel cursor-pointer rounded-full px-3 py-1.5 font-bold"
-      >
-        {tr('Chat')}
-      </button>
     </div>
   );
 }
