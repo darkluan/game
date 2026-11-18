@@ -1,7 +1,7 @@
 import { tr } from '@/i18n';
 import type { AbilityHud, GameSession, HudState } from '@/lib/session';
 import { HeroPortrait } from '../HeroPortrait';
-import { GameIcon } from '../icons/GameIcon';
+import { ItemIcon } from '../icons/ItemIcon';
 import { RELIC_EFFECTS, RELIC_NAMES } from '../relicText';
 import type { HudActions } from '../Hud';
 import { clock, teamKills } from './format';
@@ -23,10 +23,21 @@ export function Bar({
       aria-label={label}
       aria-valuenow={Math.round(value)}
       aria-valuemax={Math.round(max)}
-      className="relative h-5 overflow-hidden rounded-sm border border-border bg-background"
+      className="relative h-5 overflow-hidden rounded-sm border border-border bg-background shadow-[inset_0_2px_4px_rgb(0_0_0/0.8)]"
     >
-      <div className={`h-full ${className}`} style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
-      <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular-nums">
+      <div className={`relative h-full ${className}`} style={{ width: `${Math.min(100, (value / max) * 100)}%` }}>
+        {/* A sheen along the top of what is left, and a shadow under it: a filled glass tube, not a flat strip. */}
+        <span
+          aria-hidden
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgb(255_255_255/0.4),transparent_45%,rgb(0_0_0/0.3))]"
+        />
+      </div>
+      {/* A notch every tenth, so a glance gives the share that is left. */}
+      <span
+        aria-hidden
+        className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent_0,transparent_calc(10%_-_1px),rgb(0_0_0/0.4)_calc(10%_-_1px),rgb(0_0_0/0.4)_10%)]"
+      />
+      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold tabular-nums [text-shadow:0_1px_2px_#000]">
         {Math.ceil(value)} / {Math.round(max)}
       </span>
     </div>
@@ -410,7 +421,7 @@ export function QuickBuy({ hud, game, className }: { hud: HudState; game: GameSe
       onPointerDown={() => game.send({ t: 'buy', itemId: item.id })}
       className={`pointer-events-auto flex touch-none items-center gap-1.5 rounded-md border border-gold bg-background/90 px-2 py-1 text-xs font-semibold text-gold ${className}`}
     >
-      <GameIcon id={item.id} className="size-5" />
+      <ItemIcon id={item.id} className="size-6" />
       {tr('Mua {name}', { name: item.name })}
       <span className="tabular-nums">{item.price}</span>
     </button>

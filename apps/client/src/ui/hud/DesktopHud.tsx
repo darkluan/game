@@ -189,7 +189,7 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
       <QuickChat game={game} className="bottom-44 left-2" panelClassName="bottom-full left-0 mb-1.5" />
       <PingWheel />
 
-      <p className="absolute right-2 bottom-2 hidden max-w-52 text-right min-[1400px]:block text-[11px] leading-snug text-muted-foreground">
+      <p className="absolute right-2 bottom-2 hidden max-w-52 text-right min-[1500px]:block text-[11px] leading-snug text-muted-foreground">
         {tr('Chuột: di chuyển, bấm vào địch để đánh.')}
         <br />
         {tr('Q W E R: chiêu theo con trỏ · Alt + phím: nâng chiêu')}
@@ -200,13 +200,19 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
       </p>
 
       {/* The console. Three blocks: who you are, what you can do, what you carry. */}
-      <div className="pointer-events-auto absolute bottom-0 left-[262px] flex min-w-[860px] items-stretch gap-3 min-[1400px]:left-1/2 min-[1400px]:-translate-x-1/2 rounded-t-lg hud-panel border-b-0 border-t-primary/60 px-3 pt-2 pb-2">
-        <div className="flex w-48 shrink-0 flex-col justify-between gap-1 text-xs">
+      <div className="pointer-events-auto hud-console bottom-0 left-[262px] flex min-w-[940px] items-stretch gap-4 px-6 pt-3.5 pb-2 min-[1500px]:left-1/2 min-[1500px]:-translate-x-1/2">
+        <div className="flex w-52 shrink-0 flex-col justify-between gap-1 text-xs">
           <div className="flex items-center gap-2">
-            <HeroPortrait
-              heroId={hud.heroDefId}
-              className={`cut-corners-sm size-14 shrink-0 ${RACE_FRAME[hud.race]}`}
-            />
+            {/* The portrait in a frame of its race's colour, the hero's level pinned to its corner. */}
+            <div className="relative shrink-0">
+              <HeroPortrait
+                heroId={hud.heroDefId}
+                className={`cut-corners-sm size-14 shadow-[0_0_14px_rgb(0_0_0/0.8)] ${RACE_FRAME[hud.race]}`}
+              />
+              <span className="absolute -right-1.5 -bottom-1.5 flex size-5 items-center justify-center rounded-full border border-background bg-primary text-[11px] leading-none font-black text-primary-foreground tabular-nums">
+                {hud.level}
+              </span>
+            </div>
             <div>
               <p className="text-sm leading-tight font-semibold">{hud.heroName}</p>
               <p className={RACE_TEXT[hud.race]}>{raceName(hud.race)}</p>
@@ -237,6 +243,10 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
           </div>
         </div>
 
+        <span
+          aria-hidden
+          className="w-px shrink-0 self-stretch bg-linear-to-b from-transparent via-foreground/25 to-transparent"
+        />
         <div className="flex min-w-[28.5rem] flex-1 flex-col gap-1.5">
           <div className="flex items-end justify-center gap-2">
             {hud.abilities.map((a) => (
@@ -263,17 +273,22 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
           )}
         </div>
 
-        <div className="flex w-44 shrink-0 flex-col justify-between gap-2">
+        <span
+          aria-hidden
+          className="w-px shrink-0 self-stretch bg-linear-to-b from-transparent via-foreground/25 to-transparent"
+        />
+        <div className="flex w-52 shrink-0 flex-col justify-between gap-2">
           <ItemBag hud={hud} game={game} columns={3} />
           <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-gold tabular-nums">
+            <span className="flex items-center gap-1.5 font-bold whitespace-nowrap text-gold tabular-nums">
+              <span aria-hidden className="size-3 rounded-full bg-gold shadow-[0_0_8px_var(--gold)]" />
               {tr('{gold} vàng', { gold: Math.floor(hud.gold) })}
             </span>
             <button
               type="button"
               onClick={toggleShop}
               aria-pressed={shopOpen}
-              className={`relative rounded-md border px-2 py-1 text-xs ${hud.suggestion?.affordable ? 'border-gold text-gold' : hud.canShop ? 'border-primary text-primary' : 'border-border'}`}
+              className={`relative rounded-md border px-2 py-1 text-xs whitespace-nowrap ${hud.suggestion?.affordable ? 'border-gold text-gold' : hud.canShop ? 'border-primary text-primary' : 'border-border'}`}
             >
               {tr('Cửa hàng (B)')}
               {/* Enough gold for the next item: worth a trip home. */}
