@@ -6,11 +6,13 @@ import {
   ConeGeometry,
   CylinderGeometry,
   DoubleSide,
+  ExtrudeGeometry,
   Group,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
   type MeshStandardMaterialParameters,
+  Shape,
   SphereGeometry,
   TorusGeometry,
 } from 'three';
@@ -38,7 +40,16 @@ export interface SwordsmanColours {
    * flared skirt, one light shoulder guard, a quiver on her back and a tall bow in her left hand.
    */
   archer?: boolean;
+  /**
+   * Who this is. A blade-master unless said otherwise (`archer` is the older way to ask for the
+   * archer). The mage wears a long robe and a tall bent hat, carries a staff crowned with a crescent
+   * and a burning stone, and reads from a book that floats over her hand. The healer wears a hooded
+   * cloak and a satchel, shoots a small crossbow and keeps a mending light over her other hand.
+   */
+  kind?: HumanKind;
 }
+
+export type HumanKind = 'blade' | 'archer' | 'mage' | 'healer';
 
 /**
  * A young blade-master, or an archer, in the style of a wuxia cartoon, built in code with no model file: a big
@@ -60,7 +71,7 @@ const LEG_STRETCH = 1.75;
 const BODY_STRETCH = 1.28;
 const BODY_SLIM = 0.86;
 const ARM_STRETCH = 1.3;
-const HEAD_SIZE = 0.66;
+const HEAD_SIZE = 0.6;
 const HIP_HEIGHT = 0.3 * LEG_STRETCH - 0.03;
 
 let brocadeMaps: { colour: Texture; thread: Texture } | null = null;
@@ -372,6 +383,141 @@ const ARCHER_ACTIONS: Record<string, (p: number) => Pose> = {
     ),
 };
 
+/** The mage standing ready: staff upright beside her, the book hovering over her raised left hand. */
+const MAGE_REST: Pose = {
+  lean: 0.02,
+  twist: -0.15,
+  lift: -0.004,
+  stance: 0.5,
+  swordArm: -0.35,
+  swordArmOut: 0.4,
+  swordElbow: 1.2,
+  swordTilt: 1.45,
+  freeArm: -0.75,
+  freeArmOut: 0.25,
+  freeElbow: 1.25,
+};
+
+/** How each action moves the mage. `p` runs 0 to 1 over the action. */
+const MAGE_ACTIONS: Record<string, (p: number) => Pose> = {
+  // The head of the staff levelled at the target.
+  attack: (p) =>
+    mix(
+      MAGE_REST,
+      { swordArm: -1.35, swordArmOut: 0.1, swordElbow: 0.25, swordTilt: 2.3, twist: 0.35, lean: 0.15 },
+      envelope(p),
+    ),
+  // The same with her whole weight behind it.
+  Q: (p) =>
+    mix(
+      MAGE_REST,
+      { swordArm: -1.45, swordArmOut: 0.05, swordElbow: 0.1, swordTilt: 2.7, twist: 0.5, lean: 0.28, stance: 1.3 },
+      envelope(p),
+    ),
+  // The staff thrust up over her head.
+  W: (p) =>
+    mix(
+      MAGE_REST,
+      { swordArm: -2.6, swordArmOut: 0.15, swordElbow: 0.2, swordTilt: 2.9, lean: -0.1, lift: 0.02 },
+      envelope(p),
+    ),
+  // Gathered small to vanish: knees up, arms in.
+  E: (p) =>
+    mix(
+      MAGE_REST,
+      { lift: 0.12, lean: 0.3, stance: 0.3, swordArm: -0.8, swordElbow: 1.6, freeArm: -0.9, freeElbow: 1.6 },
+      envelope(p),
+    ),
+  // Both arms flung up to call the sky down.
+  R: (p) =>
+    mix(
+      MAGE_REST,
+      {
+        swordArm: -2.8,
+        swordArmOut: 0.3,
+        swordElbow: 0.15,
+        swordTilt: 2.9,
+        freeArm: -2.7,
+        freeArmOut: 0.3,
+        freeElbow: 0.2,
+        lean: -0.2,
+        lift: 0.06,
+        stance: 1.2,
+      },
+      envelope(p),
+    ),
+};
+
+/** The healer standing ready: crossbow held forward at the hip, the mending light lifted in her left hand. */
+const HEALER_REST: Pose = {
+  lean: 0.03,
+  twist: 0.1,
+  lift: -0.005,
+  stance: 0.6,
+  swordArm: -0.2,
+  swordArmOut: 0.12,
+  swordElbow: 1.3,
+  swordTilt: 3,
+  freeArm: -0.9,
+  freeArmOut: 0.35,
+  freeElbow: 1.5,
+};
+
+/** Crossbow arm out straight, sighting along it. */
+const AIMED: Partial<Pose> = {
+  swordArm: -1.5,
+  swordArmOut: 0.05,
+  swordElbow: 0.05,
+  swordTilt: Math.PI,
+  twist: 0.45,
+  lean: 0.05,
+  stance: 1.1,
+};
+/** The same, kicked back by the shot. */
+const KICKED: Partial<Pose> = { ...AIMED, swordArm: -1.8, lean: -0.1 };
+
+/** How each action moves the healer. `p` runs 0 to 1 over the action. */
+const HEALER_ACTIONS: Record<string, (p: number) => Pose> = {
+  // Aim and shoot.
+  attack: (p) => mix(HEALER_REST, mix(mix(HEALER_REST, AIMED, 1), KICKED, smooth((p - 0.45) * 8)), envelope(p)),
+  Q: (p) => mix(HEALER_REST, mix(mix(HEALER_REST, AIMED, 1), KICKED, smooth((p - 0.45) * 8)), envelope(p)),
+  // The mending light held high.
+  W: (p) => mix(HEALER_REST, { freeArm: -2.6, freeArmOut: 0.2, freeElbow: 0.25, lean: -0.12, lift: 0.02 }, envelope(p)),
+  // Something lobbed underhand from the left.
+  E: (p) => {
+    const back = mix(HEALER_REST, { freeArm: 0.9, freeArmOut: 0.3, freeElbow: 0.3, lean: 0.2, twist: 0.3 }, 1);
+    const thrown = mix(HEALER_REST, { freeArm: -1.6, freeArmOut: 0.1, freeElbow: 0.1, lean: 0.3, twist: -0.4 }, 1);
+    return mix(HEALER_REST, mix(back, thrown, smooth(p * 2.2)), envelope(p));
+  },
+  // Both arms raised to rally everyone near.
+  R: (p) =>
+    mix(
+      HEALER_REST,
+      {
+        swordArm: -2.7,
+        swordArmOut: 0.35,
+        swordElbow: 0.2,
+        freeArm: -2.7,
+        freeArmOut: 0.35,
+        freeElbow: 0.2,
+        lean: -0.15,
+        lift: 0.05,
+        stance: 1.2,
+      },
+      envelope(p),
+    ),
+};
+
+const REST_OF: Record<HumanKind, Pose> = { blade: REST, archer: ARCHER_REST, mage: MAGE_REST, healer: HEALER_REST };
+const ACTIONS_OF: Record<HumanKind, Record<string, (p: number) => Pose>> = {
+  blade: ACTIONS,
+  archer: ARCHER_ACTIONS,
+  mage: MAGE_ACTIONS,
+  healer: HEALER_ACTIONS,
+};
+/** How the thing in the right hand is carried at a run: the sabre and bow hand low and back, the staff upright, the crossbow forward. */
+const RUN_TILT: Record<HumanKind, number> = { blade: 2.5, archer: 2.5, mage: 1.35, healer: 2.8 };
+
 interface Limb {
   upper: Group;
   lower: Group;
@@ -398,10 +544,10 @@ export class Swordsman {
   private readonly sword = new Group();
   private readonly tabard: Group[] = [];
   private readonly streamers: Streamer[] = [];
-  private readonly materials: Record<Exclude<keyof SwordsmanColours, 'archer'> | 'dark', MeshStandardMaterial>;
+  private readonly materials: Record<Exclude<keyof SwordsmanColours, 'archer' | 'kind'> | 'dark', MeshStandardMaterial>;
   private readonly white = new MeshBasicMaterial({ color: '#ffffff' });
   private readonly castShadow: boolean;
-  private readonly archer: boolean;
+  private readonly kind: HumanKind;
 
   private time = Math.random() * 10;
   private walk = 0;
@@ -412,7 +558,7 @@ export class Swordsman {
 
   constructor(colours: SwordsmanColours, height: number, castShadow: boolean) {
     this.castShadow = castShadow;
-    this.archer = colours.archer === true;
+    this.kind = colours.kind ?? (colours.archer ? 'archer' : 'blade');
     const make = (color: string, extra: MeshStandardMaterialParameters = {}) =>
       new MeshStandardMaterial({ color, roughness: 0.75, metalness: 0, ...extra });
     this.materials = {
@@ -445,10 +591,13 @@ export class Swordsman {
     this.buildBody();
     this.swordArm = this.buildArm(1);
     this.freeArm = this.buildArm(-1);
-    if (this.archer) this.buildBowAndQuiver();
+    if (this.kind === 'archer') this.buildBowAndQuiver();
+    else if (this.kind === 'mage') this.buildStaffAndBook();
+    else if (this.kind === 'healer') this.buildCrossbowAndLight();
     else this.buildSabre();
     this.buildHead();
     this.buildCape();
+    this.buildTrappings();
     // Draw the short round figure out into a tall, lean one. Each part is stretched in itself, joint by
     // joint: scaling a whole limb at its root would skew whatever bends below it.
     for (const leg of this.legs) {
@@ -462,7 +611,7 @@ export class Swordsman {
     }
     for (const flap of this.tabard) flap.scale.y = LEG_STRETCH;
     this.head.scale.setScalar(HEAD_SIZE);
-    this.applyPose(this.archer ? ARCHER_REST : REST);
+    this.applyPose(REST_OF[this.kind]);
   }
 
   // ---- building ----
@@ -530,6 +679,10 @@ export class Swordsman {
     // A plate over the knee with a stone set in it.
     this.ball(armour, lower, [0, 0.01, 0.055], [0.05, 0.055, 0.03]);
     this.ball(gem, lower, [0, 0.012, 0.083], [0.014, 0.014, 0.008]);
+    // A ridge down the shin, a spur at the knee and a band at the ankle.
+    this.mesh(new CylinderGeometry(0.007, 0.011, 0.1, 4), trim, lower, [0, -0.062, 0.066]);
+    this.mesh(new ConeGeometry(0.014, 0.05, 6), trim, lower, [0, 0.045, 0.07], [0.5, 0, 0]);
+    this.mesh(new TorusGeometry(0.071, 0.008, 6, 18), trim, lower, [0, -0.112, 0], [UP, 0, 0]);
     upper.add(lower);
     this.hips.add(upper);
     return { upper, lower };
@@ -541,7 +694,7 @@ export class Swordsman {
     this.chest.position.y = 0.02;
     this.hips.add(this.chest);
     this.ball(cloth, this.hips, [0, -0.01, 0], [0.115, 0.07, 0.09]);
-    if (this.archer) {
+    if (this.kind === 'archer' || this.kind === 'healer') {
       // A short skirt flaring out over the hips, edged in the colour of her ribbons.
       this.mesh(
         new CylinderGeometry(0.105, 0.2, 0.13, 20, 1, true),
@@ -553,11 +706,29 @@ export class Swordsman {
       );
       this.mesh(new TorusGeometry(0.2, 0.01, 6, 26), ribbon, this.hips, [0, -0.12, 0], [UP, 0, 0], [1, 0.9, 1]);
     }
+    if (this.kind === 'mage') {
+      // A long robe to the ankles, banded in metal, its hem edged in light.
+      const robe = 0.43;
+      this.mesh(new CylinderGeometry(0.1, 0.25, robe, 24, 1, true), cloth, this.hips, [0, -robe / 2 + 0.01, 0]);
+      for (const [y, r] of [
+        [-0.13, 0.148],
+        [-0.27, 0.205],
+      ])
+        this.mesh(new TorusGeometry(r, 0.007, 6, 30), trim, this.hips, [0, y, 0], [UP, 0, 0]);
+      this.mesh(new TorusGeometry(0.25, 0.011, 6, 34), ribbon, this.hips, [0, -robe + 0.01, 0], [UP, 0, 0]);
+      // Stars worked into the skirt, all the way round.
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2;
+        const y = -0.2 - (i % 3) * 0.07;
+        const r = 0.1 + ((0.01 - y) / robe) * 0.15 + 0.004;
+        this.ball(gem, this.hips, [Math.sin(a) * r, y, Math.cos(a) * r], [0.011, 0.011, 0.006], [0, a, 0]);
+      }
+    }
     this.mesh(new CylinderGeometry(0.135, 0.1, 0.2, 18), cloth, this.chest, [0, 0.1, 0], [0, 0, 0], [1, 1, 0.78]);
     this.ball(cloth, this.chest, [0, 0.2, 0], [0.14, 0.05, 0.105]);
     // A plate over the chest, edged in metal, with a stone at its centre.
     this.ball(armour, this.chest, [0, 0.13, 0.05], [0.1, 0.085, 0.065]);
-    this.mesh(new TorusGeometry(0.085, 0.01, 8, 22), trim, this.chest, [0, 0.13, 0.1], [0, 0, 0], [1, 0.85, 0.5]);
+    this.mesh(new TorusGeometry(0.064, 0.008, 8, 22), trim, this.chest, [0, 0.13, 0.098], [0, 0, 0], [1, 0.9, 0.5]);
     this.ball(gem, this.chest, [0, 0.13, 0.115], [0.022, 0.022, 0.012]);
     // A high collar.
     this.mesh(
@@ -574,15 +745,19 @@ export class Swordsman {
     this.ball(trim, this.chest, [0, 0.005, 0.088], [0.034, 0.028, 0.014]);
     this.ball(gem, this.chest, [0, 0.005, 0.1], [0.014, 0.012, 0.008]);
     // Plates hanging over the hips.
-    for (const side of [-1, 1]) {
+    for (const side of this.kind === 'mage' ? [] : [-1, 1]) {
       this.ball(armour, this.hips, [side * 0.115, -0.045, 0], [0.04, 0.075, 0.07], [0, 0, side * 0.25]);
       this.ball(trim, this.hips, [side * 0.128, -0.1, 0], [0.03, 0.015, 0.055], [0, 0, side * 0.25]);
     }
     // A long panel of cloth hangs from the belt in front and behind, edged in metal at the hem.
-    for (const [z, length] of [
-      [0.085, 0.22],
-      [-0.08, 0.25],
-    ]) {
+    const flaps: [number, number][] =
+      this.kind === 'mage'
+        ? []
+        : [
+            [0.085, 0.22],
+            [-0.08, 0.25],
+          ];
+    for (const [z, length] of flaps) {
       const flap = new Group();
       flap.position.set(0, -0.01, z);
       const panel = new CylinderGeometry(0.05, 0.075, length, 4, 1);
@@ -607,7 +782,7 @@ export class Swordsman {
     upper.position.set(side * 0.16, 0.17, 0);
     this.hanging(0.05, 0.046, 0.11, cloth, upper);
     // The archer wears no guard on the arm that draws the string.
-    const guarded = !(this.archer && side === 1);
+    const guarded = this.kind === 'blade' || (this.kind === 'archer' && side === -1);
     // The shoulder guard: two overlapping plates, each rimmed in metal, with a spike and a stone.
     if (guarded) {
       this.ball(armour, upper, [side * 0.015, 0.03, 0], [0.085, 0.06, 0.085], [0, 0, side * 0.35]);
@@ -622,71 +797,136 @@ export class Swordsman {
       );
       this.mesh(new ConeGeometry(0.02, 0.08, 8), trim, upper, [side * 0.06, 0.075, 0], [0, 0, -side * 0.7]);
       this.ball(gem, upper, [side * 0.02, 0.045, 0.07], [0.015, 0.015, 0.01]);
+      // A third plate lower down, a row of studs along the crest, and a tassel that flies from the rim.
+      this.ball(armour, upper, [side * 0.052, -0.05, 0], [0.055, 0.03, 0.065], [0, 0, side * 0.85]);
+      for (let i = 0; i < 3; i++)
+        this.mesh(
+          new ConeGeometry(0.01, 0.035, 6),
+          trim,
+          upper,
+          [side * (0.022 + i * 0.004), 0.082, (i - 1) * 0.045],
+          [(i - 1) * 0.5, 0, -side * 0.35],
+        );
+      this.streamers.push(
+        this.buildStreamer(
+          upper,
+          [side * 0.075, -0.045, 0],
+          4,
+          0.15,
+          0.02,
+          this.materials.ribbon,
+          0.7,
+          0.6,
+          side * 0.4,
+        ),
+      );
     } else this.ball(cloth, upper, [0, 0.01, 0], [0.058, 0.05, 0.058]);
     const lower = new Group();
     lower.position.y = -0.11;
     this.ball(skin, lower, [0, 0, 0], [0.042, 0.042, 0.042]);
-    // A bracer from the elbow to the wrist, and a fist.
-    this.hanging(0.046, 0.054, 0.1, armour, lower);
-    this.mesh(new TorusGeometry(0.05, 0.009, 8, 16), trim, lower, [0, -0.095, 0], [UP, 0, 0]);
-    this.mesh(new TorusGeometry(0.046, 0.007, 8, 16), trim, lower, [0, -0.015, 0], [UP, 0, 0]);
-    this.ball(skin, lower, [0, -0.135, 0], [0.046, 0.046, 0.046]);
+    if (this.kind === 'mage') {
+      // A wide sleeve that opens toward the wrist, banded at its mouth.
+      this.hanging(0.05, 0.088, 0.11, cloth, lower);
+      this.mesh(new TorusGeometry(0.088, 0.008, 6, 20), trim, lower, [0, -0.108, 0], [UP, 0, 0]);
+    } else {
+      // A bracer from the elbow to the wrist, ridged down the back.
+      this.hanging(0.046, 0.054, 0.1, armour, lower);
+      this.mesh(new TorusGeometry(0.05, 0.009, 8, 16), trim, lower, [0, -0.095, 0], [UP, 0, 0]);
+      this.mesh(new TorusGeometry(0.046, 0.007, 8, 16), trim, lower, [0, -0.015, 0], [UP, 0, 0]);
+      this.mesh(new CylinderGeometry(0.006, 0.009, 0.075, 4), trim, lower, [0, -0.055, -0.052]);
+      this.ball(gem, lower, [0, -0.05, 0.052], [0.011, 0.016, 0.007]);
+    }
+    // A hand closed round what it holds: four fingers and a thumb laid across them.
+    this.ball(skin, lower, [0, -0.13, 0], [0.034, 0.036, 0.03]);
+    for (let i = 0; i < 4; i++) this.ball(skin, lower, [(i - 1.5) * 0.016, -0.15, 0.018], [0.0095, 0.02, 0.014]);
+    this.ball(skin, lower, [side * 0.03, -0.134, 0.016], [0.011, 0.022, 0.012], [0, 0, side * 0.5]);
     upper.add(lower);
     this.chest.add(upper);
     return { upper, lower };
   }
 
-  /** A broad, heavy sabre nearly as tall as its owner: a wide blade with a clipped point and a toothed back. */
+  /**
+   * A broad curved sabre: the blade cut from one outline, its edge a line of light, runes down the
+   * fuller, a toothed back, a round guard set with stones and a tasselled ring at the pommel.
+   */
   private buildSabre(): void {
     const { blade, trim, ribbon, gem, dark } = this.materials;
     this.sword.position.set(0, -0.135, 0);
     // Turned about its own length so the broad flat of the blade, not its edge, shows from the front.
     this.sword.rotation.y = 1.25;
     this.swordArm.lower.add(this.sword);
-    // Built pointing up from the fist: pommel ring, grip, guard, then the blade. Its edge faces +z.
-    this.mesh(new TorusGeometry(0.022, 0.007, 8, 16), trim, this.sword, [0, -0.1, 0], [0, UP, 0]);
-    this.mesh(new CylinderGeometry(0.016, 0.016, 0.13, 10), ribbon, this.sword, [0, -0.02, 0]);
-    this.ball(trim, this.sword, [0, 0.055, 0], [0.022, 0.022, 0.075]);
-    this.ball(gem, this.sword, [0, 0.055, 0], [0.026, 0.016, 0.02]);
-    // The blade widens toward the point; a dark fuller runs up its middle.
-    const steel = new CylinderGeometry(0.105, 0.06, 0.62, 4, 1);
-    this.mesh(steel, blade, this.sword, [0, 0.38, 0.012], [0, Math.PI / 4, 0], [0.11, 1, 1]);
-    this.mesh(
-      new CylinderGeometry(0.03, 0.022, 0.5, 4),
-      dark,
-      this.sword,
-      [0, 0.34, 0.005],
-      [0, Math.PI / 4, 0],
-      [0.13, 1, 1],
-    );
-    // Runes burn along the fuller, and the blade trails fire from its back.
-    for (let i = 0; i < 5; i++)
-      this.ball(gem, this.sword, [0, 0.16 + i * 0.1, 0.006], [0.017, 0.022, 0.012], [0, 0, i * 0.7]);
+    // Built pointing up from the fist: pommel ring, bound grip, guard, then the blade. Its edge faces +z.
+    this.mesh(new TorusGeometry(0.02, 0.006, 8, 16), trim, this.sword, [0, -0.095, 0], [0, UP, 0]);
+    this.mesh(new CylinderGeometry(0.014, 0.016, 0.12, 10), ribbon, this.sword, [0, -0.02, 0]);
+    for (const y of [-0.06, -0.02, 0.02])
+      this.mesh(new TorusGeometry(0.0165, 0.004, 6, 12), trim, this.sword, [0, y, 0], [UP, 0, 0]);
+    this.mesh(new CylinderGeometry(0.05, 0.05, 0.014, 20), trim, this.sword, [0, 0.05, 0], [0, 0, 0], [0.55, 1, 1]);
+    for (const z of [-0.036, 0.036]) this.ball(gem, this.sword, [0, 0.05, z], [0.012, 0.01, 0.01]);
+    this.ball(trim, this.sword, [0, 0.078, 0.003], [0.012, 0.03, 0.04]);
+
+    // The outline of the blade, drawn lying down: along its length, then across from back (-) to edge (+).
+    const from = [0, 0.032] as const;
+    const belly = [0.36, 0.1] as const;
+    const point = [0.64, -0.005] as const;
+    const outline = new Shape();
+    outline.moveTo(0, -0.03);
+    outline.lineTo(...from);
+    outline.quadraticCurveTo(...belly, ...point);
+    // The clipped point sweeps back to a spine that dips a little along its length.
+    outline.lineTo(0.5, -0.055);
+    outline.quadraticCurveTo(0.26, -0.02, 0, -0.03);
+    const thick = 0.012;
+    const steel = new ExtrudeGeometry(outline, {
+      depth: thick,
+      bevelEnabled: true,
+      bevelThickness: 0.004,
+      bevelSize: 0.004,
+      bevelSegments: 1,
+      curveSegments: 16,
+    });
+    // Stood up: its length along y, its width along z, its thickness along x.
+    steel.translate(0, 0, -thick / 2);
+    steel.rotateZ(UP);
+    steel.rotateY(UP);
+    const base = 0.085;
+    this.mesh(steel, blade, this.sword, [0, base, 0]);
+    // A dark fuller up the middle: the same outline, narrower and standing a little proud.
+    this.mesh(steel, dark, this.sword, [0, base + 0.03, -0.003], [0, 0, 0], [1.3, 0.7, 0.36]);
+    // The edge burns: short lengths of light laid along the belly of the blade.
+    for (let i = 0; i < 9; i++) {
+      const t = 0.06 + (i / 8) * 0.9;
+      const u = (1 - t) ** 2 * from[0] + 2 * (1 - t) * t * belly[0] + t ** 2 * point[0];
+      const v = (1 - t) ** 2 * from[1] + 2 * (1 - t) * t * belly[1] + t ** 2 * point[1];
+      const du = 2 * (1 - t) * (belly[0] - from[0]) + 2 * t * (point[0] - belly[0]);
+      const dv = 2 * (1 - t) * (belly[1] - from[1]) + 2 * t * (point[1] - belly[1]);
+      this.ball(gem, this.sword, [0, base + u, v + 0.003], [0.0055, 0.042, 0.0055], [Math.atan2(dv, du), 0, 0]);
+    }
+    // Runes down the fuller.
     for (let i = 0; i < 4; i++)
-      this.streamers.push(
-        this.buildStreamer(this.sword, [0, 0.28 + i * 0.14, -0.05], 4, 0.2, 0.035, ribbon, 1.4, 1.6, 0, true),
+      this.ball(
+        gem,
+        this.sword,
+        [0, base + 0.1 + i * 0.105, 0.012 - i * 0.004],
+        [0.012, 0.018, 0.012],
+        [0, 0, i * 0.7],
       );
-    // The clipped point sweeps up to the back of the blade.
-    this.mesh(
-      new ConeGeometry(0.105, 0.17, 4),
-      blade,
-      this.sword,
-      [0, 0.775, 0.012],
-      [0, Math.PI / 4, -0.0],
-      [0.11, 1, 1],
-    );
-    // Teeth of metal along the back, and a plate where blade meets guard.
-    for (let i = 0; i < 4; i++)
+    // Teeth of metal along the back, and fire trailing from it near the point.
+    for (let i = 0; i < 3; i++)
       this.mesh(
-        new ConeGeometry(0.02, 0.07, 6),
+        new ConeGeometry(0.014, 0.05, 6),
         trim,
         this.sword,
-        [0, 0.22 + i * 0.14, -0.06 - i * 0.008],
+        [0, base + 0.12 + i * 0.11, -0.04],
         [-UP - 0.4, 0, 0],
         [0.4, 1, 1],
       );
-    this.ball(trim, this.sword, [0, 0.11, 0.005], [0.014, 0.05, 0.062]);
-    this.streamers.push(this.buildStreamer(this.sword, [0, -0.12, 0], 5, 0.26, 0.024, ribbon, 0.8, 0.6, 0));
+    for (let i = 0; i < 2; i++)
+      this.streamers.push(
+        this.buildStreamer(this.sword, [0, base + 0.36 + i * 0.12, -0.045], 4, 0.18, 0.03, ribbon, 1.4, 1.6, 0, true),
+      );
+    // A long tassel from the ring at the pommel.
+    for (const spread of [-0.25, 0.25])
+      this.streamers.push(this.buildStreamer(this.sword, [0, -0.115, 0], 5, 0.24, 0.02, ribbon, 0.8, 0.6, spread));
   }
 
   /** A piece that curves: a row of ever thinner lengths, each tipped a little further than the last. */
@@ -698,7 +938,7 @@ export class Swordsman {
     radius: number,
     curl: number,
     material: MeshStandardMaterial,
-  ): void {
+  ): Group {
     const pieces = 7;
     const step = length / pieces;
     let holder = new Group();
@@ -717,6 +957,7 @@ export class Swordsman {
       holder.add(next);
       holder = next;
     }
+    return holder;
   }
 
   /** A tall recurved bow in the left fist, and on the back a quiver of arrows. */
@@ -828,8 +1069,9 @@ export class Swordsman {
     // A clasp at each shoulder and a chain between them.
     for (const side of [-1, 1]) this.ball(trim, this.chest, [side * 0.09, 0.225, -0.055], [0.024, 0.024, 0.018]);
     this.ball(gem, this.chest, [0, 0.215, -0.085], [0.016, 0.016, 0.01]);
-    const panels = this.archer ? 3 : 5;
-    const length = this.archer ? 0.34 : 0.5;
+    // The blade-master's long cape, the archer's short one, the mage's mantle over her shoulders, the healer's cloak.
+    const panels = { blade: 5, archer: 3, mage: 5, healer: 5 }[this.kind];
+    const length = { blade: 0.5, archer: 0.34, mage: 0.2, healer: 0.46 }[this.kind];
     for (let i = 0; i < panels; i++) {
       const across = (i / (panels - 1) - 0.5) * 2;
       this.streamers.push(
@@ -880,7 +1122,9 @@ export class Swordsman {
     this.ball(skin, this.head, [0, 0.118, 0.158], [0.012, 0.01, 0.012]);
     this.ball(dark, this.head, [0, 0.082, 0.146], [0.022, 0.005, 0.006]);
 
-    if (this.archer) this.buildArcherHair();
+    if (this.kind === 'archer') this.buildArcherHair();
+    else if (this.kind === 'mage') this.buildMageHat();
+    else if (this.kind === 'healer') this.buildHood();
     else {
       // Hair: a cap over the skull, a fringe of spikes over the brow, and a crest of bigger spikes swept up and back.
       this.ball(hair, this.head, [0, 0.2, -0.02], [0.18, 0.16, 0.168]);
@@ -913,6 +1157,7 @@ export class Swordsman {
       this.streamers.push(this.buildStreamer(this.head, [0, 0.42, -0.03], 6, 0.3, 0.05, hair, 0.5, 1.2, 0, true));
     }
 
+    if (this.kind === 'mage' || this.kind === 'healer') return;
     // A headband with a plate at the brow; its ends fly out behind.
     this.mesh(new TorusGeometry(0.17, 0.014, 8, 26), ribbon, this.head, [0, 0.235, 0], [UP - 0.1, 0, 0], [1, 0.95, 1]);
     this.ball(trim, this.head, [0, 0.252, 0.162], [0.04, 0.026, 0.012]);
@@ -921,6 +1166,300 @@ export class Swordsman {
       this.streamers.push(
         this.buildStreamer(this.head, [side * 0.03, 0.22, -0.165], 6, 0.36, 0.03, ribbon, 0.8, 1.3, side * 0.3),
       );
+  }
+
+  /** A soft fringe over the brow and a lock in front of each ear: the hair that shows under a hat or a hood. */
+  private buildFringe(): void {
+    const { hair, dark, ribbon } = this.materials;
+    this.ball(hair, this.head, [0, 0.2, -0.02], [0.182, 0.162, 0.17]);
+    for (let i = 0; i < 6; i++) {
+      const x = (i - 2.5) * 0.055;
+      this.ball(
+        hair,
+        this.head,
+        [x, 0.262 - Math.abs(i - 2.5) * 0.014, 0.135],
+        [0.036, 0.05, 0.022],
+        [0.35, 0, (i - 2.5) * -0.28],
+      );
+    }
+    for (const side of [-1, 1]) {
+      this.ball(hair, this.head, [side * 0.158, 0.11, 0.05], [0.026, 0.1, 0.03], [0, 0, side * 0.1]);
+      // Long lashes at the corner of each eye, and a touch of colour on the cheek.
+      this.mesh(new ConeGeometry(0.008, 0.04, 4), dark, this.head, [side * 0.102, 0.176, 0.128], [0, 0, -side * 1.1]);
+      this.ball(ribbon, this.head, [side * 0.1, 0.1, 0.132], [0.024, 0.012, 0.006]);
+    }
+  }
+
+  /**
+   * The mage's hair, long down her back, under a tall hat: a wide brim rimmed in metal, a crown that
+   * bends over backward to a burning point, a jewelled band and a star at the brow.
+   */
+  private buildMageHat(): void {
+    const { cloth, trim, gem, hair, ribbon } = this.materials;
+    this.buildFringe();
+    for (const side of [-1, 0, 1])
+      this.streamers.push(
+        this.buildStreamer(this.head, [side * 0.09, 0.16, -0.15], 8, 0.5, 0.11, hair, 0.35, 0.5, side * 0.18),
+      );
+    for (const side of [-1, 1])
+      this.streamers.push(
+        this.buildStreamer(this.head, [side * 0.165, 0.2, 0.02], 6, 0.3, 0.045, hair, 0.4, 0.4, side * 0.12),
+      );
+    const tilt = -0.14;
+    this.mesh(new CylinderGeometry(0.3, 0.335, 0.02, 30), cloth, this.head, [0, 0.305, -0.015], [tilt, 0, 0]);
+    this.mesh(new TorusGeometry(0.33, 0.009, 6, 38), trim, this.head, [0, 0.297, -0.015], [UP + tilt, 0, 0]);
+    const tip = this.curved(this.head, [0, 0.305, -0.015], [tilt - 0.1, 0, 0], 0.52, 0.168, -1.25, cloth);
+    this.mesh(new TorusGeometry(0.166, 0.017, 8, 28), trim, this.head, [0, 0.34, -0.02], [UP + tilt, 0, 0]);
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 4 - 0.5) * 2;
+      this.ball(
+        gem,
+        this.head,
+        [Math.sin(a) * 0.172, 0.343, -0.02 + Math.cos(a) * 0.172],
+        [0.012, 0.012, 0.008],
+        [0, a, 0],
+      );
+    }
+    // A star at the brow, cradled in a crescent.
+    this.ball(gem, this.head, [0, 0.4, 0.14], [0.028, 0.028, 0.012], [tilt, 0, 0]);
+    this.mesh(
+      new TorusGeometry(0.036, 0.007, 6, 16, Math.PI * 1.3),
+      trim,
+      this.head,
+      [0, 0.4, 0.143],
+      [tilt, 0, -Math.PI * 1.15],
+    );
+    // The point of the hat ends in a stone that trails light.
+    this.ball(gem, tip, [0, 0.01, 0], [0.026, 0.026, 0.026]);
+    for (const spread of [-0.3, 0.3])
+      this.streamers.push(this.buildStreamer(tip, [0, 0, 0], 4, 0.16, 0.02, ribbon, 0.9, 0.8, spread));
+  }
+
+  /** The healer's hood: a deep cowl over her hair, rimmed in metal round the face, peaked behind, a leaf of light at the brow. */
+  private buildHood(): void {
+    const { cloth, trim, gem, hair } = this.materials;
+    this.buildFringe();
+    for (const side of [-1, 1])
+      this.streamers.push(
+        this.buildStreamer(this.head, [side * 0.15, 0.12, 0.06], 6, 0.3, 0.05, hair, 0.4, 0.4, side * 0.1),
+      );
+    // A shell round the head with a gap left open down the front for the face.
+    const gap = 0.95;
+    const shell = new SphereGeometry(1, 26, 16, UP + gap, Math.PI * 2 - gap * 2);
+    this.mesh(shell, cloth, this.head, [0, 0.19, -0.012], [0, 0, 0], [0.204, 0.205, 0.2]);
+    this.mesh(new TorusGeometry(0.166, 0.012, 8, 30), trim, this.head, [0, 0.19, 0.106], [0, 0, 0], [1, 1.16, 1]);
+    this.mesh(new ConeGeometry(0.1, 0.24, 12), cloth, this.head, [0, 0.31, -0.17], [-1.05, 0, 0]);
+    this.ball(gem, this.head, [0, 0.39, 0.1], [0.02, 0.03, 0.01]);
+    for (const side of [-1, 1])
+      this.ball(trim, this.head, [side * 0.03, 0.38, 0.1], [0.022, 0.01, 0.008], [0, 0, side * 0.6]);
+  }
+
+  /** A staff taller than she is in the right hand, and a spell book floating open over the left. */
+  private buildStaffAndBook(): void {
+    const { trim, ribbon, gem, dark, cloth } = this.materials;
+    this.sword.position.set(0, -0.135, 0);
+    this.swordArm.lower.add(this.sword);
+    // Built pointing up from the fist, the shaft running on down through it to a shod foot.
+    this.mesh(new CylinderGeometry(0.012, 0.015, 0.98, 8), dark, this.sword, [0, 0.19, 0]);
+    for (const y of [-0.22, -0.06, 0.3, 0.52, 0.62])
+      this.mesh(new TorusGeometry(0.0165, 0.005, 6, 12), trim, this.sword, [0, y, 0], [UP, 0, 0]);
+    this.mesh(new ConeGeometry(0.016, 0.06, 8), trim, this.sword, [0, -0.325, 0], [Math.PI, 0, 0]);
+    // The head: a crescent open to the sky, a burning stone held in it, a ring of light and three sparks round that.
+    const top = 0.76;
+    this.mesh(
+      new TorusGeometry(0.09, 0.014, 8, 26, Math.PI * 1.36),
+      trim,
+      this.sword,
+      [0, top, 0],
+      [0, 0, -Math.PI * 1.18],
+    );
+    for (const side of [-1, 1])
+      this.mesh(
+        new ConeGeometry(0.014, 0.05, 6),
+        trim,
+        this.sword,
+        [side * 0.052, top + 0.092, 0],
+        [0, 0, -side * 0.5],
+      );
+    this.ball(gem, this.sword, [0, top + 0.012, 0], [0.05, 0.05, 0.05]);
+    this.mesh(new TorusGeometry(0.068, 0.005, 6, 26), ribbon, this.sword, [0, top + 0.012, 0], [UP - 0.5, 0.3, 0]);
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + 0.4;
+      this.ball(
+        gem,
+        this.sword,
+        [Math.sin(a) * 0.12, top + 0.03 + Math.cos(a * 2) * 0.05, Math.cos(a) * 0.12],
+        [0.012, 0.012, 0.012],
+      );
+    }
+    for (const spread of [-0.4, 0.4])
+      this.streamers.push(this.buildStreamer(this.sword, [0, top - 0.11, 0], 5, 0.26, 0.022, ribbon, 0.9, 0.6, spread));
+
+    // The book hangs in the air just past her left hand, open, its pages bright.
+    const book = new Group();
+    book.position.set(0, -0.235, 0.02);
+    book.rotation.set(0.5, 0, 0);
+    this.freeArm.lower.add(book);
+    for (const side of [-1, 1]) {
+      const half = new Group();
+      half.position.x = side * 0.004;
+      half.rotation.z = side * 0.3;
+      book.add(half);
+      const leaf = new CylinderGeometry(0.058, 0.058, 0.012, 4);
+      leaf.rotateY(Math.PI / 4);
+      this.mesh(leaf, cloth, half, [side * 0.045, 0, 0], [0, 0, 0], [1.05, 1, 1.3]);
+      this.mesh(leaf, this.white, half, [side * 0.044, -0.009, 0], [0, 0, 0], [0.95, 0.8, 1.2]);
+      this.ball(trim, half, [side * 0.085, 0.004, 0.045], [0.008, 0.008, 0.008]);
+      this.ball(trim, half, [side * 0.085, 0.004, -0.045], [0.008, 0.008, 0.008]);
+    }
+    this.ball(gem, book, [0, -0.04, 0], [0.016, 0.016, 0.016]);
+    for (const spread of [-0.5, 0, 0.5])
+      this.streamers.push(this.buildStreamer(book, [0, -0.02, 0], 3, 0.12, 0.016, ribbon, 1.2, 0.5, spread));
+  }
+
+  /** A small crossbow in the right hand, a bolt of light on it, and a mending light floating over the left. */
+  private buildCrossbowAndLight(): void {
+    const { trim, ribbon, gem, dark, armour } = this.materials;
+    this.sword.position.set(0, -0.135, 0);
+    this.swordArm.lower.add(this.sword);
+    // Built pointing up from the fist: the stock, the bow across its far end swept back, the string, the bolt.
+    const stock = new CylinderGeometry(0.02, 0.026, 0.3, 4);
+    stock.rotateY(Math.PI / 4);
+    this.mesh(stock, dark, this.sword, [0, 0.09, 0], [0, 0, 0], [1, 1, 0.75]);
+    this.mesh(new TorusGeometry(0.02, 0.005, 6, 12), trim, this.sword, [0, -0.02, 0], [UP, 0, 0]);
+    this.mesh(new TorusGeometry(0.022, 0.006, 6, 14), trim, this.sword, [0, 0.262, 0], [0, 0, 0]);
+    const front = 0.215;
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i++)
+        this.mesh(
+          new CylinderGeometry(0.012 - i * 0.002, 0.015 - i * 0.002, 0.056, 8),
+          armour,
+          this.sword,
+          [side * (0.026 + i * 0.045), front - i * 0.012 - i * i * 0.007, 0],
+          [0, 0, -side * (UP - 0.2 - i * 0.28)],
+        );
+      this.ball(trim, this.sword, [side * 0.142, front - 0.062, 0], [0.008, 0.012, 0.008]);
+    }
+    this.mesh(new CylinderGeometry(0.0045, 0.0045, 0.284, 4), ribbon, this.sword, [0, front - 0.062, 0], [0, 0, UP]);
+    // A plate of metal where the bow is lashed to the stock.
+    this.ball(trim, this.sword, [0, front, 0.012], [0.03, 0.02, 0.012]);
+    this.mesh(new CylinderGeometry(0.005, 0.005, 0.2, 6), gem, this.sword, [0, 0.22, 0.016]);
+    this.mesh(new ConeGeometry(0.014, 0.05, 6), gem, this.sword, [0, 0.345, 0.016]);
+    this.ball(gem, this.sword, [0, 0.12, 0.02], [0.01, 0.014, 0.008]);
+
+    // The mending light: a bright heart in a ring, three leaves round it, wisps rising from it.
+    const light = new Group();
+    light.position.set(0, -0.225, 0);
+    this.freeArm.lower.add(light);
+    this.ball(gem, light, [0, 0, 0], [0.04, 0.04, 0.04]);
+    this.mesh(new TorusGeometry(0.06, 0.006, 6, 24), ribbon, light, [0, 0, 0], [0.4, 0, 0.3]);
+    this.mesh(new TorusGeometry(0.074, 0.004, 6, 24), trim, light, [0, 0, 0], [UP - 0.3, 0.5, 0]);
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      this.ball(ribbon, light, [Math.sin(a) * 0.085, 0, Math.cos(a) * 0.085], [0.012, 0.03, 0.02], [0, a, 0.5]);
+      this.streamers.push(
+        this.buildStreamer(
+          light,
+          [Math.sin(a) * 0.02, 0, Math.cos(a) * 0.02],
+          4,
+          0.16,
+          0.018,
+          ribbon,
+          1.3,
+          0.3,
+          (i - 1) * 0.5,
+        ),
+      );
+    }
+  }
+
+  /**
+   * What is worn over the rest, by everyone: an emblem and crossed straps on the chest, a pendant and
+   * a pouch at the belt, and for the blade-master a skirt of small plates round the hips and back.
+   */
+  private buildTrappings(): void {
+    const { armour, trim, ribbon, gem, dark, cloth } = this.materials;
+    if (this.kind === 'mage') {
+      // A wide collar of metal over the mantle, and a great stone at the throat.
+      this.mesh(
+        new CylinderGeometry(0.085, 0.175, 0.07, 22, 1, true),
+        cloth,
+        this.chest,
+        [0, 0.205, 0],
+        [0, 0, 0],
+        [1, 1, 0.82],
+      );
+      this.mesh(new TorusGeometry(0.175, 0.008, 6, 30), trim, this.chest, [0, 0.17, 0], [UP, 0, 0], [1, 0.82, 1]);
+      this.ball(trim, this.chest, [0, 0.2, 0.09], [0.034, 0.034, 0.014]);
+      this.ball(gem, this.chest, [0, 0.2, 0.1], [0.022, 0.022, 0.012]);
+      // A sash round the waist, knotted in front, its ends hanging.
+      this.mesh(new TorusGeometry(0.108, 0.016, 8, 24), ribbon, this.chest, [0, 0.01, 0], [UP, 0, 0], [1, 0.8, 1]);
+      for (const spread of [-0.2, 0.2])
+        this.streamers.push(this.buildStreamer(this.chest, [0, 0, 0.09], 5, 0.26, 0.03, ribbon, 0.6, 0.3, spread));
+    } else {
+      // The emblem on the chest plate: four petals of metal round the stone.
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        this.ball(
+          trim,
+          this.chest,
+          [Math.cos(a) * 0.042, 0.13 + Math.sin(a) * 0.042, 0.108 - Math.abs(Math.cos(a)) * 0.012],
+          [0.024, 0.009, 0.006],
+          [0, 0, a],
+        );
+      }
+      // Straps crossed over the chest, studded.
+      for (const side of [-1, 1]) {
+        this.mesh(
+          new CylinderGeometry(0.011, 0.011, 0.25, 6),
+          dark,
+          this.chest,
+          [side * 0.05, 0.115, 0.074],
+          [0, 0, side * 0.45],
+          [1, 1, 0.4],
+        );
+        for (const along of [-0.08, 0.085])
+          this.ball(trim, this.chest, [side * (0.05 - along * 0.45), 0.115 + along, 0.083], [0.008, 0.008, 0.005]);
+      }
+    }
+    // A pendant of stone on a cord at the left hip, and a buttoned pouch at the right.
+    this.ball(gem, this.hips, [-0.092, -0.035, 0.072], [0.014, 0.02, 0.008]);
+    this.streamers.push(this.buildStreamer(this.hips, [-0.092, -0.05, 0.072], 4, 0.14, 0.02, ribbon, 0.7, 0.2, -0.15));
+    this.ball(dark, this.hips, [0.1, -0.025, 0.062], [0.03, 0.032, 0.022]);
+    this.ball(trim, this.hips, [0.1, -0.02, 0.083], [0.008, 0.008, 0.005]);
+
+    if (this.kind === 'blade') {
+      // A skirt of small plates round the sides and back, each tipped in metal.
+      for (let i = 0; i < 7; i++) {
+        const a = Math.PI + (i / 6 - 0.5) * 3.5;
+        const x = Math.sin(a) * 0.122;
+        const z = Math.cos(a) * 0.096;
+        this.ball(armour, this.hips, [x, -0.07, z], [0.036, 0.07, 0.013], [0, a, 0]);
+        this.ball(trim, this.hips, [x * 1.02, -0.135, z * 1.02], [0.02, 0.012, 0.01], [0, a, 0]);
+      }
+    }
+    if (this.kind === 'healer') {
+      // A satchel on a strap across the body, and vials of light along the belt.
+      this.mesh(
+        new CylinderGeometry(0.012, 0.012, 0.3, 6),
+        dark,
+        this.chest,
+        [0.01, 0.11, 0.08],
+        [0, 0, 0.75],
+        [1, 1, 0.4],
+      );
+      this.ball(dark, this.hips, [-0.125, -0.03, 0.0], [0.04, 0.05, 0.05]);
+      this.ball(trim, this.hips, [-0.15, -0.01, 0.0], [0.02, 0.03, 0.045], [0, 0, 0.3]);
+      this.ball(gem, this.hips, [-0.166, -0.02, 0.0], [0.008, 0.012, 0.012]);
+      for (let i = 0; i < 3; i++) {
+        this.mesh(new CylinderGeometry(0.009, 0.009, 0.036, 8), gem, this.hips, [
+          0.03 + i * 0.03,
+          -0.03,
+          0.088 - i * 0.008,
+        ]);
+        this.ball(trim, this.hips, [0.03 + i * 0.03, -0.008, 0.088 - i * 0.008], [0.007, 0.006, 0.007]);
+      }
+    }
   }
 
   /**
@@ -1016,9 +1555,9 @@ export class Swordsman {
     this.swordArm.upper.rotation.x = pose.swordArm * (1 - run) + run * (0.8 + Math.sin(step) * 0.12);
     this.swordArm.upper.rotation.z = pose.swordArmOut * (1 - run) + run * 0.35;
     this.swordArm.lower.rotation.x = -(pose.swordElbow * (1 - run) + run * 0.25);
-    this.sword.rotation.x = pose.swordTilt * (1 - run) + run * 2.5;
-    // The archer runs with her bow carried low and forward, not pumping that arm.
-    const carry = this.archer ? 0.25 : 1;
+    this.sword.rotation.x = pose.swordTilt * (1 - run) + run * RUN_TILT[this.kind];
+    // Only the blade-master's left hand is empty: the others carry something in it and do not pump that arm.
+    const carry = this.kind === 'blade' ? 1 : 0.25;
     this.freeArm.upper.rotation.x = pose.freeArm * (1 - run) + run * (-0.3 - Math.sin(step) * 0.7 * carry);
     this.freeArm.upper.rotation.z = -(pose.freeArmOut * (1 - run) + run * 0.2);
     this.freeArm.lower.rotation.x = -(pose.freeElbow * (1 - run) + run * 1.2);
@@ -1052,8 +1591,8 @@ export class Swordsman {
       if (shot && clock - incoming.at < 0.2 && !state.dead)
         this.action = { kind: incoming.kind, from: clock, until: clock + shot.seconds };
     }
-    const rest = this.archer ? ARCHER_REST : REST;
-    const actions = this.archer ? ARCHER_ACTIONS : ACTIONS;
+    const rest = REST_OF[this.kind];
+    const actions = ACTIONS_OF[this.kind];
     let pose = rest;
     if (this.action && clock < this.action.until && !state.dead) {
       const progress = (clock - this.action.from) / (this.action.until - this.action.from);

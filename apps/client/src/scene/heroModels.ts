@@ -185,22 +185,26 @@ export const HERO_MODELS: Record<string, HeroModel> = {
   },
   bolt7: mech(MODELS.mechMike, 3),
   mekka: mech(MODELS.mechLeela, 2.7),
+  // A star mage in a long indigo robe and a tall bent hat, a crescent staff in one hand and a book
+  // floating over the other. Built in code.
   mira: {
-    model: MODELS.mage,
-    // Sola carries the staff; Mira reads from an open book and casts with a wand.
-    hide: ['2H_Staff', 'Spellbook'],
-    tint: '#b9c8ff',
-    scale: 0.95,
-    rig: {
-      ...BASE,
-      actions: {
-        attack: clip('Spellcast_Shoot'),
-        Q: clip('Spellcast_Shoot'),
-        W: clip('Spellcast_Raise'),
-        E: clip('Spellcast_Raise', 0.4),
-        R: clip('Spellcast_Long', 1),
-      },
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2,
+    showcaseScale: 0.9,
+    swordsman: {
+      kind: 'mage',
+      cloth: '#3b2f8f',
+      armour: '#2f3566',
+      trim: '#cfd8f0',
+      ribbon: '#8fd0ff',
+      skin: '#f4d3bb',
+      hair: '#d9d2ff',
+      blade: '#e6edf5',
+      gem: '#7fb0ff',
     },
+    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
   // Storm: a black winged dragon with fire showing between its scales, fins and a mane of flame, and
   // burning shards circling it. Built in code; it has one body and simply grows as it evolves.
@@ -239,22 +243,26 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     },
   },
   raze3: mech(MODELS.mechStan, 2.8, true),
-  // The medic wears the hooded outfit in pale green and carries a hand crossbow instead of knives.
+  // A field medic in a deep green hooded cloak, a satchel at her hip, a hand crossbow and a mending
+  // light she carries over her other hand. Built in code.
   elna: {
-    model: MODELS.rogueHooded,
-    hide: ['Knife', 'Knife_Offhand', '2H_Crossbow', 'Throwable'],
-    tint: '#c9f7d2',
-    scale: 0.92,
-    rig: {
-      ...BASE,
-      actions: {
-        attack: clip('Throw', 0.5),
-        Q: clip('Throw'),
-        W: clip('Spellcast_Raise'),
-        E: clip('Throw'),
-        R: clip('Spellcast_Raise', 0.8),
-      },
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 1.95,
+    showcaseScale: 0.9,
+    swordsman: {
+      kind: 'healer',
+      cloth: '#2c7048',
+      armour: '#5b4630',
+      trim: '#dcc47a',
+      ribbon: '#9af0a6',
+      skin: '#f2cfae',
+      hair: '#7a4a2a',
+      blade: '#e6edf5',
+      gem: '#7dffa0',
     },
+    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
   // Venom: a three-headed dragon in black-green scales with violet wings and fins, venom glowing between
   // the scales and dripping from all three mouths. Built in code; it has one body and simply grows as it evolves.

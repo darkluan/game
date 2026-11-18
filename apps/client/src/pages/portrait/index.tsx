@@ -67,7 +67,9 @@ function Subject({ heroId }: { heroId: string }) {
       box.min.y + size.y * framing.lookAt,
       box.min.z + size.z * framing.forward,
     );
-    const distance = span * framing.distance * 2.2;
+    // ?far=1.5 steps the camera back, for a body whose staff or cloak runs out of the frame.
+    const far = Number(new URLSearchParams(window.location.search).get('far') ?? 1) || 1;
+    const distance = span * framing.distance * 2.2 * far;
     camera.position.set(
       target.x + Math.sin(framing.yaw) * distance,
       target.y + span * framing.lift,
