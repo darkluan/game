@@ -8,6 +8,7 @@ import type {
   MapDef,
   Race,
   RelicType,
+  SpellId,
   StatusType,
   Team,
   Vec2,
@@ -34,6 +35,20 @@ export interface AbilityHud {
   range: number;
   /** Its numbers, one row each, as text per ability level. */
   details: { label: string; values: string[] }[];
+}
+
+/** A helper spell on the HUD: the same set for every hero. Recall sits with them. */
+export interface SpellHud {
+  id: SpellId | 'recall';
+  /** The keyboard key that casts it. */
+  key: string;
+  name: string;
+  description: string;
+  cooldownLeft: number; // seconds
+  cooldownFraction: number; // 1 = just cast, 0 = ready
+  usable: boolean;
+  /** Seconds between casts. */
+  cooldown: number;
 }
 
 export interface HeroScore {
@@ -81,6 +96,11 @@ export interface HudState {
   /** Labels of the conditions the hero is under, for display. */
   conditions: string[];
   abilities: AbilityHud[];
+  spells: SpellHud[];
+  /** The recall in progress: seconds left and how far along it is (0..1); null when not recalling. */
+  recall: { seconds: number; fraction: number } | null;
+  /** The next item worth buying for this hero, when its bag has room; null otherwise. */
+  suggestion: { id: string; name: string; price: number; affordable: boolean } | null;
   /** The hero's fighting numbers; null while the server has not sent them. */
   stats: HeroStats | null;
   items: string[];

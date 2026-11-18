@@ -1,6 +1,6 @@
 import { tr } from '@/i18n';
-import { castSlot } from '@/input/commands';
-import type { AbilityHud, GameSession } from '@/lib/session';
+import { castSlot, castSpell } from '@/input/commands';
+import type { AbilityHud, GameSession, SpellHud } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { HeroPortrait } from '../HeroPortrait';
@@ -12,6 +12,8 @@ import {
   AbilityInfo,
   Bar,
   DeathNotice,
+  QuickBuy,
+  RecallNotice,
   EndScreen,
   EventFeed,
   type LayoutProps,
@@ -94,6 +96,52 @@ function AbilityButton({ ability, game }: { ability: AbilityHud; game: GameSessi
   );
 }
 
+/** A helper spell: smaller than an ability, with nothing to level up. */
+function SpellButton({ spell, game }: { spell: SpellHud; game: GameSession }) {
+  return (
+    <div className="relative flex flex-col items-center gap-1">
+      <button
+        type="button"
+        aria-label={`${spell.name} (${spell.key})`}
+        disabled={!spell.usable}
+        onClick={() => castSpell(game, spell.id, null)}
+        className={`peer/cast relative size-11 overflow-hidden rounded-full border-2 bg-background font-bold ${
+          spell.usable ? 'border-gold' : 'border-border text-muted-foreground'
+        }`}
+      >
+        {spell.cooldownLeft > 0 && (
+          <span
+            className="absolute inset-x-0 bottom-0 bg-foreground/25"
+            style={{ height: `${spell.cooldownFraction * 100}%` }}
+          />
+        )}
+        <GameIcon
+          id={spell.id}
+          className={`absolute inset-2 ${spell.usable ? 'text-gold' : 'text-muted-foreground/60'}`}
+        />
+        {spell.cooldownLeft > 0 && (
+          <span className="relative text-sm text-foreground [text-shadow:0_0_4px_#000]">
+            {Math.ceil(spell.cooldownLeft)}
+          </span>
+        )}
+        <span className="absolute bottom-0 left-1.5 text-[10px] text-primary [text-shadow:0_0_3px_#000]">
+          {spell.key}
+        </span>
+      </button>
+      <div role="tooltip" className={`${TIP} peer-hover/cast:block`}>
+        <p className="font-semibold">{spell.name}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{spell.description}</p>
+        {spell.cooldown > 0 && (
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {tr('Hồi chiêu {seconds} giây', { seconds: spell.cooldown })}
+          </p>
+        )}
+      </div>
+      <span className="max-w-16 truncate text-[10px] text-muted-foreground">{spell.name}</span>
+    </div>
+  );
+}
+
 /**
  * Mouse-and-keyboard layout: heroes and clock along the top, the minimap bottom left, and one wide
  * console along the bottom holding the hero, its abilities and bars, and its items.
@@ -142,7 +190,7 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
         <br />
         {tr('Q W E R: chiêu theo con trỏ · Alt + phím: nâng chiêu')}
         <br />
-        {tr('S: dừng · B: cửa hàng · giữ Tab: bảng điểm')}
+        {tr('D: hồi máu · F: tốc biến · T: biến về · S: dừng · B: cửa hàng · giữ Tab: bảng điểm')}
       </p>
 
       {/* The console. Three blocks: who you are, what you can do, what you carry. */}
@@ -184,9 +232,13 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
         </div>
 
         <div className="flex min-w-72 flex-1 flex-col gap-1.5">
-          <div className="flex justify-center gap-3">
+          <div className="flex items-end justify-center gap-3">
             {hud.abilities.map((a) => (
               <AbilityButton key={a.slot} ability={a} game={game} />
+            ))}
+            <span aria-hidden className="h-10 w-px self-center bg-border" />
+            {hud.spells.map((s) => (
+              <SpellButton key={s.id} spell={s} game={game} />
             ))}
           </div>
           <Bar value={hud.hp} max={hud.maxHp} className="bg-hp" label={tr('Máu')} />
@@ -215,14 +267,23 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
               type="button"
               onClick={toggleShop}
               aria-pressed={shopOpen}
-              className={`rounded-md border px-2 py-1 text-xs ${hud.canShop ? 'border-primary text-primary' : 'border-border'}`}
+              className={`relative rounded-md border px-2 py-1 text-xs ${hud.suggestion?.affordable ? 'border-gold text-gold' : hud.canShop ? 'border-primary text-primary' : 'border-border'}`}
             >
               {tr('Cửa hàng (B)')}
+              {/* Enough gold for the next item: worth a trip home. */}
+              {hud.suggestion?.affordable && (
+                <span
+                  aria-hidden
+                  className="absolute -top-1 -right-1 size-2.5 animate-pulse-dot rounded-full bg-gold"
+                />
+              )}
             </button>
           </div>
         </div>
       </div>
 
+      <QuickBuy hud={hud} game={game} className="absolute bottom-48 left-1/2 -translate-x-1/2" />
+      <RecallNotice hud={hud} />
       <DeathNotice hud={hud} />
       <EndScreen hud={hud} actions={actions} />
     </div>

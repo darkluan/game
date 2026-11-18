@@ -12,6 +12,7 @@ import { Buildings } from './Buildings';
 import { Effects } from './Effects';
 import { Heroes } from './Heroes';
 import { HealthBars, Swarm } from './Instanced';
+import { HeroNames } from './HeroNames';
 import { Summons, Zones } from './Ground';
 import { Minions, Monsters } from './Minions';
 import { Objectives } from './Objectives';
@@ -106,6 +107,7 @@ export default function GameScene({ game, graphics }: { game: GameSession; graph
       <Summons game={game} />
       <Swarm game={game} simpleMinions={!high} />
       <HealthBars game={game} />
+      <HeroNames game={game} />
       <Effects game={game} />
     </Canvas>
   );

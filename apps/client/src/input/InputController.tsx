@@ -3,10 +3,11 @@ import { useEffect } from 'react';
 import { ABILITY_SLOTS, type AbilitySlot } from '@game/core';
 import type { GameSession } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
-import { castSlot, clickGround } from './commands';
+import { castSlot, castSpell, clickGround } from './commands';
 
 /**
  * Mouse and keyboard. Click to move or attack; Q W E R cast at the cursor; Alt+key levels up;
+ * D heals, F flashes toward the cursor and T recalls to the fountain;
  * S stops; B opens the shop; holding Tab shows the scoreboard.
  * With `touch`, moving is the joystick's job, so a tap on the ground only picks an enemy to attack.
  */
@@ -36,6 +37,12 @@ export function InputController({ game, touch }: { game: GameSession; touch: boo
         e.preventDefault();
         if (e.altKey) game.send({ t: 'levelUp', slot: key as AbilitySlot });
         else castSlot(game, key as AbilitySlot, game.cursor);
+      } else if (key === 'D') {
+        castSpell(game, 'heal', null);
+      } else if (key === 'F') {
+        castSpell(game, 'flash', game.cursor);
+      } else if (key === 'T') {
+        castSpell(game, 'recall', null);
       } else if (key === 'S') {
         game.send({ t: 'stop' });
       } else if (key === 'B') {

@@ -222,6 +222,42 @@ export abstract class BaseSession {
         });
         return;
       }
+      case 'recall': {
+        if (event.phase === 'cancel') return;
+        const who = this.find(event.id);
+        if (event.phase === 'start') {
+          this.addFx({ kind: 'ring', x: event.x, z: event.z, radius: 2.4, color: 'ally', inward: true, duration: 1.2 });
+          this.cue('cast', event);
+          return;
+        }
+        this.addFx({ kind: 'pillar', x: event.x, z: event.z, radius: 1.4, color: 'ally', duration: 0.6 });
+        if (who) this.addFx({ kind: 'pillar', x: who.pos.x, z: who.pos.z, radius: 1.4, color: 'ally', duration: 0.6 });
+        this.cue('blink', event);
+        return;
+      }
+      case 'spell': {
+        const flash = event.spell === 'flash';
+        if (flash)
+          this.addFx({
+            kind: 'ring',
+            x: event.fromX,
+            z: event.fromZ,
+            radius: 1.6,
+            color: 'gold',
+            inward: true,
+            duration: 0.35,
+          });
+        this.addFx({
+          kind: flash ? 'burst' : 'pillar',
+          x: event.x,
+          z: event.z,
+          radius: flash ? 1.8 : 1.4,
+          color: flash ? 'gold' : 'heal',
+          duration: flash ? 0.4 : 0.7,
+        });
+        this.cue(flash ? 'blink' : 'heal', event);
+        return;
+      }
       case 'evolve': {
         const who = this.find(event.id);
         if (!who) return;

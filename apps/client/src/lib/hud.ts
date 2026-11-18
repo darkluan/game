@@ -2,11 +2,18 @@ import { abilityDetails } from './abilityDetails';
 import { tr } from '@/i18n';
 import {
   ABILITY_SLOTS,
+  BOT_BUILDS,
+  itemPrice,
+  ITEMS,
+  RECALL,
   type HeroDef,
   type HeroStats,
   maxAbilityLevel,
   type Race,
   raceOf,
+  SPELL_IDS,
+  type SpellId,
+  SPELLS,
   type StatusType,
   type Team,
   type TeamSynergy,
@@ -33,6 +40,29 @@ export interface HudInput {
   world: WorldView;
   announcements: Announcement[];
 }
+
+/** How each helper spell is shown: its key on a keyboard, its name and what it does. */
+const SPELL_TEXT: Record<SpellId | 'recall', { key: string; name: string; description: string }> = {
+  heal: {
+    key: 'D',
+    name: tr('Hồi máu'),
+    description: tr('Hồi ngay {percent}% máu tối đa của tướng.', {
+      percent: Math.round(SPELLS.heal.healFraction * 100),
+    }),
+  },
+  flash: {
+    key: 'F',
+    name: tr('Tốc biến'),
+    description: tr('Dịch chuyển tức thời một đoạn ngắn theo hướng nhắm, qua được cả tường.'),
+  },
+  recall: {
+    key: 'T',
+    name: tr('Biến về'),
+    description: tr('Đứng yên {seconds} giây để về hồ. Di chuyển, tấn công hoặc bị đánh sẽ hủy.', {
+      seconds: RECALL.channelTicks / TICK_RATE,
+    }),
+  },
+};
 
 const CONDITION_LABELS: [StatusType, string][] = [
   ['stun', tr('Bị choáng')],
@@ -62,6 +92,13 @@ function synergyLines(synergy: TeamSynergy): string[] {
 /** Turns the player's hero state into what the HUD displays. The same for offline and online play. */
 export function buildHud(input: HudInput): HudState {
   const { def, you, has } = input;
+  // An older server does not send these yet.
+  const recallLeft = (you.recall as number | undefined) ?? 0;
+  const stuck = input.dead || has('stun') || has('stone');
+  const itemSlots = raceOf(def.race).itemSlots;
+  const nextItem =
+    you.items.length < itemSlots ? BOT_BUILDS[def.role].find((id) => !you.items.includes(id)) : undefined;
+  const nextPrice = nextItem ? itemPrice(nextItem, you.discount) : 0;
   const disabled = input.dead || has('stun') || has('stone') || has('silence');
   const conditions = CONDITION_LABELS.filter(([type]) => has(type)).map(([, label]) => label);
   if (input.siege) conditions.push(tr('Chế độ pháo'));
@@ -111,10 +148,41 @@ export function buildHud(input: HudInput): HudState {
         details: abilityDetails(ability),
       };
     }),
+    spells: [
+      ...SPELL_IDS.map((id, i) => {
+        // An older server does not send the cooldowns yet: show the spell as ready.
+        const left = (you.spells as number[] | undefined)?.[i] ?? 0;
+        return {
+          id,
+          ...SPELL_TEXT[id],
+          cooldownLeft: left / TICK_RATE,
+          cooldownFraction: left / SPELLS[id].cooldownTicks,
+          // Silence does not stop a helper spell; only death, a stun or being turned to stone does.
+          usable: left === 0 && !stuck,
+          cooldown: SPELLS[id].cooldownTicks / TICK_RATE,
+        };
+      }),
+      // Recall has no cooldown: it is ready whenever the hero can act, is away from home and is not already channelling.
+      {
+        id: 'recall' as const,
+        ...SPELL_TEXT.recall,
+        cooldownLeft: 0,
+        cooldownFraction: 0,
+        usable: !stuck && !you.canShop && recallLeft === 0,
+        cooldown: 0,
+      },
+    ],
+    recall:
+      recallLeft > 0
+        ? { seconds: Math.ceil(recallLeft / TICK_RATE), fraction: 1 - recallLeft / RECALL.channelTicks }
+        : null,
+    suggestion: nextItem
+      ? { id: nextItem, name: tr(ITEMS[nextItem].name), price: nextPrice, affordable: you.gold >= nextPrice }
+      : null,
     // An older server does not send these yet.
     stats: (you.stats as HeroStats | undefined) ?? null,
     items: you.items,
-    itemSlots: raceOf(def.race).itemSlots,
+    itemSlots,
     canShop: you.canShop,
     discount: you.discount,
     synergy: synergyLines(you.synergy),

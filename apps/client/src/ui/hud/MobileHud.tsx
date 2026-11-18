@@ -1,8 +1,8 @@
 import { tr } from '@/i18n';
 import { useCallback, useState } from 'react';
 import { ITEMS, type Vec2 } from '@game/core';
-import { attackNearest, castSlot, moveInDirection } from '@/input/commands';
-import type { AbilityHud, GameSession, HudState } from '@/lib/session';
+import { attackNearest, castSlot, castSpell, moveInDirection } from '@/input/commands';
+import type { AbilityHud, GameSession, HudState, SpellHud } from '@/lib/session';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import { useGameStore } from '@/store/gameStore';
 import { launchedAsApp } from '@/lib/install';
@@ -17,6 +17,8 @@ import {
   EndScreen,
   EventFeed,
   type LayoutProps,
+  QuickBuy,
+  RecallNotice,
   Scoreboard,
   StatsGrid,
   TeamBar,
@@ -33,6 +35,45 @@ const ABILITY_SPOTS: Record<string, { right: number; bottom: number; size: numbe
   E: { right: 22, bottom: 110, size: 58 },
   R: { right: 168, bottom: 62, size: 66 },
 };
+
+/** Where the helper spells and recall sit: smaller, tucked into the gaps of the ability ring. */
+const SPELL_SPOTS: Record<string, { right: number; bottom: number }> = {
+  heal: { right: 172, bottom: 6 },
+  flash: { right: 96, bottom: 140 },
+  recall: { right: 180, bottom: 138 },
+};
+const SPELL_SIZE = 48;
+
+function RoundSpell({ spell, game }: { spell: SpellHud; game: GameSession }) {
+  const spot = SPELL_SPOTS[spell.id];
+  return (
+    <button
+      type="button"
+      aria-label={spell.name}
+      disabled={!spell.usable}
+      // Flash goes the way the hero faces: on a phone that is the way the stick was last pushed.
+      onPointerDown={() => castSpell(game, spell.id, null)}
+      style={{ right: spot.right, bottom: spot.bottom, width: SPELL_SIZE, height: SPELL_SIZE }}
+      className={`pointer-events-auto absolute touch-none overflow-hidden rounded-full border-2 bg-panel text-sm font-bold ${
+        spell.usable ? 'border-gold' : 'border-border text-muted-foreground'
+      }`}
+    >
+      {spell.cooldownLeft > 0 && (
+        <span
+          className="absolute inset-x-0 bottom-0 bg-foreground/25"
+          style={{ height: `${spell.cooldownFraction * 100}%` }}
+        />
+      )}
+      <GameIcon
+        id={spell.id}
+        className={`absolute inset-2.5 ${spell.usable ? 'text-gold' : 'text-muted-foreground/60'}`}
+      />
+      {spell.cooldownLeft > 0 && (
+        <span className="relative [text-shadow:0_0_4px_#000]">{Math.ceil(spell.cooldownLeft)}</span>
+      )}
+    </button>
+  );
+}
 
 function RoundAbility({ ability, game }: { ability: AbilityHud; game: GameSession }) {
   const spot = ABILITY_SPOTS[ability.slot];
@@ -181,9 +222,13 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
           type="button"
           onPointerDown={toggleShop}
           aria-pressed={shopOpen}
-          className={`${chip} ${hud.canShop ? 'border-primary text-primary' : ''}`}
+          className={`${chip} relative ${hud.suggestion?.affordable ? 'border-gold text-gold' : hud.canShop ? 'border-primary text-primary' : ''}`}
         >
           {tr('Cửa hàng')}
+          {/* Enough gold for the next item: worth a trip home. */}
+          {hud.suggestion?.affordable && (
+            <span aria-hidden className="absolute -top-1 -right-1 size-2.5 animate-pulse-dot rounded-full bg-gold" />
+          )}
         </button>
         {offerFullscreen && (
           // click, not pointerdown: browsers only allow going full screen from a finished tap.
@@ -267,6 +312,8 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
       </div>
 
       <Vitals hud={hud} />
+      <QuickBuy hud={hud} game={game} className="absolute bottom-[5.5rem] left-1/2 -translate-x-1/2" />
+      <RecallNotice hud={hud} />
 
       <div className="absolute right-4 bottom-4 h-48 w-60">
         <button
@@ -281,16 +328,9 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
         {hud.abilities.map((a) => (
           <RoundAbility key={a.slot} ability={a} game={game} />
         ))}
-      </div>
-
-      {/* The game is laid out for a phone held sideways. */}
-      <div className="pointer-events-auto absolute inset-0 hidden flex-col items-center justify-center gap-4 bg-background/90 p-6 text-center text-lg font-semibold portrait:flex">
-        {tr('Hãy xoay ngang điện thoại để chơi.')}
-        {fullscreen.supported && !installed && (
-          <button type="button" onClick={() => void fullscreen.enter()} className="btn btn-primary cut-corners text-sm">
-            {tr('Xoay ngang và toàn màn hình')}
-          </button>
-        )}
+        {hud.spells.map((s) => (
+          <RoundSpell key={s.id} spell={s} game={game} />
+        ))}
       </div>
 
       <DeathNotice hud={hud} />

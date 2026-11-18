@@ -1,6 +1,7 @@
 import { tr } from '@/i18n';
 import type { AbilityHud, GameSession, HudState } from '@/lib/session';
 import { HeroPortrait } from '../HeroPortrait';
+import { GameIcon } from '../icons/GameIcon';
 import { RELIC_EFFECTS, RELIC_NAMES } from '../relicText';
 import type { HudActions } from '../Hud';
 import { clock, teamKills } from './format';
@@ -380,6 +381,39 @@ export function Scoreboard({ hud }: { hud: HudState }) {
         ))}
       </tbody>
     </table>
+  );
+}
+
+/** Shown while the hero channels a recall: how long is left, filling up as it goes. */
+export function RecallNotice({ hud }: { hud: HudState }) {
+  if (!hud.recall || hud.dead) return null;
+  return (
+    <div className="absolute top-[62%] left-1/2 w-44 -translate-x-1/2 rounded-md hud-panel px-3 py-1.5 text-center text-xs">
+      <div className="font-semibold text-ally">{tr('Đang biến về… {seconds}', { seconds: hud.recall.seconds })}</div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-sm bg-background">
+        <div className="h-full bg-ally" style={{ width: `${hud.recall.fraction * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One tap to buy the next item worth having. Shown only when the shop is in reach and the gold is
+ * there, so it never needs a second look.
+ */
+export function QuickBuy({ hud, game, className }: { hud: HudState; game: GameSession; className: string }) {
+  const item = hud.suggestion;
+  if (!item?.affordable || !hud.canShop) return null;
+  return (
+    <button
+      type="button"
+      onPointerDown={() => game.send({ t: 'buy', itemId: item.id })}
+      className={`pointer-events-auto flex touch-none items-center gap-1.5 rounded-md border border-gold bg-background/90 px-2 py-1 text-xs font-semibold text-gold ${className}`}
+    >
+      <GameIcon id={item.id} className="size-5" />
+      {tr('Mua {name}', { name: item.name })}
+      <span className="tabular-nums">{item.price}</span>
+    </button>
   );
 }
 

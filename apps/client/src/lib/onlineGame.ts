@@ -47,8 +47,8 @@ const PREDICTION_LEAD_SECONDS = 0.7;
 const PREDICTION_HOLD_MS = 900;
 /** How quickly the shown hero closes on the server's position once it stops predicting: the share of the gap closed per second. */
 const SETTLE_RATE = 9;
-/** A gap this wide is a respawn, a blink or a throw: jump across it instead of sliding. */
-const SNAP_DISTANCE = 7;
+/** A gap this wide is a respawn, a blink, a Flash or a throw: jump across it instead of sliding. */
+const SNAP_DISTANCE = 4.5;
 /** Statuses under which the server will not let the hero walk, so the client must not show it walking. */
 const HELD_STATUSES: StatusType[] = ['stun', 'root', 'stone'];
 
