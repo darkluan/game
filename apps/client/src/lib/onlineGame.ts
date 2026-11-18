@@ -292,6 +292,7 @@ export class OnlineGame extends BaseSession implements GameSession {
         return {
           id: r.heroId,
           name: r.isBot ? 'Máy' : r.nickname,
+          heroDefId: r.heroDefId,
           heroName: HEROES[r.heroDefId]?.name ?? r.heroDefId,
           team: r.team,
           isPlayer: r.heroId === me.id,

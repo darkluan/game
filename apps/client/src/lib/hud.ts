@@ -92,6 +92,7 @@ export function buildHud(input: HudInput): HudState {
       const left = you.cooldowns[i];
       const affordable = def.resource !== 'mana' || you.mana >= ability.cost[index];
       return {
+        id: ability.id,
         slot,
         name: ability.name,
         description: ability.description,

@@ -236,6 +236,7 @@ export class LocalGame extends BaseSession implements GameSession {
       scores: sim.q.heroes.entities.map((e) => ({
         id: e.id,
         name: e === h ? 'Bạn' : 'Máy',
+        heroDefId: e.hero.defId,
         heroName: sim.heroDef(e.hero.defId).name,
         team: e.team,
         isPlayer: e === h,

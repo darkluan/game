@@ -1,5 +1,6 @@
 import { type AbilityDef, type AbilitySlot, dist, type Faction, HEROES, type SimEvent, type Vec2 } from '@game/core';
 import { RELIC_EFFECTS, RELIC_NAMES } from '@/ui/relicText';
+import { ABILITY_FX } from './abilityFx';
 import type { ActorAction, Announcement, Fx, FxColor, RosterHero, SoundCue, UnitView, ViewEntity } from './session';
 
 /** How long an announcement stays on screen. */
@@ -40,8 +41,8 @@ export abstract class BaseSession {
     this.cursor.z = z;
   }
 
-  addFx(fx: Omit<Fx, 'bornAt'>): void {
-    this.fx.push({ ...fx, bornAt: this.clock });
+  addFx(fx: Omit<Fx, 'bornAt'>, delay = 0): void {
+    this.fx.push({ ...fx, bornAt: this.clock + delay });
   }
 
   protected expireFx(): void {
@@ -273,14 +274,16 @@ export abstract class BaseSession {
     }
   }
 
-  /** The visual for a cast, chosen by how the ability is aimed. */
+  /** The visual for a cast: the ability's own, or one chosen by how it is aimed when it has none. */
   private castFx(caster: ViewEntity, def: AbilityDef, at: Vec2): void {
     const color = this.side(caster.team);
-    if (def.targeting === 'self') {
+    const from = this.previousPos(caster.id) ?? caster.pos;
+    const own = ABILITY_FX[def.id];
+    if (own) {
+      own({ add: (fx, delay) => this.addFx(fx, delay), from, caster: caster.pos, at, side: color });
+    } else if (def.targeting === 'self') {
       this.addFx({ kind: 'ring', x: caster.pos.x, z: caster.pos.z, radius: 1.8, color, duration: 0.5 });
     } else if (def.targeting === 'direction') {
-      // A dash: streak from where the caster stood before to where it stands now.
-      const from = this.previousPos(caster.id) ?? caster.pos;
       const width = def.params.width?.[0] ?? 1;
       this.addFx({
         kind: 'line',
@@ -296,7 +299,8 @@ export abstract class BaseSession {
       const radius = def.params.radius?.[0] ?? 1.2;
       this.addFx({ kind: 'disc', x: at.x, z: at.z, radius, color, duration: 0.3 });
       this.addFx({ kind: 'ring', x: at.x, z: at.z, radius: radius * 1.15, color, duration: 0.5 });
-      if (def.params.radius && dist(at, this.hero.pos) < 14) this.shakeUntil = this.clock + 0.25;
     }
+    if (def.targeting !== 'direction' && def.params.radius && dist(at, this.hero.pos) < 14)
+      this.shakeUntil = this.clock + 0.25;
   }
 }

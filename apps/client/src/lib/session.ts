@@ -14,6 +14,8 @@ import type {
 } from '@game/core';
 
 export interface AbilityHud {
+  /** The ability's id; also the key of its icon. */
+  id: string;
   slot: AbilitySlot;
   name: string;
   description: string;
@@ -28,6 +30,7 @@ export interface AbilityHud {
 export interface HeroScore {
   id: number;
   name: string;
+  heroDefId: string;
   heroName: string;
   team: Team;
   isPlayer: boolean;
@@ -99,19 +102,28 @@ export interface WorldView {
 
 export type FxColor = 'ally' | 'enemy' | 'gold' | 'neutral' | 'heal';
 
+/** The shapes the scene can draw for a one-shot visual. */
+export type FxShape = 'ring' | 'disc' | 'line' | 'pillar' | 'burst' | 'cone' | 'bolt' | 'slash';
+
 /** One-shot visual; the scene draws it and the session expires it. */
 export interface Fx {
-  kind: 'ring' | 'disc' | 'line' | 'text';
+  kind: FxShape | 'text';
   x: number;
   z: number;
-  /** ring/disc: radius. line: width. */
+  /** ring/disc/burst/cone/slash: radius. line/bolt: width. pillar: thickness. */
   radius: number;
-  /** line only: the far end. */
+  /** line and bolt only: the far end. */
   x2?: number;
   z2?: number;
-  color: FxColor;
+  /** A team or meaning colour, or any hex colour for an ability's own look. */
+  color: FxColor | `#${string}`;
+  /** cone, slash and burst: the direction it faces, in radians (0 = +z, grows toward +x). */
+  angle?: number;
+  /** ring only: closes in on the centre instead of spreading out. */
+  inward?: boolean;
   text?: string;
-  bornAt: number; // seconds on the session clock
+  /** Seconds on the session clock; in the future for a visual that starts after a delay. */
+  bornAt: number;
   duration: number;
 }
 
@@ -190,7 +202,8 @@ export interface GameSession {
   update(deltaSeconds: number): boolean;
   send(cmd: Command): void;
   setCursor(x: number, z: number): void;
-  addFx(fx: Omit<Fx, 'bornAt'>): void;
+  /** `delay`: seconds to wait before the visual appears. */
+  addFx(fx: Omit<Fx, 'bornAt'>, delay?: number): void;
   hud(): HudState;
 
   roster(): readonly RosterHero[];
