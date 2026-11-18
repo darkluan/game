@@ -1,23 +1,25 @@
 import { useId } from 'react';
 import { ITEMS, type ItemStats } from '@game/core';
 import { GAME_ICONS } from './gameIcons';
+import { ITEM_ART } from './itemArt';
 
 /** What an item is for, which decides the colours of its tile. */
 type Family = 'blade' | 'guard' | 'vital' | 'arcane' | 'swift';
 
-/** The stat that names an item's family; the first one an item has, in this order, wins. */
-const FAMILY_OF: [keyof ItemStats, Family][] = [
-  ['abilityDamage', 'arcane'],
-  ['cooldownReduction', 'arcane'],
-  ['mana', 'arcane'],
-  ['lifesteal', 'blade'],
-  ['attack', 'blade'],
-  ['attackSpeed', 'blade'],
-  ['armor', 'guard'],
-  ['moveSpeed', 'swift'],
-  ['hp', 'vital'],
-  ['hpRegen', 'vital'],
-];
+/** The family each kind of stat belongs to. An item takes the family of the first stat it lists: what it is mainly for. */
+const FAMILY_OF: Record<keyof ItemStats, Family> = {
+  attack: 'blade',
+  attackSpeed: 'blade',
+  lifesteal: 'blade',
+  armor: 'guard',
+  hp: 'vital',
+  hpRegen: 'vital',
+  mana: 'arcane',
+  manaRegen: 'arcane',
+  abilityDamage: 'arcane',
+  cooldownReduction: 'arcane',
+  moveSpeed: 'swift',
+};
 
 /** Each family: the deep colour behind the picture, the light at its heart, and the two ends of the picture's own sheen. */
 const FAMILIES: Record<Family, { deep: string; heart: string; top: string; bottom: string }> = {
@@ -40,7 +42,7 @@ const TIERS = [
 const TILE = 'M10 2H54L62 10V54L54 62H10L2 54V10Z';
 
 /**
- * An item as a small framed tile: its picture in a sheen of light over the colour of what it is for
+ * An item as a small framed tile: its own picture (see itemArt) over the colour of what it is for
  * (red for weapons, blue for armour, green for health, violet for magic, teal for speed), in a frame
  * whose metal tells how dear it is. The dearest also throw sparks.
  */
@@ -48,8 +50,9 @@ export function ItemIcon({ id, className }: { id: string; className?: string }) 
   const uid = useId();
   const item = ITEMS[id];
   const icon = GAME_ICONS[id];
-  if (!item || !icon) return null;
-  const family = FAMILIES[FAMILY_OF.find(([stat]) => item.stats[stat])?.[1] ?? 'vital'];
+  const art = ITEM_ART[id];
+  if (!item || (!icon && !art)) return null;
+  const family = FAMILIES[FAMILY_OF[(Object.keys(item.stats) as (keyof ItemStats)[])[0]] ?? 'vital'];
   const tier = TIERS.find((t) => item.cost <= t.upTo) ?? TIERS[0];
   const ref = (name: string) => `url(#${uid}${name})`;
   return (
@@ -73,6 +76,9 @@ export function ItemIcon({ id, className }: { id: string; className?: string }) 
           <stop offset="0" stopColor="#fff" stopOpacity="0.28" />
           <stop offset="0.5" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
+        <filter id={`${uid}lift`} x="-20%" y="-20%" width="140%" height="150%">
+          <feDropShadow dx="0" dy="1.6" stdDeviation="1.3" floodColor="#000" floodOpacity="0.7" />
+        </filter>
         <filter id={`${uid}glow`} x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="14" result="blur" />
           <feMerge>
@@ -88,11 +94,26 @@ export function ItemIcon({ id, className }: { id: string; className?: string }) 
           <path key={turn} d="M32 4L34 32L32 60L30 32Z" transform={`rotate(${turn} 32 32)`} />
         ))}
       </g>
-      {/* The picture: drawn on a 512 grid, set in the middle of the tile. */}
-      <g transform="translate(8.5 7.5) scale(0.092)" filter={ref('glow')}>
-        <path d={icon.d} fill={family.deep} opacity="0.7" transform="translate(8 14)" />
-        <path d={icon.d} fill={ref('sheen')} />
-      </g>
+      {art ? (
+        // The item's own picture, outlined in the tile's dark tone and lifted off it by a shadow.
+        <g
+          filter={ref('lift')}
+          stroke={family.deep}
+          strokeWidth="1.1"
+          strokeLinejoin="round"
+          transform="translate(4.5 4) scale(0.86)"
+        >
+          {art({ light: family.top, mid: family.bottom, deep: family.deep })}
+        </g>
+      ) : (
+        icon && (
+          // An item with no picture of its own yet: its plain symbol, drawn on a 512 grid.
+          <g transform="translate(8.5 7.5) scale(0.092)" filter={ref('glow')}>
+            <path d={icon.d} fill={family.deep} opacity="0.7" transform="translate(8 14)" />
+            <path d={icon.d} fill={ref('sheen')} />
+          </g>
+        )
+      )}
       <path d={TILE} fill={ref('gloss')} />
       <path d={TILE} fill="none" stroke={ref('frame')} strokeWidth="3" strokeLinejoin="round" />
       <path d="M11 5H53L59 11V53L53 59H11L5 53V11Z" fill="none" stroke="#000" strokeOpacity="0.45" strokeWidth="1" />
