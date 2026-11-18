@@ -1,4 +1,5 @@
 import type { GameSession, HudState } from '@/lib/session';
+import { HeroPortrait } from '../HeroPortrait';
 import { RELIC_EFFECTS, RELIC_NAMES } from '../relicText';
 import type { HudActions } from '../Hud';
 import { clock } from './format';
@@ -84,7 +85,7 @@ export function EventFeed({ hud, className }: { hud: HudState; className: string
       className={`absolute left-1/2 flex w-[30rem] max-w-[60vw] -translate-x-1/2 flex-col items-center gap-1 text-center ${className}`}
     >
       {relic && (
-        <p className="rounded-md border border-border bg-panel px-3 py-1 text-gold">
+        <p className="rounded-md hud-panel px-3 py-1 text-gold">
           Di vật {RELIC_NAMES[relic.type]} đang sáng ở rừng dưới
           {relic.capturing &&
             ` · ${relic.capturing === 'mine' ? 'đội bạn' : 'đội địch'} đang chiếm ${Math.round(relic.progress * 100)}%`}
@@ -94,14 +95,14 @@ export function EventFeed({ hud, className }: { hud: HudState; className: string
         <p
           key={`${buff.type}${buff.mine}`}
           title={RELIC_EFFECTS[buff.type]}
-          className={`rounded-md border border-border bg-panel px-3 py-1 tabular-nums ${buff.mine ? 'text-hp' : 'text-danger'}`}
+          className={`rounded-md hud-panel px-3 py-1 tabular-nums ${buff.mine ? 'text-hp' : 'text-danger'}`}
         >
           {buff.mine ? 'Đội bạn' : 'Đội địch'} có Di vật {RELIC_NAMES[buff.type]} · {buff.seconds} giây
         </p>
       ))}
       <ul aria-live="polite" className="flex flex-col items-center gap-1">
         {hud.announcements.map((a) => (
-          <li key={a.id} className={`rounded-md bg-panel px-3 py-1 font-semibold ${TONE_TEXT[a.tone]}`}>
+          <li key={a.id} className={`hud-panel rounded-md px-3 py-1 font-semibold ${TONE_TEXT[a.tone]}`}>
             {a.text}
           </li>
         ))}
@@ -112,7 +113,7 @@ export function EventFeed({ hud, className }: { hud: HudState; className: string
 
 export function Scoreboard({ hud }: { hud: HudState }) {
   return (
-    <table className="rounded-md border border-border bg-panel text-xs tabular-nums">
+    <table className="rounded-md hud-panel text-xs tabular-nums">
       <caption className="sr-only">Bảng điểm</caption>
       <thead>
         <tr className="text-muted-foreground">
@@ -125,7 +126,10 @@ export function Scoreboard({ hud }: { hud: HudState }) {
         {hud.scores.map((s) => (
           <tr key={s.id} className={s.team === hud.team ? 'text-ally' : 'text-enemy'}>
             <td className={`px-2 py-0.5 ${s.isPlayer ? 'font-bold' : ''}`}>
-              {s.heroName} · {s.name}
+              <span className="flex items-center gap-2">
+                <HeroPortrait heroId={s.heroDefId} className="size-6 rounded-sm" />
+                {s.heroName} · {s.name}
+              </span>
             </td>
             <td className="px-2 py-0.5 text-center">{s.level}</td>
             <td className="px-2 py-0.5 text-center">
@@ -141,7 +145,7 @@ export function Scoreboard({ hud }: { hud: HudState }) {
 export function DeathNotice({ hud }: { hud: HudState }) {
   if (!hud.dead || hud.winner !== null) return null;
   return (
-    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 rounded-md border border-border bg-panel px-6 py-3 text-center">
+    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 rounded-md hud-panel px-6 py-3 text-center">
       <div className="text-lg font-semibold text-danger">Bạn đã bị hạ gục</div>
       <div className="text-sm text-muted-foreground">Hồi sinh sau {hud.respawnSeconds} giây</div>
     </div>
@@ -152,7 +156,7 @@ export function EndScreen({ hud, actions }: { hud: HudState; actions: HudActions
   if (hud.winner === null) return null;
   return (
     <div className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-background/70">
-      <div className="flex max-h-full flex-col items-center gap-4 overflow-y-auto rounded-lg border border-border bg-panel px-10 py-6">
+      <div className="flex max-h-full flex-col items-center gap-4 overflow-y-auto rounded-lg hud-panel px-10 py-6">
         <h2 className={`text-4xl font-bold ${hud.winner === hud.team ? 'text-primary' : 'text-danger'}`}>
           {hud.winner === hud.team ? 'Chiến thắng' : 'Thất bại'}
         </h2>

@@ -2,16 +2,19 @@ import { lazy, Suspense, useState } from 'react';
 import { ABILITY_SLOTS, type AbilitySlot, HERO_IDS, HEROES, RACES } from '@game/core';
 import { useWideLayout } from '@/hooks/useWideLayout';
 import { useShowcaseStore } from '@/store/showcaseStore';
+import { HeroPortrait } from './HeroPortrait';
 import { RACE_TEXT, ROLE_NAMES } from './heroText';
+import { GameIcon } from './icons/GameIcon';
 
 // three.js is most of the bundle; the picker works before it arrives.
 const HeroStage = lazy(() => import('@/scene/HeroStage'));
 
-const RACE_DOT = {
-  human: 'bg-race-human',
-  dragon: 'bg-race-dragon',
-  god: 'bg-race-god',
-  machine: 'bg-race-machine',
+/** Each portrait is underlined in the colour of the hero's race. */
+const RACE_EDGE = {
+  human: 'border-race-human',
+  dragon: 'border-race-dragon',
+  god: 'border-race-god',
+  machine: 'border-race-machine',
 } as const;
 
 /** What the text under the hero explains: one ability, the hero's passive or its race trait. */
@@ -84,9 +87,12 @@ export function HeroPicker({ value, onChange, taken = [], label }: Props) {
               disabled={unavailable}
               title={unavailable ? 'Đồng đội đã chọn tướng này' : `${def.name}, ${def.title}`}
               onClick={() => onChange(id)}
-              className="flex cursor-pointer flex-col items-center gap-1 rounded-md border border-border bg-background/70 px-1 py-2 text-sm font-semibold transition-colors hover:border-muted-foreground disabled:cursor-not-allowed disabled:opacity-40 aria-checked:border-primary aria-checked:bg-primary/15 aria-checked:text-primary"
+              className="flex cursor-pointer flex-col items-center gap-1 rounded-md border border-border bg-background/70 p-1 pb-1.5 text-sm font-semibold transition-colors hover:border-muted-foreground disabled:cursor-not-allowed disabled:opacity-40 aria-checked:border-primary aria-checked:bg-primary/15 aria-checked:text-primary"
             >
-              <span aria-hidden className={`size-2.5 rotate-45 ${RACE_DOT[def.race]}`} />
+              <HeroPortrait
+                heroId={id}
+                className={`aspect-[4/3] w-full rounded-sm border-b-2 ${RACE_EDGE[def.race]}`}
+              />
               {def.name}
               <span className="text-[0.65rem] leading-none font-normal text-muted-foreground">
                 {ROLE_NAMES[def.role]}
@@ -107,8 +113,9 @@ export function HeroPicker({ value, onChange, taken = [], label }: Props) {
               setPicked(slot);
               play(slot);
             }}
-            className={`${tab} min-w-10 border-border`}
+            className={`${tab} flex items-center gap-1.5 border-border px-2!`}
           >
+            <GameIcon id={hero.abilities[slot].id} className="size-6" />
             {slot}
           </button>
         ))}

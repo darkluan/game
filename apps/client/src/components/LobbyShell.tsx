@@ -85,6 +85,9 @@ export function LobbyShell({ children, aside, actions, heroId }: Props) {
         </main>
         <footer className="px-5 py-4 lg:px-10">
           <SoundSettings />
+          <Link to="/credits" className="mt-2 block text-center text-xs text-muted-foreground underline lg:text-left">
+            Ghi công
+          </Link>
         </footer>
       </div>
     </div>

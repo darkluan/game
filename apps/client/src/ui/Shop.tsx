@@ -1,6 +1,7 @@
 import { ITEM_LIST, itemPrice, ITEMS } from '@game/core';
 import type { GameSession, HudState } from '@/lib/session';
 import { describeItem } from './heroText';
+import { GameIcon } from './icons/GameIcon';
 
 /** The hero's bag. Items can be sold back by clicking them while the shop is open. */
 export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSession; columns: number }) {
@@ -13,7 +14,7 @@ export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSessi
       {Array.from({ length: hud.itemSlots }, (_, i) => {
         const item = ITEMS[hud.items[i]];
         if (!item) {
-          return <span key={i} className="h-8 rounded-sm border border-dashed border-border" />;
+          return <span key={i} className="h-9 rounded-sm border border-dashed border-border" />;
         }
         return (
           <button
@@ -22,9 +23,9 @@ export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSessi
             disabled={!hud.canShop}
             title={`${item.name}: ${describeItem(item.stats)}${hud.canShop ? ' · bấm để bán lại nửa giá' : ''}`}
             onClick={() => game.send({ t: 'sell', slotIndex: i })}
-            className="h-8 truncate rounded-sm border border-border bg-background px-1 text-[10px] enabled:cursor-pointer enabled:hover:border-danger"
+            className="flex h-9 items-center justify-center rounded-sm text-gold border border-border bg-background px-1 text-[10px] enabled:cursor-pointer enabled:hover:border-danger"
           >
-            {item.name}
+            <GameIcon id={item.id} className="size-7" />
           </button>
         );
       })}
@@ -38,7 +39,7 @@ export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSes
   return (
     <section
       aria-label="Cửa hàng"
-      className="pointer-events-auto absolute top-16 left-3 flex max-h-[70vh] w-80 max-w-[92vw] flex-col gap-2 rounded-lg border border-border bg-panel p-3"
+      className="pointer-events-auto absolute top-16 left-3 flex max-h-[70vh] w-80 max-w-[92vw] flex-col gap-2 rounded-lg hud-panel p-3"
     >
       <header className="flex items-center justify-between">
         <h2 className="font-semibold">Cửa hàng</h2>
@@ -70,7 +71,8 @@ export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSes
                 onClick={() => game.send({ t: 'buy', itemId: item.id })}
                 className="flex w-full items-center justify-between gap-2 rounded-sm border border-border bg-background px-2 py-1 text-left text-xs enabled:cursor-pointer enabled:hover:border-primary disabled:opacity-50"
               >
-                <span>
+                <GameIcon id={item.id} className="size-8 shrink-0 text-gold" />
+                <span className="flex-1">
                   <span className="font-semibold">{item.name}</span>
                   <span className="block text-muted-foreground">{describeItem(item.stats)}</span>
                 </span>

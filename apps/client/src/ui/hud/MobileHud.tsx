@@ -2,9 +2,13 @@ import { useCallback, useState } from 'react';
 import type { Vec2 } from '@game/core';
 import { attackNearest, castSlot, moveInDirection } from '@/input/commands';
 import type { AbilityHud, GameSession, HudState } from '@/lib/session';
+import { useFullscreen } from '@/hooks/useFullscreen';
 import { useGameStore } from '@/store/gameStore';
+import { useInstallStore } from '@/lib/install';
 import { useSettingsStore } from '@/store/settingsStore';
+import { HeroPortrait } from '../HeroPortrait';
 import { Minimap } from '../Minimap';
+import { GameIcon } from '../icons/GameIcon';
 import { ItemBag, ShopPanel } from '../Shop';
 import { clock, teamKills } from './format';
 import { DeathNotice, EndScreen, EventFeed, type LayoutProps, Scoreboard } from './parts';
@@ -33,7 +37,9 @@ function RoundAbility({ ability, game }: { ability: AbilityHud; game: GameSessio
         // pointerdown, not click: on a phone a click waits for the finger to lift.
         onPointerDown={() => castSlot(game, ability.slot, null)}
         className={`pointer-events-auto relative size-full touch-none overflow-hidden rounded-full border-2 bg-panel text-sm font-bold ${
-          ability.usable ? 'border-primary' : 'border-border text-muted-foreground'
+          ability.usable
+            ? 'border-primary shadow-[inset_0_0_14px_color-mix(in_srgb,var(--primary)_45%,transparent)]'
+            : 'border-border text-muted-foreground'
         }`}
       >
         {cooling && (
@@ -42,9 +48,13 @@ function RoundAbility({ ability, game }: { ability: AbilityHud; game: GameSessio
             style={{ height: `${ability.cooldownFraction * 100}%` }}
           />
         )}
-        <span className="relative block px-1 text-[10px] leading-tight break-words whitespace-normal">
-          {cooling ? Math.ceil(ability.cooldownLeft) : ability.name}
-        </span>
+        <GameIcon
+          id={ability.id}
+          className={`absolute inset-2 ${ability.usable ? 'text-foreground' : 'text-muted-foreground/60'}`}
+        />
+        {cooling && (
+          <span className="relative text-lg [text-shadow:0_0_4px_#000]">{Math.ceil(ability.cooldownLeft)}</span>
+        )}
       </button>
       {ability.canLevelUp && (
         <button
@@ -72,33 +82,38 @@ function Vitals({ hud }: { hud: HudState }) {
           }
         : null;
   return (
-    <div className="absolute bottom-2 left-1/2 flex w-[34vw] -translate-x-1/2 flex-col gap-1">
-      <div className="flex justify-between text-[11px] font-semibold tabular-nums">
-        <span>
-          Cấp {hud.level}
-          {hud.resource === 'none' && <span className="text-race-dragon"> · Tiến hóa {hud.stage}/2</span>}
-          {hud.overloadSeconds > 0 && <span className="text-danger"> · QUÁ TẢI</span>}
-        </span>
-        <span>
-          {Math.ceil(hud.hp)} / {hud.maxHp}
-        </span>
-      </div>
-      <div
-        className="h-2.5 overflow-hidden rounded-sm border border-border bg-background"
-        role="progressbar"
-        aria-label="Máu"
-      >
-        <div className="h-full bg-hp" style={{ width: `${Math.min(100, (hud.hp / hud.maxHp) * 100)}%` }} />
-      </div>
-      {resource && (
-        <div className="h-1.5 overflow-hidden rounded-sm bg-background">
-          <div
-            className={`h-full ${resource.className}`}
-            style={{ width: `${Math.min(100, resource.fraction * 100)}%` }}
-          />
+    <div className="absolute bottom-2 left-1/2 flex w-[38vw] -translate-x-1/2 items-end gap-2">
+      <HeroPortrait heroId={hud.heroDefId} className="cut-corners-sm size-10 shrink-0 border-b-2 border-primary" />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex justify-between text-[11px] font-semibold tabular-nums">
+          <span>
+            Cấp {hud.level}
+            {hud.resource === 'none' && <span className="text-race-dragon"> · Tiến hóa {hud.stage}/2</span>}
+            {hud.overloadSeconds > 0 && <span className="text-danger"> · QUÁ TẢI</span>}
+          </span>
+          <span>
+            {Math.ceil(hud.hp)} / {hud.maxHp}
+          </span>
         </div>
-      )}
-      {hud.conditions.length > 0 && <p className="text-center text-[11px] text-danger">{hud.conditions.join(' · ')}</p>}
+        <div
+          className="h-2.5 overflow-hidden rounded-sm border border-border bg-background"
+          role="progressbar"
+          aria-label="Máu"
+        >
+          <div className="h-full bg-hp" style={{ width: `${Math.min(100, (hud.hp / hud.maxHp) * 100)}%` }} />
+        </div>
+        {resource && (
+          <div className="h-1.5 overflow-hidden rounded-sm bg-background">
+            <div
+              className={`h-full ${resource.className}`}
+              style={{ width: `${Math.min(100, resource.fraction * 100)}%` }}
+            />
+          </div>
+        )}
+        {hud.conditions.length > 0 && (
+          <p className="text-center text-[11px] text-danger">{hud.conditions.join(' · ')}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -112,10 +127,14 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
   const shopOpen = useGameStore((s) => s.shopOpen);
   const toggleShop = useGameStore((s) => s.toggleShop);
   const [menuOpen, setMenuOpen] = useState(false);
+  const fullscreen = useFullscreen();
+  // An installed app already fills the screen and is already sideways.
+  const installed = useInstallStore((s) => s.state === 'installed');
+  const offerFullscreen = fullscreen.supported && !fullscreen.active && !installed;
   const [mine, theirs] = teamKills(hud);
   const walk = useCallback((dir: Vec2) => moveInDirection(game, dir), [game]);
   const halt = useCallback(() => game.send({ t: 'stop' }), [game]);
-  const chip = 'pointer-events-auto touch-none rounded-md border border-border bg-panel px-2.5 py-1.5 text-xs';
+  const chip = 'pointer-events-auto touch-none rounded-md hud-panel px-2.5 py-1.5 text-xs';
 
   return (
     <div className="pointer-events-none absolute inset-0 text-foreground select-none">
@@ -123,7 +142,7 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
         <Minimap game={game} />
       </div>
 
-      <div className="absolute top-1 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-md border border-border bg-panel px-3 py-0.5 text-sm font-bold tabular-nums">
+      <div className="absolute top-1 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-md hud-panel px-3 py-0.5 text-sm font-bold tabular-nums">
         <span className="text-ally">{mine}</span>
         <span>{clock(hud.timeSeconds)}</span>
         <span className="text-enemy">{theirs}</span>
@@ -131,7 +150,7 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
       <EventFeed hud={hud} className="top-9 text-[11px]" />
 
       <div className="absolute top-1 right-1 flex items-center gap-1.5">
-        <span className="rounded-md border border-border bg-panel px-2.5 py-1.5 text-xs font-semibold text-gold tabular-nums">
+        <span className="rounded-md hud-panel px-2.5 py-1.5 text-xs font-semibold text-gold tabular-nums">
           {Math.floor(hud.gold)}
         </span>
         <button
@@ -142,6 +161,16 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
         >
           Cửa hàng
         </button>
+        {offerFullscreen && (
+          // click, not pointerdown: browsers only allow going full screen from a finished tap.
+          <button
+            type="button"
+            onClick={() => void fullscreen.enter()}
+            className={`${chip} border-primary text-primary`}
+          >
+            Toàn màn hình
+          </button>
+        )}
         <button
           type="button"
           onPointerDown={() => setMenuOpen((open) => !open)}
@@ -153,9 +182,20 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
       </div>
 
       {menuOpen && (
-        <div className="pointer-events-auto absolute top-11 right-1 flex max-h-[80vh] flex-col gap-2 overflow-y-auto rounded-lg border border-border bg-panel p-2 text-xs">
+        <div className="pointer-events-auto absolute top-11 right-1 flex max-h-[80vh] flex-col gap-2 overflow-y-auto rounded-lg hud-panel p-2 text-xs">
           <Scoreboard hud={hud} />
           <ItemBag hud={hud} game={game} columns={hud.itemSlots} />
+          {fullscreen.active && (
+            <button type="button" onClick={fullscreen.leave} className="rounded-md border border-border px-3 py-2">
+              Thoát toàn màn hình
+            </button>
+          )}
+          {!fullscreen.supported && !installed && (
+            <p className="max-w-56 text-muted-foreground">
+              Để ẩn thanh địa chỉ trên iPhone: bấm Chia sẻ rồi chọn "Thêm vào Màn hình chính" và mở game từ biểu tượng
+              đó.
+            </p>
+          )}
           <button type="button" onClick={toggleMuted} className="rounded-md border border-border px-3 py-2">
             Âm thanh: {muted ? 'tắt' : 'bật'}
           </button>
@@ -187,7 +227,7 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
           onPointerDown={() => attackNearest(game, ATTACK_SEARCH_RANGE)}
           className="pointer-events-auto absolute right-0 bottom-0 size-[88px] touch-none rounded-full border-2 border-enemy bg-enemy/25 text-sm font-bold disabled:opacity-40"
         >
-          Đánh
+          <GameIcon id="attack" className="mx-auto size-12" />
         </button>
         {hud.abilities.map((a) => (
           <RoundAbility key={a.slot} ability={a} game={game} />
@@ -195,8 +235,13 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
       </div>
 
       {/* The game is laid out for a phone held sideways. */}
-      <div className="pointer-events-auto absolute inset-0 hidden items-center justify-center bg-background/90 p-6 text-center text-lg font-semibold portrait:flex">
+      <div className="pointer-events-auto absolute inset-0 hidden flex-col items-center justify-center gap-4 bg-background/90 p-6 text-center text-lg font-semibold portrait:flex">
         Hãy xoay ngang điện thoại để chơi.
+        {fullscreen.supported && !installed && (
+          <button type="button" onClick={() => void fullscreen.enter()} className="btn btn-primary cut-corners text-sm">
+            Xoay ngang và toàn màn hình
+          </button>
+        )}
       </div>
 
       <DeathNotice hud={hud} />

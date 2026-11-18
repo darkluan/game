@@ -109,7 +109,7 @@ export function Minimap({ game }: { game: GameSession }) {
       height={height}
       role="img"
       aria-label="Bản đồ nhỏ. Bấm để di chuyển tới đó."
-      className="pointer-events-auto cursor-pointer rounded-md border border-border bg-panel"
+      className="pointer-events-auto cursor-pointer rounded-md hud-panel"
       onPointerDown={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         game.send({
