@@ -29,6 +29,10 @@ export interface MapDef {
   bushes: Rect[];
   /** Jungle camps: two on each side of the lane. */
   camps: CampDef[];
+  /** Relic pedestals, in the middle of the +z jungle (the lower half of the screen). */
+  pedestals: Vec2[];
+  /** Where the Ancient Beast waits, in the middle of the -z jungle (the upper half of the screen). */
+  beastCave: Vec2;
 }
 
 const mirror = (rects: Rect[]): Rect[] =>
@@ -69,7 +73,9 @@ export const MAP: MapDef = {
     { x: 11, z: 8, w: 14, d: 2 },
     // Jungle rocks.
     { x: 20, z: 16, w: 6, d: 4 },
-    { x: 0, z: 18, w: 8, d: 3 },
+  ]).concat([
+    // Behind the relic pedestals. The other side's middle is left open for the Beast's cave.
+    { x: 0, z: 21.5, w: 10, d: 3 },
   ]),
   bushes: mirror([
     // In the gaps of the lane walls, and at the middle jungle entrance.
@@ -82,6 +88,12 @@ export const MAP: MapDef = {
     { x: -31, z: -15 },
     { x: 31, z: -15 },
   ].map((pos) => ({ pos, monsters: CAMP_MONSTERS })),
+  pedestals: [
+    { x: -12, z: 16 },
+    { x: 0, z: 16.5 },
+    { x: 12, z: 16 },
+  ],
+  beastCave: { x: 0, z: -18 },
 };
 
 /** Index of the bush containing the point, or -1. */

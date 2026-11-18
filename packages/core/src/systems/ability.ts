@@ -85,7 +85,8 @@ export function castAbility(sim: Sim, caster: HeroEntity, cmd: Extract<Command, 
 
   if (def.targeting === 'unit') {
     const t = cmd.targetId === undefined ? undefined : sim.get(cmd.targetId);
-    if (!t || t.team === caster.team || !sim.isTargetable(t) || !sim.canSee(caster, t)) return false;
+    if (!t || t.team === caster.team || t.kind === 'tower' || t.kind === 'shrine') return false;
+    if (!sim.isTargetable(t) || !sim.canSee(caster, t)) return false;
     if (!sim.inRange(caster, t, def.range)) return false;
     target = t;
     point = { ...t.pos };

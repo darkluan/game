@@ -218,3 +218,25 @@ describe('Mekka', () => {
     expect(sim.hasStatus(hero(sim, 'b'), 'shield')).toBe(false);
   });
 });
+
+describe('buildings', () => {
+  it('are not damaged by abilities, only by basic attacks', () => {
+    const { sim, a, cast } = arena('ignar', 'kael', 40);
+    const tower = sim.q.towers.entities.find((t) => t.team === 1 && t.tower.tier === 1)!;
+    place(a, tower.pos.x - 4, 0);
+    const hp = tower.health.hp;
+    cast('W', tower.pos);
+    cast('Q', tower.pos);
+    a.hero.readyAt.R = 0;
+    cast('R', tower.pos);
+    run(sim, seconds(3));
+    expect(tower.health.hp).toBe(hp);
+    cast('Q', tower.pos, 'a');
+    sim.command('a', { t: 'cast', slot: 'E', targetId: tower.id });
+    sim.step();
+    a.attacker.cooldown = 0;
+    sim.command('a', { t: 'attack', targetId: tower.id });
+    run(sim, seconds(2));
+    expect(tower.health.hp).toBeLessThan(hp);
+  });
+});

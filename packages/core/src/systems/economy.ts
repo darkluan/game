@@ -1,9 +1,10 @@
-import { HERO, JUNGLE, MAX_LEVEL, MINION, TICK_RATE, TOWER, xpToNext } from '../data/balance.js';
+import { BEAST, HERO, JUNGLE, MAX_LEVEL, MINION, TICK_RATE, TOWER, xpToNext } from '../data/balance.js';
 import { itemTotals } from '../data/items.js';
 import { dist } from '../math.js';
 import { FOLLOWERS, HEAT, raceOf } from '../races/index.js';
 import type { HeroEntity, Sim } from '../sim/Sim.js';
 import type { Entity } from '../types.js';
+import { onBeastSlain, onMarchingBeastDeath } from './beast.js';
 import { bonusKillGold } from './passives.js';
 import { recomputeStats } from './stats.js';
 
@@ -50,14 +51,21 @@ export function onDeath(sim: Sim, victim: Entity, killer: Entity | null): void {
   });
 
   if (victim.minion) {
+    if (victim.minion.type === 'beast') onMarchingBeastDeath(sim);
     if (killer?.hero) giveGold(sim, killer, MINION.gold[victim.minion.type], victim);
     shareXp(sim, victim, MINION.xp[victim.minion.type]);
+  } else if (victim.monster?.type === 'beast') {
+    onBeastSlain(sim, killer);
+    // The whole team is paid, so the hunt is worth leaving the lane for.
+    for (const h of sim.q.heroes) if (h.team === killer?.team) giveGold(sim, h, BEAST.teamGold, victim);
+    shareXp(sim, victim, BEAST.wild.xp);
   } else if (victim.monster) {
+    const type = victim.monster.type;
     const camp = sim.camps[victim.monster.camp];
     camp.alive--;
     if (camp.alive <= 0) camp.respawnAt = sim.tick + JUNGLE.respawnTicks;
-    if (killer?.hero) giveGold(sim, killer, JUNGLE[victim.monster.type].gold, victim);
-    shareXp(sim, victim, JUNGLE[victim.monster.type].xp);
+    if (killer?.hero) giveGold(sim, killer, JUNGLE[type].gold, victim);
+    shareXp(sim, victim, JUNGLE[type].xp);
   } else if (victim.turret) {
     if (killer?.hero) giveGold(sim, killer, TURRET_GOLD, victim);
   } else if (victim.tower) {

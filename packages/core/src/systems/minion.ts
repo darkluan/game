@@ -1,13 +1,15 @@
 import { MINION } from '../data/balance.js';
 import type { Sim } from '../sim/Sim.js';
 import type { Team } from '../types.js';
+import { spawnMarchingBeast } from './beast.js';
 import { moveToward } from './movement.js';
+import { applyRelicShield } from './relic.js';
 
 function spawnMinion(sim: Sim, team: Team, type: 'melee' | 'ranged', laneZ: number): void {
   const stats = MINION[type];
   const spawn = sim.map.minionSpawns[team];
   const dir = team === 0 ? 1 : -1;
-  sim.spawn({
+  const minion = sim.spawn({
     kind: 'minion',
     team,
     // Ranged minions start a step behind the melee line. A little jitter keeps waves from being identical.
@@ -27,6 +29,7 @@ function spawnMinion(sim: Sim, team: Team, type: 'melee' | 'ranged', laneZ: numb
     },
     minion: { type, laneZ },
   });
+  applyRelicShield(sim, minion);
 }
 
 export function minionSpawnSystem(sim: Sim): void {
@@ -35,6 +38,7 @@ export function minionSpawnSystem(sim: Sim): void {
   for (const team of [0, 1] as const) {
     for (let i = 0; i < MINION.meleePerWave; i++) spawnMinion(sim, team, 'melee', sim.map.laneOffsets.melee[i] ?? 0);
     for (let i = 0; i < MINION.rangedPerWave; i++) spawnMinion(sim, team, 'ranged', sim.map.laneOffsets.ranged[i] ?? 0);
+    spawnMarchingBeast(sim, team);
   }
 }
 

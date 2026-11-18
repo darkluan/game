@@ -1,17 +1,19 @@
 import { type Query, World } from 'miniplex';
-import { HERO, JUNGLE, SHRINE, TOWER } from '../data/balance.js';
+import { BEAST, HERO, JUNGLE, RELIC, SHRINE, TOWER } from '../data/balance.js';
 import { HEROES } from '../data/heroes.js';
 import { MAP, type MapDef } from '../data/map.js';
 import { dist, Rng } from '../math.js';
 import { NavGrid } from '../pathfinding/grid.js';
 import { aiSystem } from '../systems/ai.js';
 import { attackSystem, projectileSystem, statusSystem } from '../systems/combat.js';
+import { beastSystem } from '../systems/beast.js';
 import { applyCommand } from '../systems/command.js';
 import { heroUpkeepSystem, onDeath } from '../systems/economy.js';
 import { jungleSystem } from '../systems/jungle.js';
 import { minionSpawnSystem, minionSystem } from '../systems/minion.js';
 import { heroOrderSystem, separationSystem } from '../systems/movement.js';
 import { modifyDamageTaken } from '../systems/passives.js';
+import { relicSystem, teamRelic } from '../systems/relic.js';
 import { recomputeStats } from '../systems/stats.js';
 import { summonSystem } from '../systems/summons.js';
 import { towerSystem } from '../systems/tower.js';
@@ -24,6 +26,7 @@ import {
   type HeroDef,
   NEUTRAL,
   type PlayerSetup,
+  type RelicType,
   type SimEvent,
   type StatusType,
   type Team,
@@ -36,6 +39,11 @@ export type HeroEntity = With<'hero' | 'health' | 'statuses' | 'mover' | 'attack
 export type MinionEntity = With<'minion' | 'health' | 'statuses' | 'mover' | 'attacker'> & { team: Team };
 export type TowerEntity = With<'tower' | 'health' | 'statuses' | 'attacker'> & { team: Team };
 export type MonsterEntity = With<'monster' | 'health' | 'statuses' | 'mover' | 'attacker'>;
+
+export interface TeamBuff {
+  relic: RelicType;
+  untilTick: number;
+}
 
 export interface SimOptions {
   seed: number;
@@ -71,6 +79,12 @@ export class Sim {
   };
   /** Per jungle camp: monsters still alive and when the camp comes back. */
   readonly camps: { alive: number; respawnAt: number }[];
+  /** The relic waiting on a pedestal: who is capturing it and for how many ticks. */
+  relic: { pedestal: number; type: RelicType; team: Team | null; progress: number } | null = null;
+  /** The relic buff each team holds, by team. */
+  readonly buffs: [TeamBuff | null, TeamBuff | null] = [null, null];
+  /** The Ancient Beast: when the next one appears, and which team's wave it will march with. */
+  readonly beast: { respawnAt: number; owner: Team | null } = { respawnAt: BEAST.spawnTick, owner: null };
 
   private nextId = 1;
   private readonly byId = new Map<number, Entity>();
@@ -228,6 +242,8 @@ export class Sim {
     aiSystem(this);
     minionSpawnSystem(this);
     jungleSystem(this);
+    beastSystem(this);
+    relicSystem(this);
     statusSystem(this);
     heroUpkeepSystem(this);
     summonSystem(this);
@@ -307,11 +323,15 @@ export class Sim {
     return best;
   }
 
-  /** Everything hostile to `team` in a circle, monsters included, seen or not (for area effects). */
+  /**
+   * Every hostile unit in a circle, monsters included, seen or not (for area effects).
+   * Towers and shrines are left out: abilities do not damage buildings, only basic attacks do.
+   */
   enemiesWithin(team: Faction, centre: Vec2, radius: number): UnitEntity[] {
     const out: UnitEntity[] = [];
     for (const e of this.q.units) {
-      if (e.team !== team && this.isTargetable(e) && dist(centre, e.pos) <= radius + e.radius) out.push(e);
+      if (e.team === team || e.kind === 'tower' || e.kind === 'shrine') continue;
+      if (this.isTargetable(e) && dist(centre, e.pos) <= radius + e.radius) out.push(e);
     }
     return out.sort((a, b) => a.id - b.id);
   }
@@ -383,6 +403,9 @@ export class Sim {
     target.statuses = target.statuses.filter((s) => s.type !== 'shield' || s.value > 0);
 
     const credit = this.creditOf(source);
+    // Fury relic: the team's heroes hit harder and are hit harder.
+    if (credit?.hero && teamRelic(this, credit.team) === 'fury') amount *= RELIC.fury.dealt;
+    if (target.hero && teamRelic(this, target.team) === 'fury') amount *= RELIC.fury.taken;
     if (credit?.hero && target.hero) {
       credit.hero.lastHeroHitTick = this.tick;
       const recent = target.hero.recentAttackers.filter((a) => a.id !== credit.id);

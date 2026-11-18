@@ -3,6 +3,8 @@ import { itemTotals } from '../data/items.js';
 import { angleTo, dist } from '../math.js';
 import type { Sim } from '../sim/Sim.js';
 import type { Entity } from '../types.js';
+import { structureBonus } from './beast.js';
+import { chainLightning } from './relic.js';
 
 /** Expires statuses and applies damage over time once a second. */
 export function statusSystem(sim: Sim): void {
@@ -29,8 +31,9 @@ export function attackDamageOf(sim: Sim, e: Entity): number {
   return (e.attacker?.damage ?? 0) * (1 + sim.statusSum(e, 'attack'));
 }
 
-function onBasicHit(sim: Sim, source: Entity | null, dealt: number): void {
+function onBasicHit(sim: Sim, source: Entity | null, target: Entity, attackDamage: number, dealt: number): void {
   if (!source?.hero || dealt <= 0) return;
+  chainLightning(sim, source, target, attackDamage);
   const lifesteal = itemTotals(source.hero.items).lifesteal;
   if (lifesteal > 0) sim.heal(source, dealt * lifesteal);
 }
@@ -52,9 +55,9 @@ export function attackSystem(sim: Sim): void {
     a.cooldown = a.intervalTicks;
     sim.removeStatus(e, 'stealth');
     sim.emit({ t: 'attack', sourceId: e.id, targetId: target.id });
-    const damage = attackDamageOf(sim, e);
+    const damage = attackDamageOf(sim, e) * structureBonus(e, target);
     if (a.projectileSpeed > 0) sim.spawnProjectile(e, target, damage, a.projectileSpeed);
-    else onBasicHit(sim, e, sim.dealDamage(target, damage, e));
+    else onBasicHit(sim, e, target, damage, sim.dealDamage(target, damage, e));
   }
 }
 
@@ -72,7 +75,7 @@ export function projectileSystem(sim: Sim): void {
     if (d <= step + target.radius * 0.5) {
       p.dead = true;
       const source = sim.get(p.projectile.sourceId) ?? null;
-      onBasicHit(sim, source, sim.dealDamage(target, p.projectile.damage, source));
+      onBasicHit(sim, source, target, p.projectile.damage, sim.dealDamage(target, p.projectile.damage, source));
     } else {
       p.pos.x += ((target.pos.x - p.pos.x) / d) * step;
       p.pos.z += ((target.pos.z - p.pos.z) / d) * step;

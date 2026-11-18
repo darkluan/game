@@ -168,6 +168,30 @@ class BotBrain {
     return true;
   }
 
+  /**
+   * Map objectives. One bot per team (by id) goes to stand on a lit relic pedestal; the other two
+   * hunt the Ancient Beast once they are strong enough. Returns true when the bot is busy with one.
+   */
+  private objective(): boolean {
+    const { sim, h } = this;
+    const runner = h.id % 3 === 0;
+    const relic = sim.relic;
+    if (relic && runner && hpPct(h) > 0.5) {
+      const at = sim.map.pedestals[relic.pedestal];
+      if (dist(h.pos, at) > 1) this.moveTo(at);
+      else if (this.hero.order.t !== 'idle') this.issue({ t: 'stop' });
+      return true;
+    }
+    const beast = sim.q.monsters.entities.find((m) => m.monster.type === 'beast' && !m.dead);
+    if (!beast || runner || this.hero.level < BOT.beastLevel) return false;
+    // Start the hunt healthy; once the Beast is engaged, stay until the usual retreat threshold.
+    const engaged = beast.monster.aggroId !== null && sim.get(beast.monster.aggroId)?.team === h.team;
+    if (hpPct(h) < 0.6 && !engaged) return false;
+    this.siegeOff();
+    this.issue({ t: 'attack', targetId: beast.id });
+    return true;
+  }
+
   think(): void {
     const { sim, h, hero, enemyHero } = this;
     this.upkeep();
@@ -195,6 +219,7 @@ class BotBrain {
       this.fight(enemyHero);
       return;
     }
+    if (this.objective()) return;
     if (!this.farm()) this.moveTo(rallyPoint(sim, h));
   }
 }

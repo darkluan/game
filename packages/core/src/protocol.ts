@@ -1,4 +1,4 @@
-import { xpToNext } from './data/balance.js';
+import { RELIC, xpToNext } from './data/balance.js';
 import type { HeroEntity, Sim } from './sim/Sim.js';
 import { canShop } from './systems/shop.js';
 import {
@@ -6,6 +6,7 @@ import {
   type Entity,
   type EntityKind,
   type Faction,
+  type RelicType,
   type SimEvent,
   type StatusType,
   type Team,
@@ -54,9 +55,9 @@ export interface EntitySnap {
   /** Bit set of FLAG_* and STATUS_FLAGS. */
   fl: number;
   /** Minions only. */
-  mt?: 'melee' | 'ranged';
+  mt?: 'melee' | 'ranged' | 'beast';
   /** Jungle monsters only. */
-  mo?: 'big' | 'small';
+  mo?: 'big' | 'small' | 'beast';
   /** Attack range, towers and turrets only (drawn as a ring). */
   ar?: number;
   /** Zones only: what the area does. */
@@ -101,7 +102,29 @@ export interface Snapshot {
   entities: EntitySnap[];
   /** What happened during this tick, for effects and sound. */
   events: SimEvent[];
+  world: WorldSnap;
   you?: YouSnap;
+}
+
+/** Match-wide state that is not an entity: the relic in play and each team's relic buff. */
+export interface WorldSnap {
+  /** The lit pedestal: which one, which relic, who is capturing and how far along (0..1). */
+  relic: { pedestal: number; type: RelicType; team: Team | null; progress: number } | null;
+  /** Per team: the relic buff held and the ticks it has left. */
+  buffs: ({ relic: RelicType; left: number } | null)[];
+}
+
+export function worldSnapshotOf(sim: Sim): WorldSnap {
+  const relic = sim.relic;
+  return {
+    relic: relic && {
+      pedestal: relic.pedestal,
+      type: relic.type,
+      team: relic.team,
+      progress: round2(relic.progress / RELIC.captureTicks),
+    },
+    buffs: sim.buffs.map((b) => b && { relic: b.relic, left: b.untilTick - sim.tick }),
+  };
 }
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
@@ -174,7 +197,7 @@ export function snapshotOf(sim: Sim, see: (e: Entity) => boolean = () => true): 
     const subject = eventSubject(event);
     return subject === null || shown.has(subject) || sim.get(subject) === undefined;
   });
-  return { tick: sim.tick, winner: sim.winner, entities, events };
+  return { tick: sim.tick, winner: sim.winner, entities, events, world: worldSnapshotOf(sim) };
 }
 
 /** What everyone on a team sees: enemies hidden in bushes or stealth are left out. */
@@ -247,8 +270,58 @@ export interface MatchWelcome {
   /** Entity id of the receiving player's hero. */
   heroId: number;
   roster: RosterEntry[];
-  /** The lobby to go back to after the match. */
+  /** The lobby to go back to after the match. Empty for a ranked match. */
   code: string;
+  mode: 'private' | 'ranked';
+}
+
+/** Sent to each player of a ranked match when it is decided. */
+export interface MatchResult {
+  mmrBefore: number;
+  mmrAfter: number;
+}
+
+// ---- matchmaking queue ----
+
+export const PARTY_MAX_SIZE = 3;
+
+/** A player's own account, as the server reports it. */
+export interface Profile {
+  playerId: string;
+  nickname: string;
+  mmr: number;
+  gamesPlayed: number;
+  /** Signed in with Google, so the account can be opened on another device. */
+  google: boolean;
+  /** ISO time until which the player is banned from the queue, or null. */
+  penaltyUntil: string | null;
+}
+
+export interface QueuePick {
+  nickname: string;
+  heroId: string;
+  team: Team;
+  isYou: boolean;
+}
+
+/** Everything the queue screen shows, sent to each player whenever it changes. */
+export interface QueueStatus {
+  state: 'idle' | 'searching' | 'accept' | 'draft' | 'starting';
+  mmr: number;
+  /** The player's party; null when playing alone. */
+  party: { code: string; isLeader: boolean; members: { nickname: string; isYou: boolean }[] } | null;
+  /** While searching: how long so far and how wide the MMR range has grown. */
+  searching?: { waitedSeconds: number; range: number; botFillSeconds: number };
+  /** A match was found: everyone must accept before the deadline. */
+  accept?: { secondsLeft: number; accepted: number; total: number; youAccepted: boolean };
+  /** Everyone accepted: pick heroes. */
+  draft?: { secondsLeft: number; team: Team; picks: QueuePick[]; bots: number; youReady: boolean };
+  /** Set in the 'starting' state: the match room to join. */
+  matchRoomId?: string;
+  /** Seconds left on a queue ban, 0 when none. */
+  penaltySeconds: number;
+  /** Why the last request was refused, for display. */
+  notice?: string;
 }
 
 /** Trim and bound a nickname typed by a player. Empty when nothing usable is left. */

@@ -179,6 +179,9 @@ export interface HeroState {
 
 export type EntityKind = 'hero' | 'minion' | 'tower' | 'shrine' | 'projectile' | 'monster' | 'zone' | 'trap' | 'turret';
 export type ZoneEffect = 'burn' | 'blind';
+/** The three ancient relics a team can capture. */
+export type RelicType = 'thunder' | 'shield' | 'fury';
+export const RELIC_TYPES: readonly RelicType[] = ['thunder', 'shield', 'fury'];
 
 /** ECS entity: a bag of optional components. Systems query by component presence. */
 export interface Entity {
@@ -202,11 +205,13 @@ export interface Entity {
     targetId: number | null;
   };
   hero?: HeroState;
-  minion?: { type: 'melee' | 'ranged'; laneZ: number };
+  /** 'beast' is the Ancient Beast marching with the wave of the team that slew it. */
+  minion?: { type: 'melee' | 'ranged' | 'beast'; laneZ: number };
   tower?: { tier: 1 | 2 };
   shrine?: true;
   projectile?: { sourceId: number; targetId: number; damage: number; speed: number };
-  monster?: { type: 'big' | 'small'; camp: number; home: Vec2; aggroId: number | null };
+  /** 'beast' is the Ancient Beast waiting in its cave (camp -1). */
+  monster?: { type: 'big' | 'small' | 'beast'; camp: number; home: Vec2; aggroId: number | null };
   /** An area that keeps affecting units inside it until it expires. */
   zone?: { ownerId: number; effect: ZoneEffect; untilTick: number; everyTicks: number; value: number };
   trap?: { ownerId: number; untilTick: number; damage: number; rootTicks: number; markTicks: number; mark: number };
@@ -231,4 +236,11 @@ export type SimEvent =
   | { t: 'overload'; id: number }
   | { t: 'gold'; id: number; amount: number; x: number; z: number }
   | { t: 'respawn'; id: number }
+  | { t: 'relicSpawn'; pedestal: number; relic: RelicType; x: number; z: number }
+  | { t: 'relicCaptured'; team: Team; relic: RelicType }
+  | { t: 'relicExpired'; team: Team; relic: RelicType }
+  | { t: 'lightning'; x1: number; z1: number; x2: number; z2: number }
+  | { t: 'beastSpawn'; x: number; z: number }
+  | { t: 'beastSlain'; team: Team | null }
+  | { t: 'beastMarch'; team: Team }
   | { t: 'gameOver'; winner: Team };
