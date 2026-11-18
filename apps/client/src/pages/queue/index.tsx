@@ -1,4 +1,4 @@
-import { tr } from '@/i18n';
+import { tr, trServer } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { HEROES, PARTY_MAX_SIZE, type QueueStatus } from '@game/core';
@@ -279,7 +279,7 @@ export default function QueuePage() {
       return (
         <>
           <p role="alert" className="glass-panel rounded-xl p-4 text-lg text-danger">
-            {tr(error ?? '')}
+            {trServer(error ?? '')}
           </p>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={join} className="btn btn-primary cut-corners">
@@ -299,7 +299,7 @@ export default function QueuePage() {
           {Step ? <Step status={status} /> : <p className={note}>{tr('Đang vào trận…')}</p>}
           {notice && status.state !== 'draft' && (
             <p role="status" className="text-sm text-gold">
-              {tr(notice)}
+              {trServer(notice)}
             </p>
           )}
           {status.state === 'idle' && (

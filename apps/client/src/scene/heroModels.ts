@@ -1,4 +1,5 @@
 import type { ActorOptions, Rig } from './Actor';
+import { HYDRA_ACTIONS, type HydraColours } from './Hydra';
 import { MODELS } from './models';
 
 const BASE = { idle: 'Idle', run: 'Running_A', death: 'Death_A' } as const;
@@ -20,6 +21,10 @@ export interface HeroLook {
   turn?: number;
   /** Multiplies the model's colours, for models that come out too dark. */
   brightness?: number;
+  /** Multiplies the size on the hero-picking screens only, for a hero that fills too much of the stage there. */
+  showcaseScale?: number;
+  /** Set for a hero drawn as the three-headed dragon built in code; `model` is then empty. */
+  hydra?: HydraColours;
 }
 
 export interface HeroModel extends HeroLook {
@@ -33,63 +38,8 @@ export function actorOptions(look: HeroLook, castShadow: boolean): ActorOptions 
   return { scale, height, turn, hide, tint, palette, brightness, castShadow };
 }
 
-/** The colours of a dragon, by part. */
-interface DragonColours {
-  body: string;
-  belly: string;
-  horn: string;
-  wing: string;
-}
-
-const EYE = { Eye_White: '#ffffff', Eye_Black: '#14181f', Eyes: '#ffe27a' };
-
-/** The long-necked dragon with broad wings. It never lands. */
-function wyvern(height: number, c: DragonColours): HeroLook {
-  const move = (name: string, seconds: number) => clip(`DragonArmature|Dragon_${name}`, seconds);
-  return {
-    model: MODELS.dragonWyvern,
-    hide: [],
-    palette: { ...EYE, Main: c.body, Belly: c.belly, Claws: c.horn, Wings: c.wing },
-    scale: 1,
-    height,
-    rig: {
-      idle: 'DragonArmature|Dragon_Flying',
-      run: 'DragonArmature|Dragon_Flying',
-      death: 'DragonArmature|Dragon_Death',
-      actions: {
-        attack: move('Attack', 0.6),
-        Q: move('Attack2', 0.7),
-        W: move('Attack', 0.6),
-        E: move('Attack2', 0.7),
-        R: move('Attack2', 0.9),
-      },
-    },
-  };
-}
-
-/** The stocky dragon, young or grown (`elder`). Both share one set of clips. */
-function drake(elder: boolean, height: number, c: DragonColours): HeroLook {
-  const move = (name: string, seconds: number) => clip(`CharacterArmature|${name}`, seconds);
-  return {
-    model: elder ? MODELS.dragonElder : MODELS.dragonYoung,
-    hide: [],
-    palette: { ...EYE, Dragon_Main: c.body, Dragon_Secondary: c.belly, Dragon_Horn: c.horn },
-    scale: 1,
-    height,
-    rig: {
-      idle: 'CharacterArmature|Flying_Idle',
-      run: 'CharacterArmature|Fast_Flying',
-      death: 'CharacterArmature|Death',
-      actions: {
-        attack: move('Punch', 0.5),
-        Q: move('Headbutt', 0.6),
-        W: move('Yes', 0.7),
-        E: move('Punch', 0.6),
-        R: move('Headbutt', 0.8),
-      },
-    },
-  };
-}
+/** Eye colours for the models that are coloured by material. */
+const EYE = { Eye_White: '#ffffff', Eye_Black: '#14181f' };
 
 /** A mech from the Quaternius pack. A melee mech swings instead of shooting. */
 function mech(model: string, height: number, melee = false): HeroLook {
@@ -117,7 +67,7 @@ function mech(model: string, height: number, melee = false): HeroLook {
 const MAGE_HIDDEN = ['Spellbook', 'Spellbook_open', '1H_Wand'];
 
 /**
- * How each hero looks. The dragons change colour, size and, for some, body as they evolve;
+ * How each hero looks. The dragons are built in code and grow as they evolve;
  * the machines are mechs.
  */
 export const HERO_MODELS: Record<string, HeroModel> = {
@@ -151,21 +101,45 @@ export const HERO_MODELS: Record<string, HeroModel> = {
       },
     },
   },
-  // Fire: a red wyvern whose scales darken and wings brighten as it grows.
+  // Fire: the red skeleton of a dragon with a fire burning in its ribs, built in code. It has one body
+  // and simply grows as it evolves.
   ignar: {
-    ...wyvern(2.4, { body: '#d9552b', belly: '#f2c46a', horn: '#3a2a22', wing: '#f08a3c' }),
-    stages: [
-      wyvern(3.1, { body: '#c5371f', belly: '#f5b54a', horn: '#2a1c18', wing: '#ff7a2a' }),
-      wyvern(3.9, { body: '#8f1d1d', belly: '#ffcf5a', horn: '#1a1212', wing: '#ff5a1f' }),
-    ],
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.1,
+    showcaseScale: 0.9,
+    hydra: {
+      heads: 1,
+      skeleton: true,
+      scale: '#b8322a',
+      accent: '#7c1d1a',
+      belly: '#d8574a',
+      horn: '#5a1614',
+      wing: '#5c1410',
+      glow: '#ffae3b',
+    },
+    rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
   },
-  // Stone: a grey drake that grows into the heavy elder.
+  // Stone: a heavy dragon armoured in pale bone, built in code. It has one body and simply grows as it evolves.
   baru: {
-    ...drake(false, 2.4, { body: '#7f8b99', belly: '#c9c2ad', horn: '#e9e2cf', wing: '#5f6a78' }),
-    stages: [
-      drake(true, 3, { body: '#6b7785', belly: '#bdb59d', horn: '#f1ead6', wing: '#4f5966' }),
-      drake(true, 3.6, { body: '#4d5764', belly: '#a8a08a', horn: '#fff6dd', wing: '#3a424d' }),
-    ],
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.05,
+    showcaseScale: 0.9,
+    hydra: {
+      heads: 1,
+      heavy: true,
+      scale: '#6f7684',
+      accent: '#9aa0ab',
+      // Kept well short of white: the lobby's lights would wash white bone out into a glare.
+      belly: '#a8a192',
+      horn: '#8e887b',
+      wing: '#8f95a3',
+      glow: '#4fe3b0',
+    },
+    rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
   },
   sola: {
     model: MODELS.mage,
@@ -218,13 +192,24 @@ export const HERO_MODELS: Record<string, HeroModel> = {
       },
     },
   },
-  // Storm: a blue-violet drake with lightning-yellow horns.
+  // Storm: a black dragon with fire showing between its plates, built in code. It has one body and
+  // simply grows as it evolves.
   zerak: {
-    ...drake(false, 2.4, { body: '#3f6fd8', belly: '#bfe3ff', horn: '#ffe14d', wing: '#2b4fa8' }),
-    stages: [
-      drake(false, 2.8, { body: '#3a4fc9', belly: '#c9e6ff', horn: '#ffe14d', wing: '#27358f' }),
-      drake(true, 3.4, { body: '#3b2f9e', belly: '#d6ecff', horn: '#fff07a', wing: '#241c6b' }),
-    ],
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 1.95,
+    showcaseScale: 0.88,
+    hydra: {
+      heads: 1,
+      scale: '#3a3c48',
+      accent: '#555866',
+      belly: '#3c3e48',
+      horn: '#5a5c68',
+      wing: '#17171c',
+      glow: '#ff4a1a',
+    },
+    rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
   },
   orun: {
     model: MODELS.barbarian,
@@ -243,4 +228,60 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     },
   },
   raze3: mech(MODELS.mechStan, 2.8, true),
+  // The medic wears the hooded outfit in pale green and carries a hand crossbow instead of knives.
+  elna: {
+    model: MODELS.rogueHooded,
+    hide: ['Knife', 'Knife_Offhand', '2H_Crossbow', 'Throwable'],
+    tint: '#c9f7d2',
+    scale: 0.92,
+    rig: {
+      ...BASE,
+      actions: {
+        attack: clip('Throw', 0.5),
+        Q: clip('Throw'),
+        W: clip('Spellcast_Raise'),
+        E: clip('Throw'),
+        R: clip('Spellcast_Raise', 0.8),
+      },
+    },
+  },
+  // Venom: a three-headed dragon in black-green scales with violet wings, its venom glowing between
+  // the scales and in all three throats. Built in code; it has one body and simply grows as it evolves.
+  nyx: {
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.3,
+    showcaseScale: 0.85,
+    hydra: {
+      scale: '#27503a',
+      accent: '#3f7d55',
+      belly: '#6f7d3a',
+      horn: '#2c2338',
+      wing: '#3d2470',
+      glow: '#b4ff3a',
+    },
+    rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
+  },
+  // The wind god is a small robed spirit, in sky white and gold.
+  aeris: {
+    model: MODELS.windSpirit,
+    hide: [],
+    palette: { ...EYE, Wizard_Main: '#dff3ff', Wizard_Secondary: '#f2c94c' },
+    scale: 1,
+    height: 2.1,
+    rig: {
+      idle: 'CharacterArmature|Idle',
+      run: 'CharacterArmature|Walk',
+      death: 'CharacterArmature|Death',
+      actions: {
+        attack: clip('CharacterArmature|Bite_Front', 0.5),
+        Q: clip('CharacterArmature|Bite_Front'),
+        W: clip('CharacterArmature|Yes', 0.7),
+        E: clip('CharacterArmature|Jump', 0.6),
+        R: clip('CharacterArmature|Dance', 1),
+      },
+    },
+  },
+  titan9: mech(MODELS.mechGeorge, 3.3, true),
 };

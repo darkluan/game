@@ -24,8 +24,8 @@ function initialLang(): Lang {
 export const lang: Lang = initialLang();
 if (typeof document !== 'undefined') {
   document.documentElement.lang = lang;
-  // The page's own title is written in Vietnamese; show the game's English name on the tab too.
-  if (lang === 'en') document.title = EN['Tứ Tộc'] ?? document.title;
+  // The page itself carries the game's English name; show the Vietnamese one on the tab too.
+  if (lang === 'vi') document.title = 'Tứ Tộc';
 }
 
 /**
@@ -33,6 +33,30 @@ if (typeof document !== 'undefined') {
  * also what the English is looked up by; text with no English yet is shown as it is.
  * `{name}` in the text is replaced by `vars.name`.
  */
+/**
+ * The text in the player's language. The game is written in Vietnamese, and the Vietnamese text is
+ * also what the English is looked up by; text with no English yet is shown as it is.
+ * `{name}` in the text is replaced by `vars.name`.
+ */
+/** Notices the server builds around a name or a number, as the text they follow and how to read the parts out. */
+const SERVER_PATTERNS: [pattern: RegExp, text: string, names: string[]][] = [
+  [
+    /^(.+) đang bị khóa tìm trận (\d+) phút vì đã thoát trận\.$/,
+    '{who} đang bị khóa tìm trận {minutes} phút vì đã thoát trận.',
+    ['who', 'minutes'],
+  ],
+];
+
+/** A notice written by the server, which always writes Vietnamese, in the player's language. */
+export function trServer(text: string): string {
+  if (lang === 'vi') return text;
+  for (const [pattern, template, names] of SERVER_PATTERNS) {
+    const match = pattern.exec(text);
+    if (match) return tr(template, Object.fromEntries(names.map((name, i) => [name, tr(match[i + 1])])));
+  }
+  return tr(text);
+}
+
 export function tr(text: string, vars?: Record<string, string | number>): string {
   const base = lang === 'en' ? (EN[text] ?? text) : text;
   if (!vars) return base;

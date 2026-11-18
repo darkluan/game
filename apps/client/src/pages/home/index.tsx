@@ -34,12 +34,12 @@ function Menu() {
       heroId={heroId}
       aside={<HeroPicker label={tr('Tướng khi chơi thử với máy')} value={heroId} onChange={setHeroId} />}
       actions={
-        <div className="flex w-full max-w-md animate-rise flex-col gap-3 [animation-delay:240ms] squat:grid squat:max-w-none squat:grid-cols-2 squat:gap-2 squat:*:px-2! squat:*:py-2.5! squat:*:text-xs! squat:*:tracking-wider!">
+        <div className="grid w-full max-w-sm animate-rise grid-cols-2 gap-2 [animation-delay:240ms] *:px-2! *:py-2.5! *:text-xs! *:tracking-wider! [&>*:nth-child(1)]:col-span-2 [&>*:nth-child(1)]:py-3! [&>*:nth-child(1)]:text-base! [&>*:nth-child(4)]:col-span-2 [&>p]:col-span-2 squat:max-w-none squat:[&>*:nth-child(1)]:col-span-1 squat:[&>*:nth-child(1)]:py-2.5! squat:[&>*:nth-child(1)]:text-xs! squat:[&>*:nth-child(4)]:col-span-1">
           <button
             type="button"
             onClick={() => void onCreate()}
             disabled={creating}
-            className="btn btn-primary cut-corners text-lg"
+            className="btn btn-primary cut-corners"
           >
             {creating ? tr('Đang tạo phòng…') : tr('Tạo phòng')}
           </button>
@@ -58,16 +58,16 @@ function Menu() {
         </div>
       }
     >
-      <p className="animate-rise text-xs font-bold tracking-[0.35em] text-primary uppercase squat:hidden">
+      <p className="animate-rise text-[11px] font-bold tracking-[0.3em] text-primary uppercase squat:hidden">
         {tr('MOBA 3v3 · Một đường · Chơi ngay trên trình duyệt')}
       </p>
-      <h1 className="animate-rise text-title text-7xl leading-none font-black tracking-[0.08em] uppercase [animation-delay:80ms] sm:text-8xl squat:text-4xl">
+      <h1 className="animate-rise text-title text-7xl leading-none font-black tracking-[0.08em] uppercase [animation-delay:80ms] sm:text-7xl xl:text-6xl squat:text-4xl">
         {tr('Tứ Tộc')}
       </h1>
-      <p className="max-w-md animate-rise text-muted-foreground [animation-delay:120ms] squat:text-xs">
+      <p className="max-w-sm animate-rise text-sm text-muted-foreground [animation-delay:120ms] squat:text-xs">
         {tr('Tạo phòng rồi gửi link cho bạn bè, ô trống sẽ do máy điều khiển. Phá đền địch để thắng.')}
       </p>
-      <div className="glass-panel w-full max-w-md animate-rise rounded-xl p-5 [animation-delay:160ms] squat:max-w-none squat:p-2.5">
+      <div className="glass-panel w-full max-w-sm animate-rise rounded-xl p-3 [animation-delay:160ms] squat:max-w-none squat:p-2.5">
         <NicknameField />
       </div>
     </LobbyShell>

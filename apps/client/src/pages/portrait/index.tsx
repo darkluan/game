@@ -3,9 +3,9 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router';
 import { Box3, type Group, Vector3 } from 'three';
 import { HEROES } from '@game/core';
-import { Actor } from '@/scene/Actor';
-import { actorOptions, HERO_MODELS } from '@/scene/heroModels';
-import { MODELS, useModel } from '@/scene/models';
+import { useHeroActors } from '@/scene/heroActors';
+import { HERO_MODELS } from '@/scene/heroModels';
+import { MODELS } from '@/scene/models';
 import { heroColor } from '@/scene/palette';
 
 /**
@@ -22,22 +22,27 @@ const FRAMING = {
   mech: { lookAt: 0.6, forward: 0.5, distance: 1.0, yaw: 0.4, lift: 0.05 },
   // Dragons: the whole animal with its wings, from a front quarter.
   dragon: { lookAt: 0.55, forward: 0.5, distance: 0.75, yaw: 0.6, lift: 0.08 },
+  // The three-headed dragon: the heads and chest, wings running out of frame.
+  hydra: { lookAt: 0.62, forward: 0.85, distance: 0.42, yaw: 0.75, lift: 0.04 },
+  whole: { lookAt: 0.45, forward: 0.56, distance: 0.7, yaw: 0.85, lift: 0.25 },
   // The stocky dragons spread their wings far wider than they stand at rest.
   drake: { lookAt: 0.6, forward: 0.5, distance: 1.05, yaw: 0.6, lift: 0.08 },
 } as const;
 
 function framingOf(heroId: string): (typeof FRAMING)[keyof typeof FRAMING] {
   const race = HEROES[heroId]?.race;
-  if (race === 'dragon') return HERO_MODELS[heroId].model === MODELS.dragonWyvern ? FRAMING.dragon : FRAMING.drake;
+  if (HERO_MODELS[heroId]?.hydra) return FRAMING.hydra;
+  // The wind spirit is all hat: show the whole of it, like the mechs.
+  if (HERO_MODELS[heroId]?.model === MODELS.windSpirit) return FRAMING.mech;
   return race === 'machine' ? FRAMING.mech : FRAMING.person;
 }
 
 function Subject({ heroId }: { heroId: string }) {
   const look = HERO_MODELS[heroId] ?? HERO_MODELS.kael;
-  const gltf = useModel(look.model);
   const holder = useRef<Group>(null);
   const camera = useThree((s) => s.camera);
-  const actor = useMemo(() => new Actor(gltf, look.rig, actorOptions(look, false)), [gltf, look]);
+  const looks = useMemo(() => [look], [look]);
+  const [actor] = useHeroActors(looks, false);
   const frames = useRef(0);
 
   useEffect(() => {
@@ -53,7 +58,9 @@ function Subject({ heroId }: { heroId: string }) {
     if (frames.current !== 20) return;
     const box = new Box3().setFromObject(actor.root);
     const size = box.getSize(new Vector3());
-    const framing = framingOf(heroId);
+    // ?view=whole shows the entire body from farther back, for checking a model rather than making a portrait.
+    const whole = new URLSearchParams(window.location.search).get('view') === 'whole';
+    const framing = whole ? FRAMING.whole : framingOf(heroId);
     const span = HEROES[heroId]?.race === 'dragon' ? Math.max(size.x, size.y, size.z) : size.y;
     const target = new Vector3(
       (box.min.x + box.max.x) / 2,

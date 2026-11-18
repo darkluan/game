@@ -90,6 +90,10 @@ Tên là tạm đặt. Đội hình ra mắt 8 tướng, MVP làm 4 tướng đ�
 | Zerak, Lôi long | Rồng | Đấu sĩ | Bổ nhào vào một mục tiêu, tự cường hóa đòn đánh, gầm làm câm lặng |
 | Orun, Thần Núi | Thần | Đỡ đòn | Kéo kẻ địch về phía mình, tăng giáp cho cả đội |
 | Raze-3, Thích khách cơ giới | Người máy | Sát thủ | Lướt xuyên kẻ địch, kết liễu mục tiêu yếu máu |
+| Elna, Quân y chiến trường | Người | Hỗ trợ | Hồi máu, bom khói che mắt, hiệu lệnh tăng sức cả đội |
+| Nyx, Độc long | Rồng | Xạ thủ | Phun độc, vũng axit, dịch hạch làm chậm và đánh dấu |
+| Aeris, Thần Gió | Thần | Pháp sư | Lưỡi gió, lốc xoáy hất văng, bão tố diện rộng |
+| Titan-9, Pháo đài di động | Người máy | Đỡ đòn | Đấm choáng, trường chắn cho đồng đội, nam châm kéo địch |
 
 ### 2.8 Cộng hưởng tộc (bật sau khi 8 tướng đã cân bằng)
 

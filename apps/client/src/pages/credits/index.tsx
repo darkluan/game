@@ -19,22 +19,22 @@ export default function CreditsPage() {
       <div>
         <p className="animate-rise text-xs font-bold tracking-[0.35em] text-primary uppercase">{tr('Tứ Tộc')}</p>
         <h1 className="animate-rise text-title text-5xl leading-tight font-black tracking-[0.08em] uppercase">
-          Ghi công
+          {tr('Ghi công')}
         </h1>
       </div>
 
       <section className="glass-panel flex w-full flex-col gap-3 rounded-xl p-4 text-left text-sm">
-        <h2 className="font-semibold">Icon chiêu và trang bị</h2>
+        <h2 className="font-semibold">{tr('Icon chiêu và trang bị')}</h2>
         <p className="text-muted-foreground">
-          Lấy từ{' '}
+          {tr('Lấy từ')}{' '}
           <a href="https://game-icons.net" target="_blank" rel="noreferrer" className={link}>
             game-icons.net
           </a>
-          , giấy phép{' '}
+          {tr(', giấy phép')}{' '}
           <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer" className={link}>
             CC BY 3.0
           </a>
-          . Icon được tô lại màu, hình vẽ giữ nguyên.
+          {tr('. Icon được tô lại màu, hình vẽ giữ nguyên.')}
         </p>
         {Object.entries(byArtist).map(([artist, ids]) => (
           <div key={artist}>
@@ -53,37 +53,37 @@ export default function CreditsPage() {
       </section>
 
       <section className="glass-panel flex w-full flex-col gap-2 rounded-xl p-4 text-left text-sm">
-        <h2 className="font-semibold">Model 3D</h2>
+        <h2 className="font-semibold">{tr('Model 3D')}</h2>
         <p className="text-muted-foreground">
-          Nhân vật, lính, trụ, đền, cây và đá: bộ KayKit của{' '}
+          {tr('Nhân vật, lính, trụ, đền, nhà cửa, núi, cây và đá: bộ KayKit của')}{' '}
           <a href="https://www.kaylousberg.com" target="_blank" rel="noreferrer" className={link}>
             Kay Lousberg
           </a>
-          . Rồng và người máy:{' '}
+          {tr('. Rồng và người máy:')}{' '}
           <a href="https://quaternius.com" target="_blank" rel="noreferrer" className={link}>
             Quaternius
           </a>
-          . Cả hai phát hành theo CC0.
+          {tr('. Cả hai phát hành theo CC0.')}
         </p>
       </section>
 
       <section className="glass-panel flex w-full flex-col gap-2 rounded-xl p-4 text-left text-sm">
-        <h2 className="font-semibold">Âm thanh</h2>
+        <h2 className="font-semibold">{tr('Âm thanh')}</h2>
         <p className="text-muted-foreground">
-          Tiếng vũ khí, va chạm, lửa, đá và tiền xu: các gói CC0 của{' '}
+          {tr('Tiếng vũ khí, va chạm, lửa, đá và tiền xu: các gói CC0 của')}{' '}
           <a href="https://www.kenney.nl" target="_blank" rel="noreferrer" className={link}>
             Kenney
           </a>{' '}
-          và{' '}
+          {tr('và')}{' '}
           <a href="https://opengameart.org/users/rubberduck" target="_blank" rel="noreferrer" className={link}>
             rubberduck
           </a>{' '}
-          trên OpenGameArt. Nhạc và các tiếng còn lại do game tự tổng hợp.
+          {tr('trên OpenGameArt. Nhạc và các tiếng còn lại do game tự tổng hợp.')}
         </p>
       </section>
 
       <Link to="/" className={`text-sm text-muted-foreground ${link}`}>
-        Về trang chủ
+        {tr('Về trang chủ')}
       </Link>
     </LobbyShell>
   );

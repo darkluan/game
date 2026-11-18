@@ -1,4 +1,5 @@
-import { type AbilityDef, TICK_RATE } from '@game/core';
+import { type AbilityDef, type AbilitySlot, type HeroDef, TICK_RATE } from '@game/core';
+import type { AbilityHud } from './session';
 import { tr } from '@/i18n';
 
 /** How a balance number reads to a player. */
@@ -77,4 +78,25 @@ export function abilityDetails(ability: AbilityDef): { label: string; values: st
     const values = ability.params[key];
     return values ? [{ label: tr(label), values: values.map((v) => show(v, unit)) }] : [];
   });
+}
+
+/** An ability as the hero picker shows it: everything about it, with no match and so no level or cooldown running. */
+export function abilityPreview(hero: HeroDef, slot: AbilitySlot): AbilityHud {
+  const ability = hero.abilities[slot];
+  return {
+    id: ability.id,
+    slot,
+    name: tr(ability.name),
+    description: tr(ability.description),
+    level: 0,
+    cost: 0,
+    cooldownLeft: 0,
+    cooldownFraction: 0,
+    canLevelUp: false,
+    usable: false,
+    cooldowns: ability.cooldownTicks.map((ticks) => ticks / TICK_RATE),
+    costs: hero.resource === 'none' ? [] : ability.cost,
+    range: ability.range,
+    details: abilityDetails(ability),
+  };
 }

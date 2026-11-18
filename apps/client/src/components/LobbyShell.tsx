@@ -4,6 +4,9 @@ import { Link } from 'react-router';
 import { useWideLayout } from '@/hooks/useWideLayout';
 import { useServerStatus } from '@/net/serverStatus';
 import { useSettingsStore } from '@/store/settingsStore';
+import { AbilitiesShownContext } from '@/ui/abilitiesShown';
+import { AbilityPanel } from '@/ui/AbilityPanel';
+import { HeroTurnArea } from '@/ui/HeroTurnArea';
 import { LangSwitch } from '@/ui/LangSwitch';
 import { SoundSettings } from '@/ui/SoundSettings';
 
@@ -53,8 +56,10 @@ interface Props {
 /** Frame shared by every screen outside a match: the 3D backdrop, the top bar and the sound controls. */
 export function LobbyShell({ children, aside, actions, heroId }: Props) {
   const wide = useWideLayout();
+  // The abilities float over the 3D hero only where there is one: a wide screen, with a hero and its picker shown.
+  const overHero = wide && heroId !== undefined && aside !== undefined && aside !== null && aside !== false;
   const column =
-    'mx-auto flex w-full max-w-xl flex-col items-center gap-6 text-center lg:mx-0 lg:items-start lg:text-left squat:mx-0 squat:items-start squat:gap-2 squat:text-left';
+    'mx-auto flex w-full max-w-xl flex-col items-center gap-6 xl:gap-4 text-center lg:mx-0 lg:items-start lg:text-left squat:mx-0 squat:items-start squat:gap-2 squat:text-left';
   const graphics = useSettingsStore((s) => s.graphics);
   return (
     <div className="relative h-full overflow-hidden">
@@ -75,21 +80,38 @@ export function LobbyShell({ children, aside, actions, heroId }: Props) {
           <ServerStatusChip />
         </header>
         <main
-          className={`grid flex-1 grid-cols-[minmax(0,1fr)] content-center gap-6 px-5 py-6 lg:px-24 squat:content-start squat:gap-2 squat:px-4 squat:py-1 ${aside ? 'xl:grid-cols-[minmax(0,32rem)_1fr_24rem] xl:gap-x-8 xl:px-16 squat:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] squat:gap-x-4' : ''}`}
+          className={`grid flex-1 grid-cols-[minmax(0,1fr)] content-center gap-6 px-5 py-6 lg:px-24 squat:content-start squat:gap-2 squat:px-4 squat:py-1 squat:pb-10 ${aside ? 'xl:grid-cols-[minmax(0,24rem)_1fr_24rem] xl:gap-x-8 xl:px-16 squat:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] squat:gap-x-4' : ''}`}
         >
-          <div className={`${column} xl:col-start-1 xl:self-end squat:col-start-1`}>{children}</div>
-          {aside && (
-            <aside className="glass-panel mx-auto w-full max-w-xl animate-rise rounded-xl p-4 [animation-delay:320ms] lg:mx-0 xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:self-center squat:col-start-2 squat:row-span-2 squat:row-start-1 squat:max-w-none squat:self-start squat:p-2.5">
-              {aside}
-            </aside>
-          )}
-          {actions && (
-            <div
-              className={`${column} xl:col-start-1 xl:row-start-2 xl:self-start squat:col-start-1 squat:row-start-2`}
-            >
-              {actions}
-            </div>
-          )}
+          <AbilitiesShownContext value={overHero}>
+            <div className={`${column} xl:col-start-1 xl:self-end squat:col-start-1`}>{children}</div>
+            {overHero && heroId && (
+              // The empty middle column: the abilities over the head of the hero standing in the backdrop,
+              // and under them the hero itself, which can be dragged round.
+              <div className="flex flex-col gap-3 self-stretch xl:col-start-2 xl:row-span-2 xl:row-start-1">
+                <AbilityPanel
+                  key={heroId}
+                  heroId={heroId}
+                  // Wide enough for the six ability tabs to sit on one row.
+                  className="glass-panel w-full max-w-[31rem] animate-rise self-center rounded-xl p-3"
+                />
+                <HeroTurnArea className="flex min-h-64 flex-1 items-end justify-center pb-1 text-xs text-muted-foreground/70">
+                  {tr('Giữ và kéo để xoay tướng')}
+                </HeroTurnArea>
+              </div>
+            )}
+            {aside && (
+              <aside className="glass-panel mx-auto w-full max-w-xl animate-rise rounded-xl p-4 [animation-delay:320ms] lg:mx-0 xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:self-center squat:col-start-2 squat:row-span-2 squat:row-start-1 squat:max-w-none squat:self-start squat:p-2.5">
+                {aside}
+              </aside>
+            )}
+            {actions && (
+              <div
+                className={`${column} xl:col-start-1 xl:row-start-2 xl:self-start squat:col-start-1 squat:row-start-2`}
+              >
+                {actions}
+              </div>
+            )}
+          </AbilitiesShownContext>
         </main>
         <footer className="px-5 py-4 pr-28 lg:px-10 lg:pr-28 squat:px-4 squat:py-2 squat:pr-28">
           <SoundSettings />

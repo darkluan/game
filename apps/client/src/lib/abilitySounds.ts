@@ -50,6 +50,22 @@ export const ABILITY_SOUND: Record<string, AbilitySound> = {
   raze_boost: 'boost',
   raze_blade: 'tumble',
   raze_execute: 'execute',
+  elna_bolt: 'tumble',
+  elna_mend: 'heal',
+  elna_smoke: 'wind',
+  elna_rally: 'dawn',
+  nyx_spit: 'fire',
+  nyx_pool: 'vent',
+  nyx_glide: 'tumble',
+  nyx_plague: 'darkness',
+  aeris_gale: 'wind',
+  aeris_cyclone: 'wind',
+  aeris_drift: 'blink',
+  aeris_tempest: 'thunder',
+  titan_punch: 'bash',
+  titan_barrier: 'guard',
+  titan_magnet: 'zap',
+  titan_meltdown: 'explosion',
 };
 
 /** The sound of each hero's basic attack, keyed by hero id. A hero missing here swings a weapon. */
@@ -66,4 +82,8 @@ export const HERO_ATTACK_SOUND: Record<string, AttackSound> = {
   bolt7: 'gun',
   mekka: 'gun',
   raze3: 'blade',
+  elna: 'arrow',
+  nyx: 'magic',
+  aeris: 'magic',
+  titan9: 'swing',
 };

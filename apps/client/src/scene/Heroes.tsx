@@ -3,9 +3,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { Group, Mesh, MeshBasicMaterial } from 'three';
 import { HERO, type Vec2 } from '@game/core';
 import type { GameSession, RosterHero } from '@/lib/session';
-import { Actor } from './Actor';
-import { actorOptions, HERO_MODELS } from './heroModels';
-import { useModels } from './models';
+import { useHeroActors } from './heroActors';
+import { HERO_MODELS } from './heroModels';
 import { COLORS, teamColor } from './palette';
 
 const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
@@ -17,7 +16,6 @@ function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
   const base = HERO_MODELS[entry.defId] ?? HERO_MODELS.kael;
   // A dragon has a different model for each evolution; everyone else has just the one.
   const looks = useMemo(() => [base, ...(base.stages ?? [])], [base]);
-  const gltfs = useModels(looks.map((l) => l.model));
   const group = useRef<Group>(null);
   const body = useRef<Group>(null);
   const ring = useRef<Mesh>(null);
@@ -26,10 +24,7 @@ function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
   const local = useRef({ pos: { x: 0, z: 0 } as Vec2, diedAt: -1 });
   const isPlayer = entry.id === game.hero.id;
   const ringColor = isPlayer ? COLORS.self : teamColor(entry.team, game.hero.team);
-  const actors = useMemo(
-    () => looks.map((look, i) => new Actor(gltfs[i], look.rig, actorOptions(look, true))),
-    [gltfs, looks],
-  );
+  const actors = useHeroActors(looks, true);
 
   useEffect(() => {
     const parent = body.current;

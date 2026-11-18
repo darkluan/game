@@ -16,7 +16,7 @@ export function NicknameField() {
         autoComplete="nickname"
         placeholder={tr('Nhập biệt danh')}
         onChange={(e) => setNickname(e.target.value)}
-        className="w-full rounded-md border border-border bg-background/70 px-4 py-3 text-lg font-medium squat:px-3 squat:py-1.5 squat:text-base tracking-normal text-foreground normal-case outline-none select-text placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/30"
+        className="w-full rounded-md border border-border bg-background/70 px-3 py-2 text-base font-medium squat:px-3 squat:py-1.5 squat:text-base tracking-normal text-foreground normal-case outline-none select-text placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/30"
       />
     </label>
   );

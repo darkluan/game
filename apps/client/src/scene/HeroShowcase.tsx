@@ -3,9 +3,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { Group, Mesh, MeshBasicMaterial } from 'three';
 import type { ActorAction } from '@/lib/session';
 import { useShowcaseStore } from '@/store/showcaseStore';
-import { Actor } from './Actor';
-import { actorOptions, HERO_MODELS } from './heroModels';
-import { useModel } from './models';
+import { useHeroActors } from './heroActors';
+import { HERO_MODELS } from './heroModels';
 import { heroColor } from './palette';
 
 const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
@@ -23,18 +22,22 @@ const PULSE_SECONDS = 0.9;
 export function HeroShowcase({ heroId, pulseReach = 3.5 }: { heroId: string; pulseReach?: number }) {
   const look = HERO_MODELS[heroId] ?? HERO_MODELS.kael;
   const color = heroColor(heroId);
-  const gltf = useModel(look.model);
   const body = useRef<Group>(null);
   const pulse = useRef<Mesh>(null);
-  const actor = useMemo(() => new Actor(gltf, look.rig, actorOptions(look, false)), [gltf, look]);
+  const looks = useMemo(() => [look], [look]);
+  const [actor] = useHeroActors(looks, false);
   const moves = useMemo(() => ORDER.filter((kind) => look.rig.actions[kind]), [look]);
   const show = useRef({ clock: 0, step: 0, nextAt: 0, seen: -1, action: undefined as ActorAction | undefined });
 
+  // A newly picked hero starts facing forward, whatever way the last one was turned.
+  useEffect(() => useShowcaseStore.getState().resetTurn(), []);
+
   useEffect(() => {
     const parent = body.current;
+    actor.root.scale.setScalar(look.showcaseScale ?? 1);
     parent?.add(actor.root);
     return () => void parent?.remove(actor.root);
-  }, [actor]);
+  }, [actor, look]);
 
   useFrame((_, delta) => {
     const state = show.current;
@@ -45,7 +48,9 @@ export function HeroShowcase({ heroId, pulseReach = 3.5 }: { heroId: string; pul
       state.action = { kind, at: state.clock };
       state.nextAt = state.clock + move.seconds + PAUSE;
     };
-    const { request } = useShowcaseStore.getState();
+    const { request, turn } = useShowcaseStore.getState();
+    // Follows the player's drag, easing so it does not snap.
+    if (body.current) body.current.rotation.y += (turn - body.current.rotation.y) * Math.min(1, delta * 12);
     // Requests made before this hero appeared were for another hero.
     if (state.seen < 0) state.seen = request.n;
     if (request.n !== state.seen) {

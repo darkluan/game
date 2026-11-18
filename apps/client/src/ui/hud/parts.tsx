@@ -132,45 +132,67 @@ function LevelValues({ values, level, next }: { values: (string | number)[]; lev
  * Everything about one ability: what it does and its numbers at every level. With `next`, the
  * level a point would buy is highlighted, which is what the level-up button shows.
  */
-export function AbilityInfo({ ability, next = false }: { ability: AbilityHud; next?: boolean }) {
+export function AbilityInfo({
+  ability,
+  next = false,
+  preview = false,
+  numbers = true,
+}: {
+  ability: AbilityHud;
+  next?: boolean;
+  /** Outside a match: no level to show, and the numbers laid out in two columns. */
+  preview?: boolean;
+  /** False leaves out the table of numbers, keeping the name and what the ability does. */
+  numbers?: boolean;
+}) {
   const maxLevel = ability.cooldowns.length;
   const row = 'flex justify-between gap-3';
   return (
     <div className="flex flex-col gap-1 text-left text-xs font-normal">
       <p className="flex items-baseline justify-between gap-3 text-sm font-semibold text-foreground">
         {ability.name}
-        <span className="text-xs font-normal text-muted-foreground">
-          {next && ability.level < maxLevel
-            ? tr('Cấp {from} → {to}', { from: ability.level, to: ability.level + 1 })
-            : tr('Cấp {level} / {max}', { level: ability.level, max: maxLevel })}
-        </span>
+        {!preview && (
+          <span className="text-xs font-normal text-muted-foreground">
+            {next && ability.level < maxLevel
+              ? tr('Cấp {from} → {to}', { from: ability.level, to: ability.level + 1 })
+              : tr('Cấp {level} / {max}', { level: ability.level, max: maxLevel })}
+          </span>
+        )}
       </p>
       <p className="text-muted-foreground">{ability.description}</p>
-      <div className="mt-1 flex flex-col gap-0.5 border-t border-border pt-1">
-        {ability.details.map((detail) => (
-          <p key={detail.label} className={row}>
-            <span className="text-muted-foreground">{detail.label}</span>
-            <LevelValues values={detail.values} level={ability.level} next={next} />
+      {numbers && (
+        <>
+          <div
+            className={`mt-1 border-t border-border pt-1 ${preview ? 'grid grid-cols-1 gap-x-5 gap-y-0.5 squat:grid-cols-2' : 'flex flex-col gap-0.5'}`}
+          >
+            {ability.details.map((detail) => (
+              <p key={detail.label} className={row}>
+                <span className="text-muted-foreground">{detail.label}</span>
+                <LevelValues values={detail.values} level={ability.level} next={next} />
+              </p>
+            ))}
+            <p className={row}>
+              <span className="text-muted-foreground">{tr('Hồi chiêu (giây)')}</span>
+              <LevelValues values={ability.cooldowns} level={ability.level} next={next} />
+            </p>
+            {ability.costs.length > 0 && (
+              <p className={row}>
+                <span className="text-muted-foreground">{tr('Tiêu hao')}</span>
+                <LevelValues values={ability.costs} level={ability.level} next={next} />
+              </p>
+            )}
+            {ability.range > 0 && (
+              <p className={row}>
+                <span className="text-muted-foreground">{tr('Tầm')}</span>
+                <span className="font-semibold">{ability.range}</span>
+              </p>
+            )}
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            {preview ? tr('Các số theo cấp 1 / 2 / 3 của chiêu.') : tr('Số đậm: cấp hiện tại. Số vàng: cấp kế tiếp.')}
           </p>
-        ))}
-        <p className={row}>
-          <span className="text-muted-foreground">{tr('Hồi chiêu (giây)')}</span>
-          <LevelValues values={ability.cooldowns} level={ability.level} next={next} />
-        </p>
-        {ability.costs.length > 0 && (
-          <p className={row}>
-            <span className="text-muted-foreground">{tr('Tiêu hao')}</span>
-            <LevelValues values={ability.costs} level={ability.level} next={next} />
-          </p>
-        )}
-        {ability.range > 0 && (
-          <p className={row}>
-            <span className="text-muted-foreground">{tr('Tầm')}</span>
-            <span className="font-semibold">{ability.range}</span>
-          </p>
-        )}
-      </div>
-      <p className="text-[10px] text-muted-foreground">{tr('Số đậm: cấp hiện tại. Số vàng: cấp kế tiếp.')}</p>
+        </>
+      )}
     </div>
   );
 }

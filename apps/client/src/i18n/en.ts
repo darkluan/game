@@ -7,6 +7,22 @@ export const EN: Record<string, string> = {
   // The game's name
   'Tứ Tộc': 'Tutoc',
 
+  // Credits page
+  'Icon chiêu và trang bị': 'Ability and item icons',
+  'Lấy từ': 'From',
+  ', giấy phép': ', licensed',
+  '. Icon được tô lại màu, hình vẽ giữ nguyên.': '. The icons are recoloured; the drawings are unchanged.',
+  'Model 3D': '3D models',
+  'Nhân vật, lính, trụ, đền, nhà cửa, núi, cây và đá: bộ KayKit của':
+    'Characters, minions, towers, shrines, houses, mountains, trees and rocks: KayKit by',
+  '. Rồng và người máy:': '. Dragons and machines:',
+  '. Cả hai phát hành theo CC0.': '. Both are released under CC0.',
+  'Âm thanh': 'Sound',
+  'Tiếng vũ khí, va chạm, lửa, đá và tiền xu: các gói CC0 của': 'Weapons, impacts, fire, stone and coins: CC0 packs by',
+  và: 'and',
+  'trên OpenGameArt. Nhạc và các tiếng còn lại do game tự tổng hợp.':
+    'on OpenGameArt. The music and every other sound are synthesised by the game.',
+
   // Lobby frame
   'Đang kết nối máy chủ…': 'Connecting to the server…',
   'Máy chủ sẵn sàng · {ping} ms · {rate} tick/giây': 'Server ready · {ping} ms · {rate} ticks/s',
@@ -151,6 +167,10 @@ export const EN: Record<string, string> = {
   'Một người trong nhóm không chấp nhận trận.': 'A party member did not accept the match.',
   'Không tạo được trận. Hãy tìm trận lại.': 'The match could not be created. Search again.',
 
+  '{who} đang bị khóa tìm trận {minutes} phút vì đã thoát trận.':
+    '{who} is locked out of matchmaking for {minutes} min for leaving a match.',
+  Khách: 'Guest',
+
   // Match: announcements
   '{killer} hạ gục {victim}': '{killer} killed {victim}',
   '{victim} bị hạ gục': '{victim} was killed',
@@ -254,6 +274,10 @@ export const EN: Record<string, string> = {
   'Tiêu hao': 'Cost',
   Tầm: 'Range',
   'Số đậm: cấp hiện tại. Số vàng: cấp kế tiếp.': 'Bold: current level. Gold: next level.',
+  'Giữ và kéo để xoay tướng': 'Press and drag to turn the hero',
+  'Xem chỉ số': 'Show numbers',
+  'Ẩn chỉ số': 'Hide numbers',
+  'Các số theo cấp 1 / 2 / 3 của chiêu.': 'Numbers are for ability levels 1 / 2 / 3.',
   '{v} giây': '{v} s',
   'Sát thương': 'Damage',
   'Sát thương cháy mỗi giây': 'Burn damage per second',
@@ -393,6 +417,63 @@ export const EN: Record<string, string> = {
   'Mỗi lần tiến hóa, Zerak đánh đau và lì đòn hơn.': 'With each evolution Zerak hits harder and endures more.',
   'Thần Núi': 'God of the Mountain',
   'Thích khách cơ giới': 'The Mechanized Assassin',
+
+  // The fourth hero of each race
+  'Quân y chiến trường': 'The Field Medic',
+  'Độc long': 'The Venom Dragon',
+  'Mỗi lần tiến hóa, nọc của Nyx độc hơn và đòn đánh mạnh hơn.':
+    "With each evolution Nyx's venom grows deadlier and its attacks stronger.",
+  'Thần Gió': 'God of Wind',
+  'Pháo đài di động': 'The Walking Fortress',
+  'Mũi tên tê liệt': 'Numbing Bolt',
+  'Bắn một mũi tên xuyên theo đường thẳng, gây sát thương và làm chậm.':
+    'Fires a piercing bolt in a line that damages and slows.',
+  'Băng bó': 'Field Dressing',
+  'Hồi máu cho đồng đội yếu máu nhất ở gần và giúp người đó chạy nhanh hơn.':
+    'Heals the most wounded ally nearby and speeds them up.',
+  'Bom khói': 'Smoke Bomb',
+  'Ném bom khói: tướng địch đứng trong khói gần như không nhìn thấy gì.':
+    'Throws a smoke bomb: enemy heroes standing in the smoke can barely see.',
+  'Hiệu lệnh': 'Rally',
+  'Mọi đồng đội và lính ở gần đánh mạnh hơn và được thêm giáp trong 5 giây.':
+    'Every ally and minion nearby hits harder and gains armor for 5 seconds.',
+  'Phun độc': 'Venom Spit',
+  'Phun nọc theo đường thẳng: gây sát thương và khiến kẻ địch trúng độc.':
+    'Spits venom in a line: damages enemies and poisons them.',
+  'Vũng axit': 'Acid Pool',
+  'Tạo một vũng axit ăn mòn kẻ địch đứng trong đó suốt 4 giây.':
+    'Creates a pool of acid that eats at enemies standing in it for 4 seconds.',
+  'Lướt gió': 'Glide',
+  'Lướt nhanh một đoạn rồi bay nhanh hơn trong 2 giây.': 'Glides a short way, then flies faster for 2 seconds.',
+  'Dịch hạch': 'Plague',
+  'Phủ dịch lên một vùng: sát thương lớn, làm chậm và đánh dấu mọi kẻ địch bên trong.':
+    'Covers an area in plague: heavy damage, and every enemy inside is slowed and marked.',
+  'Lưỡi gió': 'Wind Blade',
+  'Phóng một lưỡi gió xuyên theo đường thẳng.': 'Sends a piercing blade of wind down a line.',
+  'Lốc xoáy': 'Cyclone',
+  'Dựng lốc xoáy ở một điểm: gây sát thương và hất kẻ địch ra xa tâm lốc.':
+    'Raises a cyclone at a point: damages enemies and throws them away from its centre.',
+  'Cưỡi gió': 'Wind Rider',
+  'Chạy nhanh hơn và được một lớp khiên gió trong 3 giây.': 'Moves faster behind a shield of wind for 3 seconds.',
+  'Bão tố': 'Tempest',
+  'Gọi bão xuống một vùng rộng trong 4 giây: sát thương liên tục, kẻ địch dính bão bị chậm.':
+    'Calls a storm onto a wide area for 4 seconds: constant damage, and enemies it catches are slowed.',
+  'Cú đấm thủy lực': 'Hydraulic Punch',
+  'Đấm một kẻ địch: gây sát thương và làm choáng.': 'Punches one enemy: damage and a stun.',
+  'Trường chắn': 'Barrier Field',
+  'Bật trường chắn: bản thân và đồng đội ở gần được khiên trong 4 giây.':
+    'Raises a barrier: you and allies nearby are shielded for 4 seconds.',
+  'Nam châm': 'Magnet',
+  'Bật nam châm theo một đường: kéo kẻ địch về phía mình và gây sát thương.':
+    'Fires a magnet down a line: pulls enemies toward you and damages them.',
+  'Lõi quá nhiệt': 'Core Meltdown',
+  'Xả lõi năng lượng: sát thương lớn, làm chậm và câm lặng mọi kẻ địch quanh mình.':
+    'Vents the core: heavy damage, a slow and a silence for every enemy around you.',
+  'Giáp hộ vệ': 'Guardian Plate',
+  'Kiếm bão': 'Storm Blade',
+  'Lông phượng': 'Phoenix Feather',
+  'Cầu bí thuật': 'Arcane Orb',
+  'Áo choàng gió': 'Wind Cloak',
 
   // Abilities
   'Xung phong': 'Charge',
