@@ -1,6 +1,7 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { HERO_IDS, HEROES, type Race, RACES } from '@game/core';
 import { tr } from '@/i18n';
+import { useSquatLayout } from '@/hooks/useSquatLayout';
 import { AbilitiesShownContext } from './abilitiesShown';
 import { AbilityPanel } from './AbilityPanel';
 import { HeroPortrait } from './HeroPortrait';
@@ -29,6 +30,58 @@ interface Props {
 export function HeroStrip({ value, onChange, taken = [], label }: Props) {
   const abilitiesShown = useContext(AbilitiesShownContext);
   const hero = HEROES[value] ?? HEROES[HERO_IDS[0]];
+  const squat = useSquatLayout();
+  const [tab, setTab] = useState<Race>(hero.race);
+  const portrait = (id: string) => {
+    const def = HEROES[id];
+    const unavailable = taken.includes(id) && id !== value;
+    return (
+      <button
+        key={id}
+        type="button"
+        role="radio"
+        aria-checked={id === value}
+        aria-label={def.name}
+        disabled={unavailable}
+        title={unavailable ? tr('Đồng đội đã chọn tướng này') : `${def.name}, ${tr(def.title)}`}
+        onClick={() => onChange(id)}
+        className="cursor-pointer overflow-hidden rounded-md border-2 border-transparent bg-background/70 transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:grayscale aria-checked:border-primary aria-checked:shadow-[0_0_14px_color-mix(in_srgb,var(--primary)_60%,transparent)]"
+      >
+        <HeroPortrait heroId={id} className={`aspect-square w-full border-b-2 ${RACE_EDGE[def.race]}`} />
+      </button>
+    );
+  };
+  if (squat) {
+    // A phone held sideways: one low row along the bottom, under the hero standing in the backdrop.
+    // One race at a time, so its four portraits stay big enough for a thumb.
+    return (
+      <div className="flex w-full items-center gap-3 text-left">
+        <p className="flex min-w-0 flex-col leading-tight">
+          <span className="truncate text-sm font-black tracking-wide uppercase">{hero.name}</span>
+          <span className={`truncate text-[11px] font-semibold ${RACE_TEXT[hero.race]}`}>{ROLE_NAMES[hero.role]}</span>
+        </p>
+        <div role="tablist" className="grid shrink-0 grid-cols-2 gap-1">
+          {RACE_ORDER.map((race) => (
+            <button
+              key={race}
+              type="button"
+              role="tab"
+              aria-selected={tab === race}
+              onClick={() => setTab(race)}
+              className={`rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
+                tab === race ? `border-current ${RACE_TEXT[race]}` : 'border-border text-muted-foreground'
+              }`}
+            >
+              {tr(RACES[race].name)}
+            </button>
+          ))}
+        </div>
+        <div role="radiogroup" aria-label={label} className="grid w-52 shrink-0 grid-cols-4 gap-1.5">
+          {HERO_IDS.filter((id) => HEROES[id].race === tab).map(portrait)}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex w-full flex-col gap-2 text-left">
       {!abilitiesShown && <AbilityPanel key={hero.id} heroId={hero.id} />}
@@ -47,25 +100,7 @@ export function HeroStrip({ value, onChange, taken = [], label }: Props) {
               {tr(RACES[race].name)}
             </p>
             <div className="grid grid-cols-4 gap-1">
-              {HERO_IDS.filter((id) => HEROES[id].race === race).map((id) => {
-                const def = HEROES[id];
-                const unavailable = taken.includes(id) && id !== value;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="radio"
-                    aria-checked={id === value}
-                    aria-label={def.name}
-                    disabled={unavailable}
-                    title={unavailable ? tr('Đồng đội đã chọn tướng này') : `${def.name}, ${tr(def.title)}`}
-                    onClick={() => onChange(id)}
-                    className="cursor-pointer overflow-hidden rounded-md border-2 border-transparent bg-background/70 transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:grayscale aria-checked:border-primary aria-checked:shadow-[0_0_14px_color-mix(in_srgb,var(--primary)_60%,transparent)]"
-                  >
-                    <HeroPortrait heroId={id} className={`aspect-square w-full border-b-2 ${RACE_EDGE[def.race]}`} />
-                  </button>
-                );
-              })}
+              {HERO_IDS.filter((id) => HEROES[id].race === race).map(portrait)}
             </div>
           </div>
         ))}

@@ -109,14 +109,14 @@ function ShareLink({ code }: { code: string }) {
     }
   };
   return (
-    <div className="flex items-center gap-3 xl:flex-col xl:items-start xl:gap-1">
+    <div className="flex items-center gap-3 xl:flex-col xl:items-start xl:gap-1 squat:flex-col squat:items-start squat:gap-0.5">
       <p className="text-xs font-bold tracking-[0.3em] text-primary uppercase">{tr('Phòng chờ')}</p>
       <p className="text-xl font-black tracking-[0.2em] select-all squat:text-base">{code}</p>
       <button
         type="button"
         title={link}
         onClick={() => void copy()}
-        className="btn btn-ghost ml-auto rounded-md px-3! py-1.5! text-xs whitespace-nowrap xl:ml-0"
+        className="btn btn-ghost ml-auto rounded-md px-3! py-1.5! text-xs whitespace-nowrap xl:ml-0 squat:ml-0 squat:px-2! squat:py-1!"
       >
         {copied ? tr('Đã chép') : tr('Chép link mời')}
       </button>
@@ -189,15 +189,15 @@ function PickPanel({ code, onLeave }: { code: string; onLeave: () => void }) {
   return (
     // On a wide screen this is a low dock along the bottom: the room on the left, the heroes in the
     // middle, the start button on the right. On a phone the three stack.
-    <div className="glass-panel relative flex w-full animate-rise flex-col gap-3 rounded-xl p-3 xl:flex-row xl:items-center xl:gap-6 xl:pr-28 xl:pl-5 squat:gap-2 squat:p-2">
+    <div className="glass-panel relative flex w-full animate-rise flex-col gap-3 rounded-xl p-3 xl:flex-row xl:items-center xl:gap-6 xl:pr-28 xl:pl-5 squat:flex-row squat:items-center squat:gap-3 squat:p-2">
       <RoomChat players={lobby.players} />
       <ShareLink code={code} />
       {me && !matchInProgress && (
-        <div className="min-w-0 xl:max-w-[60rem] xl:flex-1">
+        <div className="min-w-0 xl:max-w-[60rem] xl:flex-1 squat:flex-1">
           <HeroStrip label={tr('Chọn tướng của bạn')} value={me.heroId} taken={teammatePicks} onChange={setHero} />
         </div>
       )}
-      <div className="flex flex-wrap items-center justify-center gap-4 xl:ml-auto xl:flex-col xl:gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-4 xl:ml-auto xl:flex-col xl:gap-2 squat:ml-auto squat:flex-col squat:gap-1">
         {matchInProgress ? (
           <p className={note}>{tr('Trận đang diễn ra. Bạn sẽ chơi được khi trận này kết thúc.')}</p>
         ) : me?.isHost ? (

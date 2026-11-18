@@ -3,6 +3,7 @@ import { lazy, type ReactNode, Suspense } from 'react';
 import { Link } from 'react-router';
 import { useWideLayout } from '@/hooks/useWideLayout';
 import { useServerStatus } from '@/net/serverStatus';
+import { useSquatLayout } from '@/hooks/useSquatLayout';
 import { useSettingsStore } from '@/store/settingsStore';
 import { AbilitiesShownContext } from '@/ui/abilitiesShown';
 import { AbilityPanel } from '@/ui/AbilityPanel';
@@ -13,6 +14,7 @@ import { SoundSettings } from '@/ui/SoundSettings';
 
 // three.js is most of the bundle: the menu shows at once and the backdrop fades in when it arrives.
 const LobbyScene = lazy(() => import('@/scene/LobbyScene'));
+const HeroStage = lazy(() => import('@/scene/HeroStage'));
 
 function ServerStatusChip() {
   const { status, retry } = useServerStatus();
@@ -47,6 +49,27 @@ function ServerStatusChip() {
 /** How big the hero on show is in a pick room, against its size on the home screen. */
 const PICK_ROOM_HERO_SIZE = 0.68;
 
+/** Far enough back that the tallest dragon, horns and all, fits the short stage of a phone. */
+const PHONE_STAGE_DISTANCE = 7.2;
+
+/** The hero on a phone held sideways: its own lit stage behind the panels, which can be dragged to turn the hero round. */
+function PhoneHeroStage({ heroId, className }: { heroId: string; className: string }) {
+  return (
+    <div className={`relative min-h-32 ${className}`}>
+      {/* The stage is far wider than its column, so a wide hero is not cut off at the column's edges;
+          what spills over shows through the panels either side, which are drawn above it. */}
+      <div aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 w-[260%] -translate-x-1/2">
+        <Suspense fallback={null}>
+          <HeroStage heroId={heroId} distance={PHONE_STAGE_DISTANCE} />
+        </Suspense>
+      </div>
+      <HeroTurnArea className="absolute inset-0 flex items-end justify-center pb-0.5 text-[10px] text-muted-foreground/70">
+        {tr('Giữ và kéo để xoay tướng')}
+      </HeroTurnArea>
+    </div>
+  );
+}
+
 interface Props {
   children: ReactNode;
   /** A second block of content. On wide screens it gets its own column on the right. */
@@ -65,22 +88,27 @@ interface Props {
 /** Frame shared by every screen outside a match: the 3D backdrop, the top bar and the sound controls. */
 export function LobbyShell({ children, aside, actions, heroId, sides }: Props) {
   const wide = useWideLayout();
-  // Where the 3D hero stands in the backdrop: only a wide screen has the room.
+  const squat = useSquatLayout();
+  // On a wide screen the 3D hero stands in the backdrop, between the columns. A phone held sideways
+  // has no room there: it gets a small lit stage of its own in a narrow middle column instead.
   const showHero = wide;
   // The abilities float over the 3D hero only where there is one: a wide screen, with a hero and its picker shown.
   const overHero = wide && heroId !== undefined && aside !== undefined && aside !== null && aside !== false;
   const column =
-    'mx-auto flex w-full max-w-xl flex-col items-center gap-6 xl:gap-4 text-center lg:mx-0 lg:items-start lg:text-left squat:mx-0 squat:items-start squat:gap-2 squat:text-left';
+    'mx-auto flex w-full max-w-xl flex-col items-center gap-6 xl:gap-4 text-center lg:mx-0 lg:items-start lg:text-left squat:relative squat:z-10 squat:mx-0 squat:items-start squat:gap-2 squat:text-left';
   const graphics = useSettingsStore((s) => s.graphics);
   return (
     <div className="relative h-full overflow-hidden">
       {/* In a pick room the scene is drawn a little higher, so the dock along the bottom clears the hero's feet. */}
-      <div aria-hidden className={`pointer-events-none absolute inset-0 ${sides && wide ? '-translate-y-[15%]' : ''}`}>
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 ${sides && showHero ? '-translate-y-[15%]' : ''}`}
+      >
         <Suspense fallback={null}>
           <div className="h-full animate-fade">
             <LobbyScene
               graphics={graphics}
-              heroId={wide ? heroId : undefined}
+              heroId={showHero ? heroId : undefined}
               // In a pick room the hero has to fit between the abilities above it and the dock below, on a laptop's
               // short screen too: it is drawn smaller there.
               heroSize={sides ? PICK_ROOM_HERO_SIZE : 1}
@@ -109,28 +137,36 @@ export function LobbyShell({ children, aside, actions, heroId, sides }: Props) {
           // with its abilities over its head and nothing in front of it. What the page adds (the
           // choice of heroes, the start button) is a low dock along the bottom there, and sits
           // between the teams on a phone, where there is no 3D hero to keep clear.
-          <main className="grid flex-1 grid-cols-2 content-start gap-3 px-4 pt-0 pb-2 xl:grid-cols-[19rem_minmax(0,1fr)_19rem] xl:grid-rows-[1fr_auto] xl:content-stretch xl:gap-x-6 xl:gap-y-3 xl:px-10 xl:pb-4 squat:grid-cols-[11rem_minmax(0,1fr)_11rem] squat:gap-2 squat:pb-10">
-            <div className="xl:col-start-1 xl:row-start-1 squat:col-start-1 squat:row-start-1">{sides[0]}</div>
-            <div className="xl:col-start-3 xl:row-start-1 squat:col-start-3 squat:row-start-1">{sides[1]}</div>
+          <main className="grid flex-1 grid-cols-2 content-start gap-3 px-4 pt-0 pb-2 xl:grid-cols-[19rem_minmax(0,1fr)_19rem] xl:grid-rows-[1fr_auto] xl:content-stretch xl:gap-x-6 xl:gap-y-3 xl:px-10 xl:pb-4 squat:grid-cols-[11rem_minmax(0,1fr)_11rem] squat:grid-rows-[1fr_auto] squat:content-stretch squat:gap-2 squat:pb-10">
+            <div className="xl:col-start-1 xl:row-start-1 squat:relative squat:z-10 squat:col-start-1 squat:row-start-1">
+              {sides[0]}
+            </div>
+            <div className="xl:col-start-3 xl:row-start-1 squat:relative squat:z-10 squat:col-start-3 squat:row-start-1">
+              {sides[1]}
+            </div>
             {showHero && heroId && (
-              <div className="flex min-w-0 flex-col items-center gap-3 xl:col-start-2 xl:row-start-1">
-                <AbilityPanel
-                  key={heroId}
-                  heroId={heroId}
-                  className="glass-panel w-full max-w-[31rem] animate-rise rounded-xl p-3"
-                />
-                <HeroTurnArea className="flex min-h-40 w-full flex-1 items-end justify-center pb-1 text-xs text-muted-foreground/70">
+              <div className="flex min-w-0 flex-col items-center gap-3 xl:col-start-2 xl:row-start-1 squat:col-start-2 squat:row-start-1">
+                {/* A phone has no room for the abilities over the hero's head as well. */}
+                {wide && (
+                  <AbilityPanel
+                    key={heroId}
+                    heroId={heroId}
+                    className="glass-panel w-full max-w-[31rem] animate-rise rounded-xl p-3"
+                  />
+                )}
+                <HeroTurnArea className="flex min-h-40 w-full flex-1 items-end justify-center pb-1 text-xs text-muted-foreground/70 squat:min-h-24">
                   {tr('Giữ và kéo để xoay tướng')}
                 </HeroTurnArea>
               </div>
             )}
-            <div className="col-span-2 min-w-0 xl:col-span-3 xl:row-start-2 squat:col-span-1 squat:col-start-2 squat:row-start-1">
+            {squat && heroId && <PhoneHeroStage heroId={heroId} className="col-start-2 row-start-1" />}
+            <div className="col-span-2 min-w-0 xl:col-span-3 xl:row-start-2 squat:relative squat:z-10 squat:col-span-3 squat:col-start-1 squat:row-start-2">
               <AbilitiesShownContext value={showHero && heroId !== undefined}>{children}</AbilitiesShownContext>
             </div>
           </main>
         ) : (
           <main
-            className={`grid flex-1 grid-cols-[minmax(0,1fr)] content-center gap-6 px-5 py-6 lg:px-24 squat:content-start squat:gap-2 squat:px-4 squat:py-1 squat:pb-10 ${aside ? 'xl:grid-cols-[minmax(0,24rem)_1fr_24rem] xl:gap-x-8 xl:px-16 squat:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] squat:gap-x-4' : ''}`}
+            className={`grid flex-1 grid-cols-[minmax(0,1fr)] content-center gap-6 px-5 py-6 lg:px-24 squat:content-start squat:gap-2 squat:px-4 squat:py-1 squat:pb-10 ${aside ? 'xl:grid-cols-[minmax(0,24rem)_1fr_24rem] xl:gap-x-8 xl:px-16 squat:grid-cols-[minmax(0,9fr)_minmax(0,6fr)_minmax(0,11fr)] squat:gap-x-3' : ''}`}
           >
             <AbilitiesShownContext value={overHero}>
               <div className={`${column} xl:col-start-1 xl:self-end squat:col-start-1`}>{children}</div>
@@ -149,8 +185,11 @@ export function LobbyShell({ children, aside, actions, heroId, sides }: Props) {
                   </HeroTurnArea>
                 </div>
               )}
+              {squat && heroId && aside && (
+                <PhoneHeroStage heroId={heroId} className="col-start-2 row-span-2 row-start-1 self-stretch" />
+              )}
               {aside && (
-                <aside className="glass-panel mx-auto w-full max-w-xl animate-rise rounded-xl p-4 [animation-delay:320ms] lg:mx-0 xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:self-center squat:col-start-2 squat:row-span-2 squat:row-start-1 squat:max-w-none squat:self-start squat:p-2.5">
+                <aside className="glass-panel mx-auto w-full max-w-xl animate-rise rounded-xl p-4 [animation-delay:320ms] lg:mx-0 xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:self-center squat:relative squat:z-10 squat:col-start-3 squat:row-span-2 squat:row-start-1 squat:max-w-none squat:self-start squat:p-2.5">
                   {aside}
                 </aside>
               )}

@@ -4,11 +4,18 @@ import { HeroShowcase } from './HeroShowcase';
 import { COLORS, heroColor } from './palette';
 
 /** A small see-through window showing one hero, for screens with no room to show it in the backdrop. */
-export default function HeroStage({ heroId }: { heroId: string }) {
+export default function HeroStage({
+  heroId,
+  distance = 5.8,
+}: {
+  heroId: string;
+  /** How far back the camera stands: farther for a stage that must fit the biggest heroes whole. */
+  distance?: number;
+}) {
   const [still] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   return (
     <Canvas
-      camera={{ fov: 30, near: 0.1, far: 50, position: [0, 1.9, 5.8] }}
+      camera={{ fov: 30, near: 0.1, far: 50, position: [0, 1.9, distance] }}
       dpr={[1, 1.5]}
       frameloop={still ? 'demand' : 'always'}
       onCreated={({ camera }) => camera.lookAt(0, 1.2, 0)}

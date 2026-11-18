@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-/** Matches the `squat` variant in index.css: a phone held sideways, wide but very short. */
+/** The same test as the `squat` style variant: a phone held sideways, wide but very short. */
 const QUERY = '(orientation: landscape) and (max-height: 520px)';
 
 const subscribe = (onChange: () => void) => {
@@ -9,7 +9,7 @@ const subscribe = (onChange: () => void) => {
   return () => media.removeEventListener('change', onChange);
 };
 
-/** True on a phone held sideways, where the lobby is laid out in two short columns. */
+/** True on a phone held sideways, where the lobby is laid out in three narrow columns round the hero. */
 export function useSquatLayout(): boolean {
   return useSyncExternalStore(subscribe, () => window.matchMedia(QUERY).matches);
 }
