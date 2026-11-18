@@ -37,6 +37,10 @@ function load(): Saved {
 
 interface SettingsStore extends Saved {
   toggleGraphics: () => void;
+  /** True after the game lowered the graphics by itself because frames were slow. */
+  autoLowered: boolean;
+  /** Switch to low graphics once, for a machine that cannot keep up. A later manual choice wins. */
+  lowerGraphics: () => void;
   toggleMuted: () => void;
   setMusic: (music: ThemeId) => void;
   setNickname: (nickname: string) => void;
@@ -59,6 +63,12 @@ export const useSettingsStore = create<SettingsStore>((set, get) => {
   return {
     ...initial,
     toggleGraphics: () => update({ graphics: get().graphics === 'high' ? 'low' : 'high' }),
+    autoLowered: false,
+    lowerGraphics: () => {
+      if (get().graphics !== 'high' || get().autoLowered) return;
+      update({ graphics: 'low' });
+      set({ autoLowered: true });
+    },
     toggleMuted: () => {
       update({ muted: !get().muted });
       setMuted(get().muted);

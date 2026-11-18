@@ -1,15 +1,19 @@
-import { HEROES, ITEM_LIST, itemPrice, ITEMS } from '@game/core';
+import { ITEM_LIST, itemPrice, ITEMS } from '@game/core';
 import type { GameSession, HudState } from '@/lib/session';
 import { describeItem } from './heroText';
 
 /** The hero's bag. Items can be sold back by clicking them while the shop is open. */
-export function ItemBag({ hud, game }: { hud: HudState; game: GameSession }) {
+export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSession; columns: number }) {
   return (
-    <div className="flex gap-1" aria-label="Túi đồ">
+    <div
+      className="grid gap-1"
+      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      aria-label="Túi đồ"
+    >
       {Array.from({ length: hud.itemSlots }, (_, i) => {
         const item = ITEMS[hud.items[i]];
         if (!item) {
-          return <span key={i} className="h-8 flex-1 rounded-sm border border-dashed border-border" />;
+          return <span key={i} className="h-8 rounded-sm border border-dashed border-border" />;
         }
         return (
           <button
@@ -18,7 +22,7 @@ export function ItemBag({ hud, game }: { hud: HudState; game: GameSession }) {
             disabled={!hud.canShop}
             title={`${item.name}: ${describeItem(item.stats)}${hud.canShop ? ' · bấm để bán lại nửa giá' : ''}`}
             onClick={() => game.send({ t: 'sell', slotIndex: i })}
-            className="h-8 flex-1 truncate rounded-sm border border-border bg-background px-1 text-[10px] enabled:cursor-pointer enabled:hover:border-danger"
+            className="h-8 truncate rounded-sm border border-border bg-background px-1 text-[10px] enabled:cursor-pointer enabled:hover:border-danger"
           >
             {item.name}
           </button>
@@ -30,7 +34,6 @@ export function ItemBag({ hud, game }: { hud: HudState; game: GameSession }) {
 
 /** The item shop. Buying only works at the fountain or while waiting to respawn. */
 export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSession; onClose: () => void }) {
-  const def = HEROES[hud.heroDefId];
   const full = hud.items.length >= hud.itemSlots;
   return (
     <section
@@ -57,7 +60,7 @@ export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSes
       </p>
       <ul className="flex flex-col gap-1 overflow-y-auto">
         {ITEM_LIST.map((item) => {
-          const price = itemPrice(def, item.id);
+          const price = itemPrice(item.id, hud.discount);
           const can = hud.canShop && !full && hud.gold >= price;
           return (
             <li key={item.id}>

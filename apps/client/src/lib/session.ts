@@ -69,6 +69,10 @@ export interface HudState {
   items: string[];
   itemSlots: number;
   canShop: boolean;
+  /** Fraction this hero gets off shop prices. */
+  discount: number;
+  /** What the team's mix of races earns it, as lines to show; empty when nothing. */
+  synergy: string[];
   /** The lit relic pedestal, if any. `mine` is whether the player's team is the one capturing. */
   relic: { type: RelicType; capturing: 'mine' | 'enemy' | null; progress: number } | null;
   /** Relic buffs in effect, the player's team first. */

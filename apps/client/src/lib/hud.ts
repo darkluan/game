@@ -2,9 +2,11 @@ import {
   ABILITY_SLOTS,
   type HeroDef,
   maxAbilityLevel,
+  type Race,
   raceOf,
   type StatusType,
   type Team,
+  type TeamSynergy,
   TICK_RATE,
   type YouSnap,
 } from '@game/core';
@@ -41,6 +43,18 @@ const CONDITION_LABELS: [StatusType, string][] = [
   ['stealth', 'Tàng hình'],
   ['haste', 'Tăng tốc'],
 ];
+
+const PAIR_TEXT: Record<Race, string> = {
+  human: 'Hai Người: mua đồ rẻ hơn 20%',
+  dragon: 'Hai Rồng: tiến hóa sớm hơn 1 cấp',
+  god: 'Hai Thần: mỗi tín đồ mạnh gấp rưỡi',
+  machine: 'Hai Người máy: Nhiệt giảm nhanh gấp rưỡi',
+};
+
+function synergyLines(synergy: TeamSynergy): string[] {
+  const lines = synergy.speed ? ['Ba tộc khác nhau: cả đội chạy nhanh hơn 6%'] : [];
+  return synergy.race ? [...lines, PAIR_TEXT[synergy.race]] : lines;
+}
 
 /** Turns the player's hero state into what the HUD displays. The same for offline and online play. */
 export function buildHud(input: HudInput): HudState {
@@ -92,6 +106,8 @@ export function buildHud(input: HudInput): HudState {
     items: you.items,
     itemSlots: raceOf(def.race).itemSlots,
     canShop: you.canShop,
+    discount: you.discount,
+    synergy: synergyLines(you.synergy),
     relic: input.world.relic && {
       type: input.world.relic.type,
       capturing: input.world.relic.team === null ? null : input.world.relic.team === input.team ? 'mine' : 'enemy',

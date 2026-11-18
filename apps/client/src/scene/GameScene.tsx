@@ -2,10 +2,12 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Suspense, useMemo, useRef } from 'react';
 import { type DirectionalLight, Plane, Vector3 } from 'three';
 import type { Vec2 } from '@game/core';
+import { useTouchLayout } from '@/hooks/useTouchLayout';
 import { InputController } from '@/input/InputController';
+import { SlowFrameDetector } from '@/lib/frameRate';
 import type { GameSession } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
-import type { Graphics } from '@/store/settingsStore';
+import { type Graphics, useSettingsStore } from '@/store/settingsStore';
 import { Buildings } from './Buildings';
 import { Effects } from './Effects';
 import { Heroes } from './Heroes';
@@ -19,12 +21,17 @@ import { Terrain } from './Terrain';
 const CAMERA_OFFSET = new Vector3(0, 34, 24);
 const SUN_OFFSET = new Vector3(18, 40, 12);
 const SHAKE = 0.35;
+/** Below this average frame rate, high graphics switches itself to low. */
+const MIN_FPS_FOR_HIGH = 28;
 /** Half-size of the square around the hero that gets shadows. */
 const SHADOW_REACH = 42;
 
 /** Runs the game, follows the hero with the camera and sun, and tracks the ground point under the mouse. */
 function GameLoop({ game, shadows }: { game: GameSession; shadows: boolean }) {
   const setHud = useGameStore((s) => s.setHud);
+  const lowerGraphics = useSettingsStore((s) => s.lowerGraphics);
+  // Only high graphics has anything to give up when frames are slow.
+  const slow = useMemo(() => (shadows ? new SlowFrameDetector(MIN_FPS_FOR_HIGH) : null), [shadows]);
   const sun = useRef<DirectionalLight>(null);
   const scratch = useMemo(
     () => ({ ground: new Plane(new Vector3(0, 1, 0), 0), hit: new Vector3(), pos: { x: 0, z: 0 } as Vec2 }),
@@ -34,6 +41,7 @@ function GameLoop({ game, shadows }: { game: GameSession; shadows: boolean }) {
   // Negative priority: runs before every other useFrame, so they all draw the same tick.
   useFrame(({ camera, raycaster, pointer }, delta) => {
     if (game.update(delta)) setHud(game.hud());
+    if (slow?.frame(delta)) lowerGraphics();
     const p = game.renderPos(game.hero, scratch.pos);
     camera.position.set(p.x + CAMERA_OFFSET.x, CAMERA_OFFSET.y, p.z + CAMERA_OFFSET.z);
     camera.lookAt(p.x, 0, p.z);
@@ -70,6 +78,7 @@ function GameLoop({ game, shadows }: { game: GameSession; shadows: boolean }) {
 }
 
 export default function GameScene({ game, graphics }: { game: GameSession; graphics: Graphics }) {
+  const touch = useTouchLayout();
   const high = graphics === 'high';
   return (
     <Canvas
@@ -81,7 +90,7 @@ export default function GameScene({ game, graphics }: { game: GameSession; graph
       <color attach="background" args={[COLORS.sky]} />
       <hemisphereLight args={['#dfeaff', '#3a4a35', 1.3]} />
       <GameLoop game={game} shadows={high} />
-      <InputController game={game} />
+      <InputController game={game} touch={touch} />
       {/* Models load in the background; the match is already running underneath. */}
       <Suspense fallback={null}>
         <Terrain map={game.map} playerTeam={game.hero.team} detailed={high} />

@@ -8,6 +8,7 @@ interface GameStore {
   game: GameSession | null;
   hud: HudState | null;
   shopOpen: boolean;
+  scoreboardOpen: boolean;
   /** Must be called from a click, which also lets the browser start audio. */
   startOffline: () => void;
   quit: () => void;
@@ -15,19 +16,22 @@ interface GameStore {
   setGame: (game: GameSession | null) => void;
   setHud: (hud: HudState) => void;
   toggleShop: () => void;
+  setScoreboard: (open: boolean) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
   game: null,
   hud: null,
   shopOpen: false,
+  scoreboardOpen: false,
   startOffline: () => {
     unlockAudio();
     playCue('matchStart');
     get().setGame(new LocalGame(Date.now(), useSettingsStore.getState().heroId, playCue));
   },
   quit: () => get().setGame(null),
-  setGame: (game) => set({ game, hud: game ? game.hud() : null, shopOpen: false }),
+  setGame: (game) => set({ game, hud: game ? game.hud() : null, shopOpen: false, scoreboardOpen: false }),
   setHud: (hud) => set({ hud }),
   toggleShop: () => set({ shopOpen: !get().shopOpen }),
+  setScoreboard: (scoreboardOpen) => set({ scoreboardOpen }),
 }));
