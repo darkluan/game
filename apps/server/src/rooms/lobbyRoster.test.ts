@@ -74,4 +74,19 @@ describe('LobbyRoster', () => {
     expect(a.heroId).toBe('sola');
     expect(b.heroId).not.toBe('sola');
   });
+
+  it('waits for everyone but the host to say they are ready', () => {
+    const roster = filled(3);
+    expect(roster.allReady()).toBe(false);
+    expect(roster.list().map((p) => p.ready)).toEqual([true, false, false]);
+    roster.setReady('p1', true);
+    roster.setReady('p2', 'yes');
+    expect(roster.allReady()).toBe(false);
+    roster.setReady('p2', true);
+    expect(roster.allReady()).toBe(true);
+    roster.clearReady();
+    expect(roster.allReady()).toBe(false);
+    // Alone in the room, the host can start at once.
+    expect(filled(1).allReady()).toBe(true);
+  });
 });

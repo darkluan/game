@@ -1,6 +1,14 @@
 import { randomInt } from 'node:crypto';
 import { type Client, matchMaker, Room, ServerError } from 'colyseus';
-import { cleanNickname, type LobbyState, ROOM_CODE_LENGTH, TEAM_SIZE } from '@game/core';
+import {
+  ChatLimiter,
+  cleanNickname,
+  type LobbyChatMessage,
+  type LobbyState,
+  parseLobbyChat,
+  ROOM_CODE_LENGTH,
+  TEAM_SIZE,
+} from '@game/core';
 import { verifyGuest } from '../auth/guest.js';
 import { createLogger } from '../logger.js';
 import { LobbyRoster } from './lobbyRoster.js';
@@ -34,6 +42,7 @@ export class LobbyRoom extends Room {
   /** The connection currently speaking for each player. */
   private readonly clientOf = new Map<string, Client>();
   private matchRoomId: string | null = null;
+  private readonly chat = new ChatLimiter();
 
   async onCreate(): Promise<void> {
     let code = randomCode();
@@ -51,8 +60,18 @@ export class LobbyRoom extends Room {
     });
     this.onMessage('start', (client: Client) => {
       const { playerId } = client.auth as Auth;
-      if (this.matchRoomId !== null || !this.roster.isHost(playerId)) return;
+      if (this.matchRoomId !== null || !this.roster.isHost(playerId) || !this.roster.allReady()) return;
       void this.startMatch();
+    });
+    this.onMessage('ready', (client: Client, ready: unknown) => {
+      const { playerId } = client.auth as Auth;
+      if (this.matchRoomId === null && this.roster.setReady(playerId, ready)) this.broadcastState();
+    });
+    this.onMessage('chat', (client: Client, raw: unknown) => {
+      const { playerId } = client.auth as Auth;
+      const message = parseLobbyChat(raw);
+      if (!message || !this.roster.has(playerId) || !this.chat.allow(playerId, Date.now())) return;
+      this.broadcast('chat', { ...message, playerId } satisfies LobbyChatMessage);
     });
     this.presence.subscribe(matchOverChannel(code), () => this.onMatchOver());
     logger.log('lobby created', { code });
@@ -123,6 +142,7 @@ export class LobbyRoom extends Room {
   private onMatchOver(): void {
     if (this.matchRoomId === null) return;
     this.matchRoomId = null;
+    this.roster.clearReady();
     this.autoDispose = true;
     logger.log('match over', { code: this.roomId });
     if (this.clients.length === 0) void this.disconnect();

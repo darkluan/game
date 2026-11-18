@@ -1,11 +1,14 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import { type Client, Room, ServerError } from 'colyseus';
 import {
+  ChatLimiter,
   type Command,
   HERO_IDS,
   heroSnapshot,
+  type MatchChatMessage,
   type MatchResult,
   type MatchWelcome,
+  parseMatchChat,
   type PlayerSetup,
   type RosterEntry,
   Sim,
@@ -75,6 +78,7 @@ export class MatchRoom extends Room {
   private accumulator = 0;
   private emptyTicks = 0;
   private finished = false;
+  private readonly chat = new ChatLimiter();
 
   async onCreate(options: MatchOptions): Promise<void> {
     if (options?.internalKey !== INTERNAL_KEY) throw new ServerError(403, 'forbidden');
@@ -117,6 +121,17 @@ export class MatchRoom extends Room {
     this.onMessage('cmd', (client: Client, cmd: Command) => {
       // The sim validates the command itself; nothing about its shape is trusted here.
       this.sim.command((client.auth as Auth).playerId, cmd);
+    });
+    this.onMessage('chat', (client: Client, raw: unknown) => {
+      const { playerId } = client.auth as Auth;
+      const message = parseMatchChat(raw);
+      const hero = this.sim.heroOf(playerId);
+      if (!message || !hero || !this.chat.allow(playerId, Date.now())) return;
+      // Team chat only: the other side never receives it.
+      const out: MatchChatMessage = { ...message, heroId: hero.id };
+      for (const [mate, connection] of this.clientOf) {
+        if (this.sim.heroOf(mate)?.team === hero.team) connection.send('chat', out);
+      }
     });
     this.setSimulationInterval((deltaMs) => this.advance(deltaMs), TICK_MS);
     logger.log('match created', { roomId: this.roomId, code: this.code, humans: this.humans.size });

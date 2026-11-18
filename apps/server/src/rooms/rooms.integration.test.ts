@@ -99,6 +99,8 @@ describe('a full room', () => {
     expect(host.state().players.map((p) => p.team)).toEqual([0, 1, 0, 1, 0, 1]);
     expect(await rejected(clients[6].joinById(code, { token: guests[6].token, nickname: 'P6' }))).toBe(true);
 
+    for (const other of others) other.room.send('ready', true);
+    await sleep(150);
     host.room.send('start');
     await sleep(500);
     const matchRoomId = host.state().matchRoomId!;
@@ -129,6 +131,25 @@ describe('match', () => {
     expect(host.state().matchRoomId).toBeNull(); // only the host may start
 
     host.room.send('start');
+    await sleep(200);
+    expect(host.state().matchRoomId).toBeNull(); // not while someone has yet to say they are ready
+    expect(host.state().players.map((p) => p.ready)).toEqual([true, false]);
+
+    // A phrase sent in the pick room reaches everyone; anything that is not a known phrase does not.
+    const heard: unknown[] = [];
+    host.room.onMessage('chat', (m: unknown) => heard.push(m));
+    other.room.send('chat', 'hello');
+    other.room.send('chat', 'buy my gold');
+    other.room.send('chat', { text: '  chờ   mình, fuck lag ' });
+    other.room.send('ready', true);
+    await sleep(200);
+    expect(heard).toEqual([
+      { playerId: b.playerId, id: 'hello' },
+      { playerId: b.playerId, text: 'chờ mình, **** lag' },
+    ]);
+    expect(host.state().players[1].ready).toBe(true);
+
+    host.room.send('start');
     await sleep(500);
     const matchRoomId = host.state().matchRoomId!;
     expect(matchRoomId).toEqual(expect.any(String));
@@ -146,6 +167,25 @@ describe('match', () => {
     expect(match.welcome().code).toBe(code);
     const last = () => match.snaps[match.snaps.length - 1];
     const entity = (id: number) => last().entities.find((e) => e.id === id)!;
+
+    // Team chat: my phrase comes back to my team (here, me) with my hero on it; the other side hears nothing.
+    const enemy = await inMatch(new Client(URL).joinById(matchRoomId, { token: b.token }));
+    const mine: unknown[] = [];
+    const theirs: unknown[] = [];
+    match.room.onMessage('chat', (m: unknown) => mine.push(m));
+    enemy.room.onMessage('chat', (m: unknown) => theirs.push(m));
+    match.room.send('chat', { k: 'quick', id: 'help' });
+    match.room.send('chat', { k: 'quick', id: 'free text' });
+    match.room.send('chat', { k: 'text', text: 'lên  đường trên' });
+    match.room.send('chat', { k: 'ping', type: 'gather', x: 4, z: -2 });
+    await sleep(200);
+    expect(mine).toEqual([
+      { k: 'quick', id: 'help', heroId },
+      { k: 'text', text: 'lên đường trên', heroId },
+      { k: 'ping', type: 'gather', x: 4, z: -2, heroId },
+    ]);
+    expect(theirs).toEqual([]);
+    await enemy.room.leave();
 
     // Nobody played for me while I was connecting: the skill point is still mine to spend.
     expect(last().you).toMatchObject({ id: heroId, skillPoints: 1 });

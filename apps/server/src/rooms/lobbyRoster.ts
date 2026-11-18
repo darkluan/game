@@ -39,7 +39,7 @@ export class LobbyRoster {
     }
     if (this.players.length >= TEAM_SIZE * 2) return false;
     const team: Team = this.count(0) <= this.count(1) ? 0 : 1;
-    this.players.push({ playerId, nickname, team, heroId: this.freeHero(team, playerId) });
+    this.players.push({ playerId, nickname, team, heroId: this.freeHero(team, playerId), ready: false });
     return true;
   }
 
@@ -67,7 +67,25 @@ export class LobbyRoster {
     return true;
   }
 
+  /** Marks a player as ready to start, or not. */
+  setReady(playerId: string, ready: unknown): boolean {
+    const player = this.players.find((p) => p.playerId === playerId);
+    if (!player || typeof ready !== 'boolean') return false;
+    player.ready = ready;
+    return true;
+  }
+
+  /** Everyone but the host has said they are ready. The host says so by starting. */
+  allReady(): boolean {
+    return this.players.every((p, i) => i === 0 || p.ready);
+  }
+
+  /** After a match everyone has to say they are ready again. */
+  clearReady(): void {
+    for (const p of this.players) p.ready = false;
+  }
+
   list(): LobbyPlayer[] {
-    return this.players.map((p, i) => ({ ...p, isHost: i === 0 }));
+    return this.players.map((p, i) => ({ ...p, isHost: i === 0, ready: i === 0 || p.ready }));
   }
 }
