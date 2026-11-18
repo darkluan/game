@@ -4,8 +4,8 @@ import type { Group, Mesh, MeshBasicMaterial } from 'three';
 import { HERO, type Vec2 } from '@game/core';
 import type { GameSession, RosterHero } from '@/lib/session';
 import { Actor } from './Actor';
-import { HERO_MODELS } from './heroModels';
-import { useModel } from './models';
+import { actorOptions, HERO_MODELS } from './heroModels';
+import { useModels } from './models';
 import { COLORS, teamColor } from './palette';
 
 const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
@@ -14,8 +14,10 @@ const TURN_RATE = 14; // radians of catch-up per second per radian of error
 const CORPSE_SECONDS = 1.6;
 
 function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
-  const look = HERO_MODELS[entry.defId] ?? HERO_MODELS.kael;
-  const gltf = useModel(look.model);
+  const base = HERO_MODELS[entry.defId] ?? HERO_MODELS.kael;
+  // A dragon has a different model for each evolution; everyone else has just the one.
+  const looks = useMemo(() => [base, ...(base.stages ?? [])], [base]);
+  const gltfs = useModels(looks.map((l) => l.model));
   const group = useRef<Group>(null);
   const body = useRef<Group>(null);
   const ring = useRef<Mesh>(null);
@@ -24,16 +26,18 @@ function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
   const local = useRef({ pos: { x: 0, z: 0 } as Vec2, diedAt: -1 });
   const isPlayer = entry.id === game.hero.id;
   const ringColor = isPlayer ? COLORS.self : teamColor(entry.team, game.hero.team);
-  const actor = useMemo(
-    () => new Actor(gltf, look.rig, { scale: look.scale, hide: look.hide, tint: look.tint, castShadow: true }),
-    [gltf, look],
+  const actors = useMemo(
+    () => looks.map((look, i) => new Actor(gltfs[i], look.rig, actorOptions(look, true))),
+    [gltfs, looks],
   );
 
   useEffect(() => {
     const parent = body.current;
-    parent?.add(actor.root);
-    return () => void parent?.remove(actor.root);
-  }, [actor]);
+    for (const actor of actors) parent?.add(actor.root);
+    return () => {
+      for (const actor of actors) parent?.remove(actor.root);
+    };
+  }, [actors]);
 
   useFrame((_, delta) => {
     const g = group.current;
@@ -53,10 +57,15 @@ function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
       // Turn the short way round toward the hero's facing.
       const diff = Math.atan2(Math.sin(hero.facing - g.rotation.y), Math.cos(hero.facing - g.rotation.y));
       g.rotation.y += diff * Math.min(1, delta * TURN_RATE);
-      // Dragons grow as they evolve.
-      body.current?.scale.setScalar(hero.radius / HERO.radius);
+      // A hero that grows without changing model is simply scaled up.
+      body.current?.scale.setScalar(looks.length > 1 ? 1 : hero.radius / HERO.radius);
     }
-    actor.update(delta, game.clock, { dead, moving: game.isMoving(hero), action: game.lastAction(hero.id) });
+    // Only the model of the current form is shown and animated.
+    const form = Math.min(hero.hero?.stage ?? 0, actors.length - 1);
+    actors.forEach((actor, i) => {
+      actor.root.visible = i === form;
+    });
+    actors[form].update(delta, game.clock, { dead, moving: game.isMoving(hero), action: game.lastAction(hero.id) });
 
     const stealth = game.hasStatus(hero, 'stealth');
     if (ring.current) (ring.current.material as MeshBasicMaterial).color.set(stealth ? COLORS.stealth : ringColor);

@@ -1,4 +1,4 @@
-import { AnimationMixer, type AnimationAction, type AnimationClip, Group, LoopOnce, LoopRepeat } from 'three';
+import { AnimationMixer, type AnimationAction, type AnimationClip, Box3, Group, LoopOnce, LoopRepeat } from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { ActorAction } from '@/lib/session';
@@ -15,6 +15,15 @@ export interface Rig {
 
 export interface ActorOptions {
   scale: number;
+  /**
+   * Resize the model to stand this tall with its feet on the ground, whatever units it was made in.
+   * `scale` then multiplies the result.
+   */
+  height?: number;
+  /** Extra turn in radians, for models that do not face +z. */
+  turn?: number;
+  /** Multiplies the model's colours, for models that come out too dark. */
+  brightness?: number;
   tint?: string;
   /** Node names to hide, e.g. the weapons a character does not carry. */
   hide?: string[];
@@ -39,12 +48,21 @@ export class Actor {
     options: ActorOptions,
   ) {
     const model = cloneSkinned(gltf.scene);
-    model.scale.setScalar(options.scale);
+    if (options.height) {
+      model.updateMatrixWorld(true);
+      const box = new Box3().setFromObject(model);
+      const fit = options.height / Math.max(1e-6, box.max.y - box.min.y);
+      model.scale.multiplyScalar(fit * options.scale);
+      model.position.y = -box.min.y * fit * options.scale;
+    } else {
+      model.scale.setScalar(options.scale);
+    }
+    if (options.turn) model.rotation.y = options.turn;
     for (const name of options.hide ?? []) {
       const node = model.getObjectByName(name);
       if (node) node.visible = false;
     }
-    if (options.tint) tintModel(model, options.tint);
+    if (options.tint || options.brightness) tintModel(model, options.tint ?? '#ffffff', options.brightness);
     setShadows(model, options.castShadow);
     this.root.add(model);
     this.mixer = new AnimationMixer(model);

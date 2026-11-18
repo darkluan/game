@@ -4,7 +4,7 @@ import type { Group, Mesh, MeshBasicMaterial } from 'three';
 import type { ActorAction } from '@/lib/session';
 import { useShowcaseStore } from '@/store/showcaseStore';
 import { Actor } from './Actor';
-import { HERO_MODELS } from './heroModels';
+import { actorOptions, HERO_MODELS } from './heroModels';
 import { useModel } from './models';
 import { heroColor } from './palette';
 
@@ -26,10 +26,7 @@ export function HeroShowcase({ heroId, pulseReach = 3.5 }: { heroId: string; pul
   const gltf = useModel(look.model);
   const body = useRef<Group>(null);
   const pulse = useRef<Mesh>(null);
-  const actor = useMemo(
-    () => new Actor(gltf, look.rig, { scale: look.scale, hide: look.hide, tint: look.tint, castShadow: false }),
-    [gltf, look],
-  );
+  const actor = useMemo(() => new Actor(gltf, look.rig, actorOptions(look, false)), [gltf, look]);
   const moves = useMemo(() => ORDER.filter((kind) => look.rig.actions[kind]), [look]);
   const show = useRef({ clock: 0, step: 0, nextAt: 0, seen: -1, action: undefined as ActorAction | undefined });
 
