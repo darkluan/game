@@ -12,7 +12,6 @@ export const EN: Record<string, string> = {
   'Lấy từ': 'From',
   ', giấy phép': ', licensed',
   '. Icon được tô lại màu, hình vẽ giữ nguyên.': '. The icons are recoloured; the drawings are unchanged.',
-  'Model 3D': '3D models',
   'Âm thanh': 'Sound',
   'Tiếng vũ khí, va chạm, lửa, đá và tiền xu: các gói CC0 của': 'Weapons, impacts, fire, stone and coins: CC0 packs by',
   và: 'and',
@@ -245,10 +244,9 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
-  'Lính, trụ, đền, nhà cửa, núi, cây và đá: bộ KayKit của':
-    'Minions, towers, shrines, houses, mountains, trees and rocks: the KayKit set by',
-  ', phát hành theo CC0. Mười sáu tướng không dùng model có sẵn: tất cả được dựng bằng code cho riêng game này.':
-    ', released under CC0. The sixteen heroes use no ready-made models: all are built in code for this game.',
+  'Hình 3D': '3D art',
+  'Tướng, lính, quái rừng, trụ, đền và toàn bộ cảnh vật đều được dựng bằng code cho riêng game này, không dùng model có sẵn.':
+    'Heroes, minions, wild creatures, towers, shrines and all the scenery are built in code for this game; no ready-made models are used.',
   'Kỹ năng': 'Abilities',
   'Quyền riêng tư': 'Privacy',
   'Về trang chính': 'Back to the home screen',
@@ -345,7 +343,7 @@ export const EN: Record<string, string> = {
   'Chiến thắng': 'Victory',
   'Thất bại': 'Defeat',
   'Thời gian trận: {time}': 'Match time: {time}',
-  'Bản đồ nhỏ. Bấm để di chuyển tới đó.': 'Minimap. Click to move there.',
+  'Bản đồ nhỏ. Bấm để di chuyển tới đó, giữ để nhìn tới đó.': 'Minimap. Press to walk there, hold to look there.',
 
   // Match: hero stats and ability details
   'Tấn công': 'Attack',

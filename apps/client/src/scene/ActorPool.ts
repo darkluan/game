@@ -1,7 +1,14 @@
 import { Group } from 'three';
 import type { Vec2 } from '@game/core';
 import type { GameSession, ViewEntity } from '@/lib/session';
-import type { Actor } from './Actor';
+import type { ActorAction } from '@/lib/session';
+
+/** What the pool keeps: anything that stands in the scene, can be told what its unit is doing, and can be handed on to another. */
+interface Actor {
+  readonly root: Group;
+  reset(): void;
+  update(delta: number, clock: number, state: { dead: boolean; moving: boolean; action?: ActorAction }): void;
+}
 
 const CORPSE_SECONDS = 1;
 
@@ -13,7 +20,7 @@ interface Slot {
 }
 
 /**
- * Animated models for units that come and go (minions, monsters). Actors are pooled: when a unit
+ * Animated bodies for units that come and go (minions, monsters). Actors are pooled: when a unit
  * disappears its actor plays the death clip, then waits here for the next unit of the same look.
  */
 export class ActorPool<T extends ViewEntity> {

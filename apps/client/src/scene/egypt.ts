@@ -40,8 +40,8 @@ type Triple = [number, number, number];
 const UP = Math.PI / 2;
 const holder = new Object3D();
 
-/** One painted piece of a prop: a shape, moved into place and given a colour on every vertex. */
-function piece(
+/** One painted piece of a prop or a creature: a shape, moved into place and given a colour on every vertex. */
+export function piece(
   geometry: BufferGeometry,
   color: string,
   position: Triple = [0, 0, 0],
@@ -63,7 +63,7 @@ function piece(
 }
 
 /** All the pieces of a prop as one mesh. */
-function prop(pieces: BufferGeometry[]): BufferGeometry {
+export function prop(pieces: BufferGeometry[]): BufferGeometry {
   const merged = mergeGeometries(pieces, false);
   merged.computeVertexNormals();
   merged.computeBoundingSphere();

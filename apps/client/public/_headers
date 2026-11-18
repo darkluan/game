@@ -1,18 +1,4 @@
 # Read by Cloudflare Pages.
-#
-# Cloudflare compresses a file in transit only when its content type is on its list, and the 3D model
-# types are not. WebAssembly and JSON are, so the binary model files are labelled as WebAssembly and
-# the JSON ones as JSON: they then travel at less than half their size. The game reads them as raw
-# bytes, so the label changes nothing else.
-/models/*.glb
-  Content-Type: application/wasm
-  Cache-Control: public, max-age=86400
-/models/*.bin
-  Content-Type: application/wasm
-  Cache-Control: public, max-age=86400
-/models/*.gltf
-  Content-Type: application/json
-  Cache-Control: public, max-age=86400
 /sounds/*
   Cache-Control: public, max-age=86400
 /portraits/*

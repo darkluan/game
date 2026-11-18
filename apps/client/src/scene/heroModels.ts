@@ -1,8 +1,15 @@
-import type { ActorOptions, Rig } from './Actor';
 import { HYDRA_ACTIONS, type HydraColours } from './Hydra';
 import { LONG_DRAGON_ACTIONS, type LongDragonColours } from './LongDragon';
 import { MECH_ACTIONS, type MechColours } from './Mech';
 import { SWORDSMAN_ACTIONS, type SwordsmanColours } from './Swordsman';
+
+/** How long each of a hero's actions plays, by its name. The other fields are left from the days of model files. */
+export interface Rig {
+  idle: string;
+  run: string;
+  death: string;
+  actions: Record<string, { clip: string; seconds: number }>;
+}
 
 export interface HeroLook {
   model: string;
@@ -35,12 +42,6 @@ export interface HeroLook {
 export interface HeroModel extends HeroLook {
   /** Dragons: the look after each evolution, replacing the base look. */
   stages?: HeroLook[];
-}
-
-/** The options an Actor needs to draw a hero look. */
-export function actorOptions(look: HeroLook, castShadow: boolean): ActorOptions {
-  const { scale, height, turn, hide, tint, palette, brightness } = look;
-  return { scale, height, turn, hide, tint, palette, brightness, castShadow };
 }
 
 /**
