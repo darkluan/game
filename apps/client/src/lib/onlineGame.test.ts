@@ -17,6 +17,7 @@ function setup() {
   const welcome: MatchWelcome = {
     heroId: me.id,
     code: 'ABCDE',
+    mode: 'private',
     roster: [
       { heroId: me.id, heroDefId: 'kael', nickname: 'Lan', isBot: false, team: 0 },
       { heroId: sim.heroOf('foe')!.id, heroDefId: 'kael', nickname: 'Bot', isBot: true, team: 1 },

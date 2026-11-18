@@ -41,6 +41,9 @@ function Menu() {
           >
             {creating ? 'Đang tạo phòng…' : 'Tạo phòng'}
           </button>
+          <button type="button" onClick={() => void navigate('/q')} className="btn btn-ghost cut-corners text-sm">
+            Tìm trận xếp hạng
+          </button>
           <button type="button" onClick={startOffline} className="btn btn-ghost cut-corners text-sm">
             Chơi thử với máy
           </button>

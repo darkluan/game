@@ -35,3 +35,13 @@ export async function ensureGuest(renew = false): Promise<Guest> {
   }
   return cached;
 }
+
+/** Become another account on this device, after signing in with Google. */
+export function replaceGuest(guest: Guest): void {
+  cached = guest;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(guest));
+  } catch {
+    // Storage blocked: the sign-in lasts for this visit only.
+  }
+}

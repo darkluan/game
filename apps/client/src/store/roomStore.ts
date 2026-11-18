@@ -1,10 +1,10 @@
 import type { Room } from '@colyseus/sdk';
-import type { LobbyState, MatchWelcome, Snapshot, Team } from '@game/core';
+import type { LobbyState, Team } from '@game/core';
 import { create } from 'zustand';
 import { playCue } from '@/lib/audio';
-import { OnlineGame } from '@/lib/onlineGame';
 import { CLOSE_REPLACED, colyseus } from '@/net/colyseus';
 import { ensureGuest } from '@/net/guest';
+import { openMatch } from '@/net/match';
 import { useGameStore } from './gameStore';
 
 type Phase = 'idle' | 'connecting' | 'lobby' | 'match' | 'error';
@@ -92,17 +92,7 @@ export const useRoomStore = create<RoomStore>((set, get) => {
     if (enteringMatch || matchRoom) return;
     enteringMatch = true;
     try {
-      const room = await colyseus.joinById(matchRoomId, { token });
-      const game = await new Promise<OnlineGame>((resolve) => {
-        let pending: OnlineGame | null = null;
-        room.onMessage('welcome', (welcome: MatchWelcome) => {
-          pending = new OnlineGame(room, welcome, playCue);
-        });
-        room.onMessage('s', (snapshot: Snapshot) => {
-          pending?.receive(snapshot);
-          if (pending?.ready) resolve(pending);
-        });
-      });
+      const { room, game } = await openMatch(matchRoomId, token);
       matchRoom = room;
       room.onLeave((code) => {
         if (matchRoom !== room) return; // we left on purpose
