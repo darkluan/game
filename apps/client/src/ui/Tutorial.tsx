@@ -27,7 +27,7 @@ const STEPS: Step[] = [
   {
     title: tr('Học chiêu'),
     desktop: tr('Bạn có 1 điểm kỹ năng. Bấm dấu + phía trên một chiêu, hoặc Alt + Q, để học.'),
-    touch: tr('Bạn có 1 điểm kỹ năng. Bấm dấu + cạnh một nút chiêu để học.'),
+    touch: tr('Bạn có 1 điểm kỹ năng. Bấm dấu + cạnh một nút chiêu để học; giữ dấu + để xem chiêu đó làm gì trước.'),
     done: (hud) => hud.abilities.some((a) => a.level > 0),
   },
   {
@@ -49,11 +49,29 @@ const STEPS: Step[] = [
     done: (hud) => hud.level >= 2,
   },
   {
+    title: tr('Phép hỗ trợ'),
+    desktop: tr(
+      'D hồi máu cho bạn, F lướt nhanh một đoạn về phía con trỏ để đuổi hoặc chạy. T đưa bạn về căn cứ sau 5 giây đứng yên; bị đánh là hỏng.',
+    ),
+    touch: tr(
+      'Nút trái tim hồi máu cho bạn, nút người chạy lướt nhanh một đoạn để đuổi hoặc chạy. Nút vòng xoáy đưa bạn về căn cứ sau 5 giây đứng yên; bị đánh là hỏng.',
+    ),
+  },
+  {
     title: tr('Mua đồ'),
     desktop: tr(
-      'Khi có vàng, về suối ở cuối đường phe mình rồi bấm B để mở cửa hàng. Đứng ở suối cũng hồi máu rất nhanh.',
+      'Khi có vàng, về ốc đảo ở cuối đường phe mình rồi bấm B để mở cửa hàng: thẻ Gợi ý xếp sẵn đồ hợp với tướng của bạn. Đứng ở ốc đảo cũng hồi máu rất nhanh.',
     ),
-    touch: tr('Khi có vàng, về suối ở cuối đường phe mình rồi bấm Cửa hàng. Đứng ở suối cũng hồi máu rất nhanh.'),
+    touch: tr(
+      'Khi có vàng, về ốc đảo ở cuối đường phe mình rồi bấm Cửa hàng: thẻ Gợi ý xếp sẵn đồ hợp với tướng của bạn. Đứng ở ốc đảo cũng hồi máu rất nhanh.',
+    ),
+  },
+  {
+    title: tr('Bản đồ nhỏ'),
+    desktop: tr('Bấm vào bản đồ nhỏ để tướng đi tới đó. Giữ chuột trên bản đồ để nhìn nơi đó, thả ra là về lại tướng.'),
+    touch: tr(
+      'Chạm vào bản đồ nhỏ để tướng đi tới đó. Giữ ngón tay trên bản đồ để nhìn nơi đó, thả ra là về lại tướng.',
+    ),
   },
   {
     title: tr('Mục tiêu'),

@@ -19,6 +19,7 @@ function Menu() {
   const nickname = useSettingsStore((s) => s.nickname);
   const heroId = useSettingsStore((s) => s.heroId);
   const setHeroId = useSettingsStore((s) => s.setHeroId);
+  const tutorialDone = useSettingsStore((s) => s.tutorialDone);
   const [creating, setCreating] = useState(false);
   useLobbyMusic();
 
@@ -47,8 +48,14 @@ function Menu() {
           <button type="button" onClick={() => void navigate('/q')} className="btn btn-ghost cut-corners text-sm">
             {tr('Tìm trận')}
           </button>
-          <button type="button" onClick={startOffline} className="btn btn-ghost cut-corners text-sm">
-            {tr('Chơi thử với máy')}
+          <button type="button" onClick={startOffline} className="btn btn-ghost cut-corners flex-col gap-0.5! text-sm">
+            <span className="block">{tr('Chơi thử với máy')}</span>
+            {/* The match against bots is the one that teaches the game: point a newcomer to it. */}
+            {!tutorialDone && (
+              <span className="block text-[10px] leading-tight font-semibold tracking-normal text-primary normal-case">
+                {tr('Người mới bắt đầu ở đây')}
+              </span>
+            )}
           </button>
           <InstallButton />
           {roomError && (

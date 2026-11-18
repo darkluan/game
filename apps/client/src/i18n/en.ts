@@ -244,6 +244,17 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  'Phép hỗ trợ': 'Helper spells',
+  'D hồi máu cho bạn, F lướt nhanh một đoạn về phía con trỏ để đuổi hoặc chạy. T đưa bạn về căn cứ sau 5 giây đứng yên; bị đánh là hỏng.':
+    'D heals you; F dashes a short way toward the pointer, to chase or to escape. T takes you back to base after 5 seconds standing still; taking a hit breaks it.',
+  'Nút trái tim hồi máu cho bạn, nút người chạy lướt nhanh một đoạn để đuổi hoặc chạy. Nút vòng xoáy đưa bạn về căn cứ sau 5 giây đứng yên; bị đánh là hỏng.':
+    'The heart button heals you; the runner button dashes a short way, to chase or to escape. The swirl button takes you back to base after 5 seconds standing still; taking a hit breaks it.',
+  'Bản đồ nhỏ': 'The minimap',
+  'Bấm vào bản đồ nhỏ để tướng đi tới đó. Giữ chuột trên bản đồ để nhìn nơi đó, thả ra là về lại tướng.':
+    'Click the minimap to send your hero there. Hold the mouse on it to look at that place; let go to return to your hero.',
+  'Chạm vào bản đồ nhỏ để tướng đi tới đó. Giữ ngón tay trên bản đồ để nhìn nơi đó, thả ra là về lại tướng.':
+    'Tap the minimap to send your hero there. Hold a finger on it to look at that place; let go to return to your hero.',
+  'Người mới bắt đầu ở đây': 'New? Start here',
   'Hình 3D': '3D art',
   'Tướng, lính, quái rừng, trụ, đền và toàn bộ cảnh vật đều được dựng bằng code cho riêng game này, không dùng model có sẵn.':
     'Heroes, minions, wild creatures, towers, shrines and all the scenery are built in code for this game; no ready-made models are used.',
@@ -436,8 +447,8 @@ export const EN: Record<string, string> = {
   'Học chiêu': 'Learn an ability',
   'Bạn có 1 điểm kỹ năng. Bấm dấu + phía trên một chiêu, hoặc Alt + Q, để học.':
     'You have 1 skill point. Click the + above an ability, or press Alt + Q, to learn it.',
-  'Bạn có 1 điểm kỹ năng. Bấm dấu + cạnh một nút chiêu để học.':
-    'You have 1 skill point. Tap the + next to an ability button to learn it.',
+  'Bạn có 1 điểm kỹ năng. Bấm dấu + cạnh một nút chiêu để học; giữ dấu + để xem chiêu đó làm gì trước.':
+    'You have 1 skill point. Tap the + next to an ability button to learn it; hold the + to see what it does first.',
   'Dùng chiêu': 'Cast an ability',
   'Đưa chuột về hướng muốn đánh rồi bấm phím của chiêu (Q W E R). Chiêu nhắm vào một kẻ địch cần có địch trong tầm.':
     'Point the mouse where you want to hit and press the ability key (Q W E R). An ability aimed at one enemy needs an enemy in range.',
@@ -448,10 +459,10 @@ export const EN: Record<string, string> = {
   'Đi cùng lính ra giữa đường và bấm nút kiếm để đánh kẻ địch gần nhất. Hạ lính ở đòn cuối sẽ được vàng. Lên cấp 2 để tiếp tục.':
     'Follow your minions to the middle of the lane and tap the swords button to attack the nearest enemy. Landing the last hit on a minion gives gold. Reach level 2 to continue.',
   'Mua đồ': 'Buy items',
-  'Khi có vàng, về suối ở cuối đường phe mình rồi bấm B để mở cửa hàng. Đứng ở suối cũng hồi máu rất nhanh.':
-    'When you have gold, return to the fountain at your end of the lane and press B to open the shop. Standing at the fountain also heals you fast.',
-  'Khi có vàng, về suối ở cuối đường phe mình rồi bấm Cửa hàng. Đứng ở suối cũng hồi máu rất nhanh.':
-    'When you have gold, return to the fountain at your end of the lane and tap Shop. Standing at the fountain also heals you fast.',
+  'Khi có vàng, về ốc đảo ở cuối đường phe mình rồi bấm B để mở cửa hàng: thẻ Gợi ý xếp sẵn đồ hợp với tướng của bạn. Đứng ở ốc đảo cũng hồi máu rất nhanh.':
+    'When you have gold, return to the oasis at your end of the lane and press B to open the shop: the Recommended tab lists items that suit your hero. Standing at the oasis also heals you fast.',
+  'Khi có vàng, về ốc đảo ở cuối đường phe mình rồi bấm Cửa hàng: thẻ Gợi ý xếp sẵn đồ hợp với tướng của bạn. Đứng ở ốc đảo cũng hồi máu rất nhanh.':
+    'When you have gold, return to the oasis at your end of the lane and tap Shop: the Recommended tab lists items that suit your hero. Standing at the oasis also heals you fast.',
   'Mục tiêu': 'The goal',
   'Phá hai trụ rồi phá đền của địch để thắng. Di vật ở rừng dưới và Cổ thú ở rừng trên giúp đội bạn mạnh hơn.':
     'Destroy the two towers, then the enemy shrine, to win. The relics in the lower jungle and the Ancient Beast in the upper jungle make your team stronger.',
