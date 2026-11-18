@@ -44,7 +44,7 @@ export const config = {
     rangeStep: intEnv('MATCH_RANGE_STEP', 50),
     rangeStepSeconds: intEnv('MATCH_RANGE_STEP_SECONDS', 10),
     /** After waiting this long, empty seats are filled with bots. */
-    botFillSeconds: intEnv('MATCH_BOT_FILL_SECONDS', 45),
+    botFillSeconds: intEnv('MATCH_BOT_FILL_SECONDS', 30),
     acceptSeconds: intEnv('MATCH_ACCEPT_SECONDS', 15),
     draftSeconds: intEnv('MATCH_DRAFT_SECONDS', 30),
   },
