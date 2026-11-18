@@ -14,6 +14,8 @@ import { type Placement, Props } from './Terrain';
 
 const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
 const EMBLEM_Y = 11;
+const EMBLEM_SIZE = 0.8;
+const EMBLEM_BACK = -3.5;
 const CAMERA_DISTANCE = 36;
 /** On wide screens the menu sits on the left, so the scene is framed to the right of centre. */
 const WIDE_ASPECT = 1.25;
@@ -52,7 +54,8 @@ function Emblem() {
   });
 
   return (
-    <group ref={star} position={[0, EMBLEM_Y, 0]}>
+    // A little smaller and set back behind the hero on show, so it frames the hero instead of crowding it.
+    <group ref={star} position={[0, EMBLEM_Y, EMBLEM_BACK]} scale={EMBLEM_SIZE}>
       {ARMS.map((arm) => (
         <group key={arm.color} rotation={[0, 0, arm.turn]}>
           {/* A four-sided cone squashed flat: a blade with a ridge down the middle. */}
@@ -61,7 +64,8 @@ function Emblem() {
             <meshStandardMaterial
               color={arm.color}
               emissive={arm.color}
-              emissiveIntensity={0.4}
+              // Lit just enough to hold its colour: any brighter and the glow pass turns it into a glare.
+              emissiveIntensity={0.16}
               roughness={0.3}
               metalness={0.25}
               flatShading
@@ -71,21 +75,27 @@ function Emblem() {
       ))}
       <mesh scale={[1, 1, 0.6]}>
         <octahedronGeometry args={[1.5]} />
-        <meshStandardMaterial color={COLORS.neutral} emissive={COLORS.neutral} emissiveIntensity={1.1} flatShading />
+        <meshStandardMaterial color={COLORS.neutral} emissive={COLORS.neutral} emissiveIntensity={0.3} flatShading />
       </mesh>
+      {/* Two rings in the emblem's own plane, each a pair of matching arcs facing one another, turning
+          opposite ways: whichever way they have turned, the figure stays even on both sides. */}
       <group ref={ringA}>
-        <mesh>
-          <torusGeometry args={[7.4, 0.05, 8, 96, Math.PI * 1.6]} />
-          <meshBasicMaterial color={COLORS.god} />
-        </mesh>
+        {[0, Math.PI].map((turn) => (
+          <mesh key={turn} rotation={[0, 0, turn]}>
+            <torusGeometry args={[7.4, 0.05, 8, 64, Math.PI * 0.78]} />
+            <meshBasicMaterial color={COLORS.god} />
+          </mesh>
+        ))}
       </group>
-      <group ref={ringB} rotation={[0.5, 0.3, 0]}>
-        <mesh>
-          <torusGeometry args={[8.6, 0.035, 8, 96, Math.PI * 1.2]} />
-          <meshBasicMaterial color={COLORS.steel} transparent opacity={0.6} />
-        </mesh>
+      <group ref={ringB}>
+        {[Math.PI / 2, -Math.PI / 2].map((turn) => (
+          <mesh key={turn} rotation={[0, 0, turn]}>
+            <torusGeometry args={[8.6, 0.035, 8, 64, Math.PI * 0.55]} />
+            <meshBasicMaterial color={COLORS.steel} transparent opacity={0.6} />
+          </mesh>
+        ))}
       </group>
-      <pointLight color={COLORS.self} intensity={260} distance={60} />
+      <pointLight color={COLORS.self} intensity={110} distance={60} />
     </group>
   );
 }
@@ -93,7 +103,8 @@ function Emblem() {
 /** A soft column of light under the emblem and the glowing circle it stands on. */
 function Beacon() {
   return (
-    <group>
+    // Under the emblem, wherever that stands, so the shaft of light rises to it.
+    <group position={[0, 0, EMBLEM_BACK]}>
       <mesh position={[0, EMBLEM_Y / 2, 0]}>
         <cylinderGeometry args={[0.5, 2.6, EMBLEM_Y, 32, 1, true]} />
         <meshBasicMaterial
@@ -245,7 +256,7 @@ function Bloom() {
   const composer = useMemo(() => {
     const made = new EffectComposer(gl);
     made.addPass(new RenderPass(scene, camera));
-    made.addPass(new UnrealBloomPass(new Vector2(1, 1), 0.6, 0.7, 0.72));
+    made.addPass(new UnrealBloomPass(new Vector2(1, 1), 0.42, 0.6, 0.8));
     made.addPass(new OutputPass());
     return made;
   }, [gl, scene, camera]);
