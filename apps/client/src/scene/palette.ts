@@ -3,10 +3,12 @@ import { HEROES } from '@game/core';
 /** Canvas colours. three.js cannot read CSS variables, so the team colours mirror the tokens in index.css. */
 export const COLORS = {
   sky: '#0b1016',
-  outside: '#16211a',
-  ground: '#2f4a34',
-  lane: '#75654a',
-  wall: '#565c66',
+  // Egypt: sand under everything, a lane paved in pale limestone, walls of quarried sandstone.
+  outside: '#9a7a4a',
+  ground: '#b08f5c',
+  lane: '#d6c193',
+  kerb: '#8a6c44',
+  wall: '#a8875a',
   ally: '#4aa3ff',
   enemy: '#ff5a4a',
   self: '#ffd166',
@@ -22,7 +24,7 @@ export const COLORS = {
   machine: '#3fbf5f',
   heal: '#7be08f',
   monster: '#b79a5a',
-  bush: '#2c6b35',
+  bush: '#5f8f3a',
   burn: '#ff7a1a',
   blind: '#2a1140',
   stone: '#8b8f96',

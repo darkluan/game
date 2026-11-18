@@ -8,7 +8,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { Rng } from '@game/core';
 import type { Graphics } from '@/store/settingsStore';
 import { HeroShowcase } from './HeroShowcase';
-import { MODELS, useModel } from './models';
+import { buildProps, propMaterial, shrineGeometry } from './egypt';
 import { COLORS, heroColor } from './palette';
 import { type Placement, Props } from './Terrain';
 
@@ -128,18 +128,27 @@ function Beacon() {
   );
 }
 
-function Castle({ model, x, turn }: { model: string; x: number; turn: number }) {
-  const gltf = useModel(model);
-  const clone = useMemo(() => gltf.scene.clone(), [gltf]);
-  return <primitive object={clone} position={[x, 0, -13]} scale={5.2} rotation={[0, turn, 0]} />;
+/** One side's shrine: the stepped pyramid of the match, with its light burning on top. */
+function Pyramid({ color, x, turn }: { color: string; x: number; turn: number }) {
+  const geometry = useMemo(() => shrineGeometry(color), [color]);
+  const material = useMemo(() => propMaterial(), []);
+  return (
+    <group position={[x, 0, -13]} scale={1.9} rotation={[0, turn, 0]}>
+      <mesh geometry={geometry} material={material} />
+      <mesh position={[0, 5.4, 0]}>
+        <octahedronGeometry args={[0.7]} />
+        <meshStandardMaterial color="#ffffff" emissive={color} emissiveIntensity={1.2} flatShading />
+      </mesh>
+    </group>
+  );
 }
 
-/** The two bases flanking the path, each lit in its team colour. */
+/** The two bases flanking the path, each in its team colour. */
 function Bases() {
   return (
     <>
-      <Castle model={MODELS.shrineAlly} x={-13} turn={Math.PI / 5} />
-      <Castle model={MODELS.shrineEnemy} x={13} turn={-Math.PI / 5} />
+      <Pyramid color={COLORS.ally} x={-13} turn={Math.PI / 5} />
+      <Pyramid color={COLORS.enemy} x={13} turn={-Math.PI / 5} />
     </>
   );
 }
@@ -151,7 +160,7 @@ function Forest() {
     const treesA: Placement[] = [];
     const treesB: Placement[] = [];
     const rocks: Placement[] = [];
-    for (let i = 0; i < 260; i++) {
+    for (let i = 0; i < 150; i++) {
       const x = rng.range(-70, 70);
       const z = rng.range(-75, -4);
       // Keep the path and the two bases clear.
@@ -162,11 +171,13 @@ function Forest() {
     }
     return { treesA, treesB, rocks };
   }, []);
+  const props = useMemo(() => buildProps(), []);
+  const material = useMemo(() => propMaterial(), []);
   return (
     <>
-      <Props model={MODELS.treeA} items={treesA} castShadow={false} />
-      <Props model={MODELS.treeB} items={treesB} castShadow={false} />
-      <Props model={MODELS.rock} items={rocks} castShadow={false} />
+      <Props geometry={props.treeA} material={material} items={treesA} castShadow={false} />
+      <Props geometry={props.treeB} material={material} items={treesB} castShadow={false} />
+      <Props geometry={props.mountainBGrassTrees} material={material} items={rocks} castShadow={false} />
     </>
   );
 }

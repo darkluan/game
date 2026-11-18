@@ -5,8 +5,8 @@ import type { MapDef } from '@game/core';
 import { COLORS } from './palette';
 
 const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
-const STONE = '#7d838c';
-const STONE_DARK = '#5a606a';
+const STONE = '#dcc797';
+const STONE_DARK = '#a8875a';
 /** Matches HERO.fountainRadius: the paved circle is exactly where standing heals. */
 const FOUNTAIN_RADIUS = 6;
 const RUNES = 6;
@@ -125,7 +125,7 @@ export function Bases({ map, playerTeam, lit }: { map: MapDef; playerTeam: numbe
           <group key={team}>
             <mesh rotation={FLAT} position={[centre, 0.02, 0]} receiveShadow>
               <planeGeometry args={[width, 15]} />
-              <meshStandardMaterial color="#666c76" />
+              <meshStandardMaterial color="#c9b283" />
             </mesh>
             {[-7.5, 7.5].map((edge) => (
               <mesh key={edge} position={[centre, 0.1, edge]} receiveShadow>

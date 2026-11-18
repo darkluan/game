@@ -1,8 +1,8 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
-import { type InstancedMesh, Object3D } from 'three';
+import { type BufferGeometry, type InstancedMesh, type Material, Object3D } from 'three';
 import { type MapDef, Rng } from '@game/core';
 import { Bases } from './Base';
-import { firstMesh, MODELS, setShadows, useModel } from './models';
+import { buildProps, propMaterial } from './egypt';
 import { COLORS } from './palette';
 
 const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
@@ -14,10 +14,18 @@ export interface Placement {
   turn: number;
 }
 
-/** Many copies of one prop model in a single draw call. */
-export function Props({ model, items, castShadow }: { model: string; items: Placement[]; castShadow: boolean }) {
-  const gltf = useModel(model);
-  const source = useMemo(() => firstMesh(gltf.scene), [gltf]);
+/** Many copies of one prop in a single draw call. */
+export function Props({
+  geometry,
+  material,
+  items,
+  castShadow,
+}: {
+  geometry: BufferGeometry;
+  material: Material;
+  items: Placement[];
+  castShadow: boolean;
+}) {
   const ref = useRef<InstancedMesh>(null);
 
   useLayoutEffect(() => {
@@ -35,17 +43,12 @@ export function Props({ model, items, castShadow }: { model: string; items: Plac
     mesh.computeBoundingSphere();
   }, [items]);
 
-  return (
-    <instancedMesh
-      ref={ref}
-      args={[source.geometry, source.material, items.length]}
-      castShadow={castShadow}
-      receiveShadow
-    />
-  );
+  return <instancedMesh ref={ref} args={[geometry, material, items.length]} castShadow={castShadow} receiveShadow />;
 }
 
-type ModelKey = keyof typeof MODELS;
+/** The name of a prop; see buildProps for what each one is. */
+type ModelKey = string;
+
 type Layout = Partial<Record<ModelKey, Placement[]>>;
 
 /** How far a tree must stay from anything built, so nothing grows through a roof. */
@@ -68,7 +71,7 @@ function layoutScenery(map: MapDef, playerTeam: number): Layout {
   const far = -map.halfDepth;
   const near = map.halfDepth;
 
-  // Rocks heaped over every wall.
+  // Blocks of sandstone heaped over every wall.
   for (const o of map.obstacles) {
     const count = Math.round((o.w * o.d) / 2.2);
     for (let i = 0; i < count; i++) {
@@ -83,7 +86,7 @@ function layoutScenery(map: MapDef, playerTeam: number): Layout {
     }
   }
 
-  // A mountain range along the far side, with wooded hills at its feet.
+  // Pyramids and great dunes along the far side, with lower dunes, palms and ruins at their feet.
   const peaks: ModelKey[] = ['mountainAGrassTrees', 'mountainBGrassTrees', 'mountainCGrass'];
   for (let x = -map.halfWidth - 24, i = 0; x <= map.halfWidth + 24; x += 15, i++)
     put(peaks[i % 3], x + rng.range(-2, 2), far - 22 + rng.range(-3, 3), rng.range(9, 12), rng.range(0, Math.PI * 2));
@@ -98,7 +101,7 @@ function layoutScenery(map: MapDef, playerTeam: number): Layout {
     // Buildings face the field.
     const facing = side < 0 ? Math.PI / 2 : -Math.PI / 2;
 
-    // A village on the far side, behind a stone fence.
+    // A village of mud-brick houses on the far side, behind a low wall, an obelisk standing over it.
     put(ally ? 'homeAAlly' : 'homeAEnemy', at(53), far - 5.5, 5, 0);
     put(ally ? 'homeBAlly' : 'homeBEnemy', at(45.5), far - 7.5, 5, 0.3 * side);
     put(ally ? 'homeAAlly' : 'homeAEnemy', at(48), far - 13, 5, -0.4 * side);
@@ -108,7 +111,7 @@ function layoutScenery(map: MapDef, playerTeam: number): Layout {
     put('barrel', at(41.5), far - 4, 5);
     put('crateABig', at(42.8), far - 4.4, 5, 0.5);
 
-    // The army's camp behind the base.
+    // The temple and the army's camp behind the base.
     put(ally ? 'barracksAlly' : 'barracksEnemy', at(map.halfWidth + 10), -12, 5, facing);
     // The one on the near side stands farther back and smaller, clear of the view of the fountain.
     put(ally ? 'barracksAlly' : 'barracksEnemy', at(map.halfWidth + 15), 13, 4, facing);
@@ -141,9 +144,9 @@ function layoutScenery(map: MapDef, playerTeam: number): Layout {
     for (let i = 0; i < 4; i++) put('fenceStoneStraight', at(40 + i * 4.7), near + 3.2, 4, Math.PI / 2, false);
   }
 
-  // Forest wherever nothing else stands.
+  // Palms wherever nothing else stands: thick near the water at the two bases, thin out in the sand.
   const margin = 20;
-  for (let i = 0; i < 520; i++) {
+  for (let i = 0; i < 300; i++) {
     const x = rng.range(-map.halfWidth - margin, map.halfWidth + margin);
     const z = rng.range(-map.halfDepth - margin, map.halfDepth + 12);
     if (Math.abs(x) < map.halfWidth + 1.5 && Math.abs(z) < map.halfDepth + 2.5) continue;
@@ -152,7 +155,7 @@ function layoutScenery(map: MapDef, playerTeam: number): Layout {
     const scale = z > 0 ? rng.range(3.5, 5) : rng.range(4.5, 7.5);
     put(i % 2 === 0 ? 'treeA' : 'treeB', x, z, scale, rng.range(0, Math.PI * 2), false);
   }
-  // Loose stones along the edges of the field.
+  // Loose blocks along the edges of the field.
   for (let i = 0; i < 36; i++) {
     const x = rng.range(-map.halfWidth, map.halfWidth);
     const z = (i % 2 ? far : near) + (i % 2 ? -1 : 1) * rng.range(1, 2.4);
@@ -161,42 +164,47 @@ function layoutScenery(map: MapDef, playerTeam: number): Layout {
   return layout;
 }
 
-/** Models made of several parts, which cannot be drawn as one instanced mesh. */
-const MULTI_PART = new Set<ModelKey>(['windmillAlly', 'windmillEnemy']);
 /** Small or flat things are not worth a place in the shadow map. */
-const NO_SHADOW = new Set<ModelKey>(['treeA', 'treeB', 'rockSingleA', 'rockSingleB']);
+const NO_SHADOW = new Set<ModelKey>(['rockSingleA', 'rockSingleB', 'barrel', 'crateABig', 'hillsC']);
 
-/** A few copies of a model made of several parts. */
-function Decor({ model, items }: { model: string; items: Placement[] }) {
-  const gltf = useModel(model);
-  const copies = useMemo(
-    () =>
-      items.map((item) => {
-        const copy = gltf.scene.clone();
-        copy.position.set(item.x, 0, item.z);
-        copy.rotation.y = item.turn;
-        copy.scale.setScalar(item.scale);
-        setShadows(copy, true, true);
-        return copy;
-      }),
-    [gltf, items],
+/** Papyrus standing in every thicket. */
+function reedBeds(map: MapDef): Placement[] {
+  const rng = new Rng(777);
+  return map.bushes.flatMap((b) =>
+    Array.from({ length: Math.round(b.w * b.d * 1.6) }, () => ({
+      x: b.x + rng.range(-b.w / 2 + 0.2, b.w / 2 - 0.2),
+      z: b.z + rng.range(-b.d / 2 + 0.2, b.d / 2 - 0.2),
+      scale: rng.range(0.9, 1.5),
+      turn: rng.range(0, Math.PI * 2),
+    })),
   );
-  return copies.map((copy, i) => <primitive key={i} object={copy} />);
 }
 
-/** The decorative models around the battlefield. */
+/** The decorative props around the battlefield, and the reeds in its thickets. */
 function Scenery({ map, playerTeam }: { map: MapDef; playerTeam: number }) {
   const layout = useMemo(() => layoutScenery(map, playerTeam), [map, playerTeam]);
-  return (Object.keys(layout) as ModelKey[]).map((key) =>
-    MULTI_PART.has(key) ? (
-      <Decor key={key} model={MODELS[key]} items={layout[key]!} />
-    ) : (
-      <Props key={key} model={MODELS[key]} items={layout[key]!} castShadow={!NO_SHADOW.has(key)} />
-    ),
+  const reeds = useMemo(() => reedBeds(map), [map]);
+  const props = useMemo(() => buildProps(), []);
+  const material = useMemo(() => propMaterial(), []);
+  return (
+    <>
+      {Object.keys(layout).map((key) =>
+        props[key] ? (
+          <Props
+            key={key}
+            geometry={props[key]}
+            material={material}
+            items={layout[key]!}
+            castShadow={!NO_SHADOW.has(key)}
+          />
+        ) : null,
+      )}
+      <Props geometry={props.reed} material={material} items={reeds} castShadow={false} />
+    </>
   );
 }
 
-/** Static map: ground, the lane, the bases and walls. `detailed` adds the decorative models. */
+/** Static map: sand, the paved lane, the bases and walls. `detailed` adds the decorative props. */
 export function Terrain({ map, playerTeam, detailed }: { map: MapDef; playerTeam: number; detailed: boolean }) {
   const laneLength = map.shrines[1].x - map.shrines[0].x + 16;
   return (
@@ -217,7 +225,7 @@ export function Terrain({ map, playerTeam, detailed }: { map: MapDef; playerTeam
       {[-6.2, 6.2].map((z) => (
         <mesh key={z} position={[0, 0.06, z]} receiveShadow>
           <boxGeometry args={[laneLength, 0.12, 0.45]} />
-          <meshStandardMaterial color="#544a3a" />
+          <meshStandardMaterial color={COLORS.kerb} />
         </mesh>
       ))}
       <Bases map={map} playerTeam={playerTeam} lit={detailed} />
@@ -228,7 +236,7 @@ export function Terrain({ map, playerTeam, detailed }: { map: MapDef; playerTeam
           <meshStandardMaterial color={COLORS.wall} />
         </mesh>
       ))}
-      {/* Tall grass: units inside are hidden from enemies outside. */}
+      {/* Papyrus thickets: units inside are hidden from enemies outside. */}
       {map.bushes.map((b, i) => (
         <mesh key={i} position={[b.x, 0.55, b.z]}>
           <boxGeometry args={[b.w, 1.1, b.d]} />
