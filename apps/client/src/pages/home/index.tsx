@@ -6,6 +6,7 @@ import { useRoomStore } from '@/store/roomStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { GameView } from '@/ui/GameView';
 import { HeroPicker } from '@/ui/HeroPicker';
+import { InstallButton } from '@/ui/InstallButton';
 import { NicknameField } from '@/ui/NicknameField';
 import { useLobbyMusic } from '@/ui/useLobbyMusic';
 
@@ -47,6 +48,7 @@ function Menu() {
           <button type="button" onClick={startOffline} className="btn btn-ghost cut-corners text-sm">
             Chơi thử với máy
           </button>
+          <InstallButton />
           {roomError && (
             <p role="alert" className="text-sm text-danger">
               {roomError}
