@@ -26,5 +26,9 @@ export default tseslint.config(
     files: ['apps/client/public/sw.js'],
     languageOptions: { globals: globals.serviceworker },
   },
+  {
+    files: ['apps/keepalive/**/*.js'],
+    languageOptions: { globals: globals.worker },
+  },
   prettier,
 );

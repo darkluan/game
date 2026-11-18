@@ -1,0 +1,14 @@
+# A tiny scheduled job on Cloudflare (free): it calls the game server every few minutes so that
+# Render's free plan, which puts an idle server to sleep, never finds it idle. Without this the
+# first player after a quiet spell waits about twenty seconds for the server to wake.
+name = "tu-toc-keepalive"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+# It serves no pages of its own.
+workers_dev = false
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+SERVER_URL = "https://tu-toc-server.onrender.com"
