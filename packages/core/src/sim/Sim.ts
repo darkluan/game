@@ -15,6 +15,7 @@ import { heroOrderSystem, separationSystem } from '../systems/movement.js';
 import { modifyDamageTaken } from '../systems/passives.js';
 import { relicSystem, teamRelic } from '../systems/relic.js';
 import { synergyOf, type TeamSynergy } from '../races/index.js';
+import { recallSystem } from '../systems/spell.js';
 import { recomputeStats } from '../systems/stats.js';
 import { summonSystem } from '../systems/summons.js';
 import { towerSystem } from '../systems/tower.js';
@@ -172,6 +173,8 @@ export class Sim {
         skillPoints: 1,
         abilityLevels: { Q: 0, W: 0, E: 0, R: 0 },
         readyAt: { Q: 0, W: 0, E: 0, R: 0 },
+        spellReadyAt: { heal: 0, flash: 0 },
+        recallAt: 0,
         mana: 0,
         maxMana: 0,
         heat: 0,
@@ -245,6 +248,7 @@ export class Sim {
       const hero = this.byPlayer.get(playerId);
       if (hero) applyCommand(this, hero, cmd);
     }
+    recallSystem(this);
     aiSystem(this);
     minionSpawnSystem(this);
     jungleSystem(this);
@@ -387,6 +391,13 @@ export class Sim {
     return this.cannotAct(e) || this.hasStatus(e, 'root') || e.hero?.siege === true;
   }
 
+  /** Breaks off a recall in progress, if there is one. */
+  cancelRecall(e: Entity): void {
+    if (!e.hero || e.hero.recallAt === 0) return;
+    e.hero.recallAt = 0;
+    this.emit({ t: 'recall', id: e.id, phase: 'cancel', x: e.pos.x, z: e.pos.z });
+  }
+
   /** The hero that gets credit for what a summoned thing does. */
   creditOf(source: Entity | null): Entity | null {
     const ownerId = source?.turret?.ownerId;
@@ -423,6 +434,8 @@ export class Sim {
       for (const m of this.q.monsters) if (m.monster.camp === target.monster.camp) m.monster.aggroId ??= credit.id;
     }
     if (amount <= 0) return 0;
+    // Being hit breaks a recall.
+    this.cancelRecall(target);
     target.health.hp -= amount;
     this.emit({ t: 'damage', targetId: target.id, amount, x: target.pos.x, z: target.pos.z });
     if (target.health.hp <= 0) {

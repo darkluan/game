@@ -36,6 +36,11 @@ export function heroOrderSystem(sim: Sim): void {
     if (h.dead || sim.cannotAct(h)) continue;
     const order = h.hero.order;
     const a = h.attacker;
+    // Channelling a recall: stand still and pick no fights.
+    if (h.hero.recallAt > 0) {
+      a.targetId = null;
+      continue;
+    }
     const rooted = sim.cannotMove(h);
 
     if (order.t === 'move') {

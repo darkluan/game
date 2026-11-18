@@ -200,8 +200,19 @@ class BotBrain {
 
     if (hero.botRetreating && hpPct(h) >= BOT.returnAbove) hero.botRetreating = false;
     if (!hero.botRetreating && hpPct(h) < BOT.retreatBelow) hero.botRetreating = true;
+    // The helper heal: when hurt in a fight, not while strolling home with nobody near.
+    if (enemyHero && hpPct(h) < BOT.spellHealBelow) this.issue({ t: 'spell', spell: 'heal' });
     if (hero.botRetreating) {
       const fountain = sim.map.fountains[h.team];
+      // A long way from home with nobody chasing: recall rather than walk. Any order would break it off.
+      if (!enemyHero) {
+        if (hero.recallAt > 0) return;
+        if (dist(h.pos, fountain) > BOT.recallBeyond && this.issue({ t: 'recall' })) return;
+      }
+      // Nearly dead with an enemy on its heels: jump for home.
+      if (enemyHero && hpPct(h) < BOT.spellFlashBelow && dist(h.pos, enemyHero.pos) <= BOT.spellFlashWithin) {
+        this.issue({ t: 'spell', spell: 'flash', x: fountain.x, z: fountain.z });
+      }
       if (enemyHero && dist(h.pos, enemyHero.pos) <= 7) {
         for (const [slot, ability] of this.abilities('escape', 'shield')) {
           this.cast(slot, ability.targeting === 'self' ? undefined : fountain);

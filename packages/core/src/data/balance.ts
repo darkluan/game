@@ -35,6 +35,25 @@ export const TOWER = {
 
 export const SHRINE = { hp: 4500, armor: 40, radius: 2.5 } as const;
 
+/** The helper spells: the same for every hero, free to cast, on long cooldowns. */
+export const SPELLS = {
+  heal: {
+    cooldownTicks: seconds(75),
+    /** Fraction of the hero's own maximum health restored at once. */
+    healFraction: 0.2,
+  },
+  flash: {
+    cooldownTicks: seconds(90),
+    /** How far the hero jumps, walls or not. */
+    range: 6,
+  },
+} as const;
+
+/** Recall: stand still this long, untouched, to be carried back to the fountain. */
+export const RECALL = {
+  channelTicks: seconds(5),
+} as const;
+
 export const HERO = {
   radius: 0.6,
   /** Multiplies every hero's own health (base, per level and dragon form; not items), so fights last longer. */
@@ -122,6 +141,13 @@ export const VISION = {
 export const BOT = {
   thinkTicks: 5,
   retreatBelow: 0.3,
+  /** Bots use the helper heal below this share of health when an enemy hero is in sight. */
+  spellHealBelow: 0.4,
+  /** Bots flash toward home below this share of health with an enemy hero this close. */
+  spellFlashBelow: 0.2,
+  spellFlashWithin: 5,
+  /** A retreating bot recalls instead of walking when home is farther than this and no enemy hero is in sight. */
+  recallBeyond: 28,
   returnAbove: 0.8,
   heroSightRange: 9,
   minionSightRange: 10,

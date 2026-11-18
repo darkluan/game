@@ -2,6 +2,7 @@ import { RELIC, TICK_RATE, xpToNext } from './data/balance.js';
 import type { HeroEntity, Sim } from './sim/Sim.js';
 import type { TeamSynergy } from './races/index.js';
 import { canShop, discountOf } from './systems/shop.js';
+import { spellCooldownLeft } from './systems/spell.js';
 import { abilityPower } from './systems/stats.js';
 import {
   ABILITY_SLOTS,
@@ -10,6 +11,7 @@ import {
   type Faction,
   type RelicType,
   type SimEvent,
+  SPELL_IDS,
   type StatusType,
   type Team,
   type ZoneEffect,
@@ -104,6 +106,10 @@ export interface YouSnap {
   levels: number[];
   /** Ticks until each ability is ready again. */
   cooldowns: number[];
+  /** Ticks until each helper spell is ready again, in SPELL_IDS order. */
+  spells: number[];
+  /** Ticks until the recall in progress completes, 0 when not recalling. */
+  recall: number;
   /** Ticks until respawn, 0 when alive. */
   respawn: number;
   shield: number;
@@ -195,7 +201,10 @@ function eventSubject(event: SimEvent): number | null {
       return event.targetId;
     case 'attack':
       return event.sourceId;
+    case 'recall':
+      return event.id;
     case 'cast':
+    case 'spell':
       return event.casterId;
     default:
       return null;
@@ -246,6 +255,8 @@ export function youSnapshotOf(sim: Sim, h: HeroEntity): YouSnap {
     skillPoints: hero.skillPoints,
     levels: ABILITY_SLOTS.map((slot) => hero.abilityLevels[slot]),
     cooldowns: ABILITY_SLOTS.map((slot) => sim.cooldownLeft(h, slot)),
+    spells: SPELL_IDS.map((spell) => spellCooldownLeft(sim, h, spell)),
+    recall: hero.recallAt > 0 ? Math.max(1, hero.recallAt - sim.tick) : 0,
     respawn: h.dead ? Math.max(0, hero.respawnTick - sim.tick) : 0,
     shield: Math.ceil(sim.statusSum(h, 'shield')),
     items: [...hero.items],

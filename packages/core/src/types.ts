@@ -12,11 +12,17 @@ export interface Vec2 {
   z: number;
 }
 
+/** Helper spells every hero carries besides its own four abilities. */
+export const SPELL_IDS = ['heal', 'flash'] as const;
+export type SpellId = (typeof SPELL_IDS)[number];
+
 export type Command =
   | { t: 'move'; x: number; z: number }
   | { t: 'attack'; targetId: number }
   | { t: 'cast'; slot: AbilitySlot; x?: number; z?: number; targetId?: number }
   | { t: 'stop' }
+  | { t: 'spell'; spell: SpellId; x?: number; z?: number }
+  | { t: 'recall' }
   | { t: 'buy'; itemId: string }
   | { t: 'sell'; slotIndex: number }
   | { t: 'levelUp'; slot: AbilitySlot };
@@ -151,6 +157,10 @@ export interface HeroState {
   abilityLevels: Record<AbilitySlot, number>;
   /** Tick at which each ability is ready again. */
   readyAt: Record<AbilitySlot, number>;
+  /** Tick at which each helper spell is ready again. */
+  spellReadyAt: Record<SpellId, number>;
+  /** Tick at which the recall in progress brings the hero home; 0 when not recalling. */
+  recallAt: number;
   mana: number;
   maxMana: number;
   /** Machines: 0..100. */
@@ -236,6 +246,10 @@ export type SimEvent =
   | { t: 'overload'; id: number }
   | { t: 'gold'; id: number; amount: number; x: number; z: number }
   | { t: 'respawn'; id: number }
+  /** A recall began, finished (the hero is now at its fountain) or was broken off. `x`/`z` is where the hero stood. */
+  | { t: 'recall'; id: number; phase: 'start' | 'done' | 'cancel'; x: number; z: number }
+  /** A helper spell was used. For Flash, `fromX`/`fromZ` is where the hero left and `x`/`z` where it landed. */
+  | { t: 'spell'; casterId: number; spell: SpellId; fromX: number; fromZ: number; x: number; z: number }
   | { t: 'relicSpawn'; pedestal: number; relic: RelicType; x: number; z: number }
   | { t: 'relicCaptured'; team: Team; relic: RelicType }
   | { t: 'relicExpired'; team: Team; relic: RelicType }
