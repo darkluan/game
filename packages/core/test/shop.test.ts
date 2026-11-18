@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { discountOf, HEROES, ITEMS, itemPrice } from '../src/index.js';
+import { discountOf, HERO_BUILDS, HERO_IDS, HEROES, ITEMS, itemPrice, raceOf, recommendedBuild } from '../src/index.js';
 import { arena, place, run } from './helpers.js';
 
 /** A hero standing on its own fountain with plenty of gold. */
@@ -100,5 +100,32 @@ describe('item effects', () => {
     a.hero.items.push('swift_bow');
     sim.step();
     expect(a.attacker.intervalTicks).toBe(Math.round(before / 1.25));
+  });
+});
+
+describe('recommended builds', () => {
+  it('has one for every hero: real items, none twice, exactly as many as the hero can carry', () => {
+    for (const id of HERO_IDS) {
+      const build = HERO_BUILDS[id];
+      expect(build, id).toBeDefined();
+      expect(
+        build.every((item) => item in ITEMS),
+        id,
+      ).toBe(true);
+      expect(new Set(build).size, id).toBe(build.length);
+      expect(build.length, id).toBe(raceOf(HEROES[id].race).itemSlots);
+    }
+  });
+
+  it('gives a hero without mana nothing bought for its mana', () => {
+    for (const id of HERO_IDS) {
+      if (HEROES[id].resource === 'mana') continue;
+      expect(HERO_BUILDS[id], id).not.toContain('mana_gem');
+    }
+  });
+
+  it("falls back to the role's build for a hero that has none of its own", () => {
+    expect(recommendedBuild('kael', 'fighter')).toBe(HERO_BUILDS.kael);
+    expect(recommendedBuild('someone-new', 'tank')).toContain('giant_heart');
   });
 });

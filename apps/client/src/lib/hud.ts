@@ -2,7 +2,6 @@ import { abilityDetails } from './abilityDetails';
 import { tr } from '@/i18n';
 import {
   ABILITY_SLOTS,
-  BOT_BUILDS,
   itemPrice,
   ITEMS,
   RECALL,
@@ -11,6 +10,7 @@ import {
   maxAbilityLevel,
   type Race,
   raceOf,
+  recommendedBuild,
   SPELL_IDS,
   type SpellId,
   SPELLS,
@@ -96,8 +96,8 @@ export function buildHud(input: HudInput): HudState {
   const recallLeft = (you.recall as number | undefined) ?? 0;
   const stuck = input.dead || has('stun') || has('stone');
   const itemSlots = raceOf(def.race).itemSlots;
-  const nextItem =
-    you.items.length < itemSlots ? BOT_BUILDS[def.role].find((id) => !you.items.includes(id)) : undefined;
+  const build = recommendedBuild(def.id, def.role);
+  const nextItem = you.items.length < itemSlots ? build.find((id) => !you.items.includes(id)) : undefined;
   const nextPrice = nextItem ? itemPrice(nextItem, you.discount) : 0;
   const disabled = input.dead || has('stun') || has('stone') || has('silence');
   const conditions = CONDITION_LABELS.filter(([type]) => has(type)).map(([, label]) => label);
@@ -176,7 +176,7 @@ export function buildHud(input: HudInput): HudState {
       recallLeft > 0
         ? { seconds: Math.ceil(recallLeft / TICK_RATE), fraction: 1 - recallLeft / RECALL.channelTicks }
         : null,
-    recommended: BOT_BUILDS[def.role],
+    recommended: [...build],
     suggestion: nextItem
       ? { id: nextItem, name: tr(ITEMS[nextItem].name), price: nextPrice, affordable: you.gold >= nextPrice }
       : null,

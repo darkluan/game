@@ -57,3 +57,44 @@ export const BOT_BUILDS: Record<Role, string[]> = {
   assassin: ['iron_sword', 'swift_boots', 'great_blade', 'blood_axe', 'hourglass'],
   support: ['spell_book', 'swift_boots', 'strength_belt', 'hourglass', 'giant_heart'],
 };
+
+/**
+ * What the shop recommends to a player, per hero, in the order to buy it. Nothing is ever traded
+ * up, so each build is exactly as long as the hero's bag: five items for a human, four for the rest.
+ * Bots keep buying by role (above), so changing a build here does not change how they play.
+ */
+export const HERO_BUILDS: Record<string, string[]> = {
+  // Humans: five slots.
+  // A bruiser who dives in: speed to reach the fight, then damage that also keeps him standing.
+  kael: ['swift_boots', 'war_hammer', 'blood_axe', 'guardian_plate', 'great_blade'],
+  // All her damage is her bow: faster shots first, then harder ones that heal her.
+  lyra: ['swift_bow', 'swift_boots', 'storm_blade', 'blood_axe', 'great_blade'],
+  // Spells and nothing else: power, then more casts.
+  mira: ['spell_book', 'swift_boots', 'ancient_staff', 'arcane_orb', 'hourglass'],
+  // She is there to keep casting for the team: mana, shorter cooldowns, and enough health to stay near the fight.
+  elna: ['mana_gem', 'swift_boots', 'hourglass', 'arcane_orb', 'giant_heart'],
+
+  // Dragons: no mana to spend, so nothing that gives it early.
+  ignar: ['spell_book', 'swift_boots', 'arcane_orb', 'ancient_staff'],
+  baru: ['swift_boots', 'giant_heart', 'guardian_plate', 'steel_armor'],
+  zerak: ['swift_boots', 'war_hammer', 'blood_axe', 'guardian_plate'],
+  nyx: ['swift_bow', 'swift_boots', 'storm_blade', 'blood_axe'],
+
+  // Gods.
+  sola: ['mana_gem', 'swift_boots', 'hourglass', 'arcane_orb'],
+  vesper: ['swift_boots', 'great_blade', 'blood_axe', 'hourglass'],
+  orun: ['swift_boots', 'giant_heart', 'guardian_plate', 'regen_core'],
+  aeris: ['spell_book', 'swift_boots', 'ancient_staff', 'hourglass'],
+
+  // Machines: Heat, not mana.
+  // He fights planted in cannon mode: no boots, everything into the gun.
+  bolt7: ['swift_bow', 'storm_blade', 'blood_axe', 'great_blade'],
+  mekka: ['spell_book', 'swift_boots', 'hourglass', 'giant_heart'],
+  raze3: ['swift_boots', 'great_blade', 'storm_blade', 'blood_axe'],
+  titan9: ['swift_boots', 'guardian_plate', 'giant_heart', 'phoenix_feather'],
+};
+
+/** The build the shop recommends for a hero: its own, or its role's when it has none yet. */
+export function recommendedBuild(heroId: string, role: Role): readonly string[] {
+  return HERO_BUILDS[heroId] ?? BOT_BUILDS[role];
+}

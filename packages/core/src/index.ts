@@ -2,7 +2,7 @@ export * from './types.js';
 export * from './math.js';
 export * from './data/balance.js';
 export { HEROES, HERO_IDS, MVP_HERO_IDS } from './data/heroes.js';
-export { ITEMS, ITEM_LIST, BOT_BUILDS, itemTotals } from './data/items.js';
+export { ITEMS, ITEM_LIST, BOT_BUILDS, HERO_BUILDS, recommendedBuild, itemTotals } from './data/items.js';
 export { MAP, bushAt, type MapDef, type Rect, type RectObstacle } from './data/map.js';
 export { RACES, FOLLOWERS, HEAT, SYNERGY, raceOf, synergyOf, type RaceDef, type TeamSynergy } from './races/index.js';
 export { NavGrid } from './pathfinding/grid.js';
