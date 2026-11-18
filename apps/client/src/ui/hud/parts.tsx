@@ -3,7 +3,7 @@ import type { AbilityHud, GameSession, HudState } from '@/lib/session';
 import { HeroPortrait } from '../HeroPortrait';
 import { RELIC_EFFECTS, RELIC_NAMES } from '../relicText';
 import type { HudActions } from '../Hud';
-import { clock } from './format';
+import { clock, teamKills } from './format';
 
 export function Bar({
   value,
@@ -78,6 +78,58 @@ export function ResourceBar({ hud }: { hud: HudState }) {
   );
 }
 
+/**
+ * The six heroes across the top of the screen: the player's team on the left, the clock and kill
+ * counts in the middle. Each portrait carries the hero's level and health, and greys out while dead.
+ * `compact` is the phone's version, small enough to sit between the minimap and the buttons.
+ */
+export function TeamBar({ hud, compact = false }: { hud: HudState; compact?: boolean }) {
+  const [mine, theirs] = teamKills(hud);
+  const chips = (own: boolean) =>
+    hud.scores
+      .filter((s) => (s.team === hud.team) === own)
+      .map((s) => (
+        <span
+          key={s.id}
+          title={`${s.heroName} · ${s.name} · ${s.kills}/${s.deaths}/${s.assists}`}
+          className={`relative block bg-background ${compact ? 'size-8 overflow-hidden rounded-sm' : 'cut-corners-sm size-12'} ${
+            s.isPlayer ? 'outline-2 -outline-offset-2 outline-primary' : ''
+          }`}
+        >
+          <HeroPortrait heroId={s.heroDefId} className={`size-full ${s.dead ? 'opacity-40 grayscale' : ''}`} />
+          {/* Health left, in the team's colour. */}
+          <span aria-hidden className={`absolute inset-x-0 bottom-0 bg-background/90 ${compact ? 'h-1' : 'h-1.5'}`}>
+            <span
+              className={`block h-full ${own ? 'bg-hp' : 'bg-enemy'}`}
+              style={{ width: `${Math.max(0, Math.min(1, s.hpFraction)) * 100}%` }}
+            />
+          </span>
+          <span
+            className={`absolute top-0 right-0 bg-background/85 leading-tight font-bold tabular-nums ${compact ? 'px-0.5 text-[8px]' : 'px-1 text-[10px]'}`}
+          >
+            {s.level}
+          </span>
+        </span>
+      ));
+  return (
+    <div
+      className={`hud-panel absolute left-1/2 flex -translate-x-1/2 items-center ${
+        compact ? 'top-1 gap-1.5 rounded-md px-1.5 py-1' : 'top-0 gap-2 rounded-b-lg border-t-0 px-3 py-1.5'
+      }`}
+    >
+      <div className="flex gap-1">{chips(true)}</div>
+      <div
+        className={`flex items-center font-bold tabular-nums ${compact ? 'gap-1.5 px-1 text-sm' : 'gap-3 px-2 text-lg'}`}
+      >
+        <span className="text-ally">{mine}</span>
+        <span className={compact ? '' : 'text-base font-semibold'}>{clock(hud.timeSeconds)}</span>
+        <span className="text-enemy">{theirs}</span>
+      </div>
+      <div className="flex gap-1">{chips(false)}</div>
+    </div>
+  );
+}
+
 /** The hero's fighting numbers, as a small grid. */
 export function StatsGrid({ hud, className = '' }: { hud: HudState; className?: string }) {
   const stats = hud.stats;
@@ -129,6 +181,70 @@ function LevelValues({ values, level, next }: { values: (string | number)[]; lev
 }
 
 /**
+ * An ability's numbers laid out for reading before a match: what stays the same at every level as
+ * a row of small tags, and what grows with the ability as a table with one column per level.
+ */
+function NumbersTable({ ability }: { ability: AbilityHud }) {
+  const rows: { label: string; values: (string | number)[] }[] = [
+    ...ability.details,
+    { label: tr('Hồi chiêu (giây)'), values: ability.cooldowns },
+    ...(ability.costs.length > 0 ? [{ label: tr('Tiêu hao'), values: ability.costs }] : []),
+    ...(ability.range > 0 ? [{ label: tr('Tầm'), values: [ability.range] }] : []),
+  ];
+  const fixed = rows.filter((row) => row.values.every((v) => v === row.values[0]));
+  const growing = rows.filter((row) => !fixed.includes(row));
+  const levels = growing[0]?.values.length ?? 0;
+  return (
+    <div className="mt-1.5 flex flex-col gap-2 border-t border-border pt-2">
+      {fixed.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5">
+          {fixed.map((row) => (
+            <li key={row.label} className="rounded-md bg-foreground/8 px-2 py-0.5">
+              <span className="text-muted-foreground">{row.label}</span>{' '}
+              <span className="font-semibold text-foreground">{row.values[0]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {growing.length > 0 && (
+        <table className="w-full border-separate border-spacing-y-0.5 tabular-nums">
+          <thead>
+            <tr className="text-[10px] tracking-wider text-muted-foreground uppercase">
+              <th className="text-left font-normal">{tr('Theo cấp chiêu')}</th>
+              {Array.from({ length: levels }, (_, i) => (
+                <th key={i} className="w-14 text-right font-semibold">
+                  {tr('Cấp {level}', { level: i + 1 })}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {growing.map((row) => (
+              <tr key={row.label}>
+                <th
+                  scope="row"
+                  className="rounded-l-md bg-foreground/5 px-2 py-0.5 text-left font-normal text-muted-foreground"
+                >
+                  {row.label}
+                </th>
+                {row.values.map((value, i) => (
+                  <td
+                    key={i}
+                    className={`bg-foreground/5 px-2 py-0.5 text-right font-semibold ${i === row.values.length - 1 ? 'rounded-r-md text-primary' : 'text-foreground'}`}
+                  >
+                    {value}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+/**
  * Everything about one ability: what it does and its numbers at every level. With `next`, the
  * level a point would buy is highlighted, which is what the level-up button shows.
  */
@@ -160,11 +276,10 @@ export function AbilityInfo({
         )}
       </p>
       <p className="text-muted-foreground">{ability.description}</p>
-      {numbers && (
+      {numbers && preview && <NumbersTable ability={ability} />}
+      {numbers && !preview && (
         <>
-          <div
-            className={`mt-1 border-t border-border pt-1 ${preview ? 'grid grid-cols-1 gap-x-5 gap-y-0.5 squat:grid-cols-2' : 'flex flex-col gap-0.5'}`}
-          >
+          <div className={`mt-1 border-t border-border pt-1 flex flex-col gap-0.5`}>
             {ability.details.map((detail) => (
               <p key={detail.label} className={row}>
                 <span className="text-muted-foreground">{detail.label}</span>
@@ -188,9 +303,7 @@ export function AbilityInfo({
               </p>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground">
-            {preview ? tr('Các số theo cấp 1 / 2 / 3 của chiêu.') : tr('Số đậm: cấp hiện tại. Số vàng: cấp kế tiếp.')}
-          </p>
+          <p className="text-[10px] text-muted-foreground">{tr('Số đậm: cấp hiện tại. Số vàng: cấp kế tiếp.')}</p>
         </>
       )}
     </div>

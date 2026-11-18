@@ -1,6 +1,6 @@
 import { tr } from '@/i18n';
 import { castSlot } from '@/input/commands';
-import type { AbilityHud, GameSession, HudState } from '@/lib/session';
+import type { AbilityHud, GameSession } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { HeroPortrait } from '../HeroPortrait';
@@ -8,7 +8,6 @@ import { RACE_TEXT, raceName } from '../heroText';
 import { Minimap } from '../Minimap';
 import { GameIcon } from '../icons/GameIcon';
 import { ItemBag, ShopPanel } from '../Shop';
-import { clock, teamKills } from './format';
 import {
   AbilityInfo,
   Bar,
@@ -19,6 +18,7 @@ import {
   ResourceBar,
   Scoreboard,
   StatsGrid,
+  TeamBar,
 } from './parts';
 
 /** The player's portrait is underlined in the colour of its race. */
@@ -94,46 +94,6 @@ function AbilityButton({ ability, game }: { ability: AbilityHud; game: GameSessi
   );
 }
 
-/** The six heroes across the top: the player's team on the left, the clock and kill counts in the middle. */
-function TopBar({ hud }: { hud: HudState }) {
-  const [mine, theirs] = teamKills(hud);
-  const chips = (own: boolean) =>
-    hud.scores
-      .filter((s) => (s.team === hud.team) === own)
-      .map((s) => (
-        <span
-          key={s.id}
-          title={`${s.heroName} · ${s.name} · ${s.kills}/${s.deaths}/${s.assists}`}
-          className={`cut-corners-sm relative block size-12 bg-background ${
-            s.isPlayer ? 'outline-2 -outline-offset-2 outline-primary' : ''
-          }`}
-        >
-          <HeroPortrait heroId={s.heroDefId} className={`size-full ${s.dead ? 'opacity-40 grayscale' : ''}`} />
-          {/* Health left, in the team's colour. */}
-          <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-background/90">
-            <span
-              className={`block h-full ${own ? 'bg-hp' : 'bg-enemy'}`}
-              style={{ width: `${Math.max(0, Math.min(1, s.hpFraction)) * 100}%` }}
-            />
-          </span>
-          <span className="absolute top-0 right-0 bg-background/85 px-1 text-[10px] leading-tight font-bold tabular-nums">
-            {s.level}
-          </span>
-        </span>
-      ));
-  return (
-    <div className="absolute top-0 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-b-lg hud-panel border-t-0 px-3 py-1.5">
-      <div className="flex gap-1">{chips(true)}</div>
-      <div className="flex items-center gap-3 px-2 text-lg font-bold tabular-nums">
-        <span className="text-ally">{mine}</span>
-        <span className="text-base font-semibold">{clock(hud.timeSeconds)}</span>
-        <span className="text-enemy">{theirs}</span>
-      </div>
-      <div className="flex gap-1">{chips(false)}</div>
-    </div>
-  );
-}
-
 /**
  * Mouse-and-keyboard layout: heroes and clock along the top, the minimap bottom left, and one wide
  * console along the bottom holding the hero, its abilities and bars, and its items.
@@ -147,7 +107,7 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
 
   return (
     <div className="pointer-events-none absolute inset-0 text-foreground">
-      <TopBar hud={hud} />
+      <TeamBar hud={hud} />
       <EventFeed hud={hud} className="top-16 text-sm" />
 
       <div className="absolute top-2 right-2 flex items-center gap-2">

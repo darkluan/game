@@ -161,10 +161,10 @@ function Forest() {
 }
 
 /** The hero being picked, life-size on the path in front of the emblem. */
-function Hero({ heroId }: { heroId: string }) {
+function Hero({ heroId, size }: { heroId: string; size: number }) {
   return (
     <group position={[0, 0, HERO_Z]}>
-      <group scale={HERO_SCALE}>
+      <group scale={HERO_SCALE * size}>
         <HeroShowcase key={heroId} heroId={heroId} />
       </group>
       {/* A soft key light from the camera side and a race-coloured rim from behind. */}
@@ -265,7 +265,16 @@ function Bloom() {
  * The living backdrop behind the lobby screens. It takes no input: the menu is drawn over it.
  * `heroId` puts that hero on show in the middle of the scene.
  */
-export default function LobbyScene({ graphics, heroId }: { graphics: Graphics; heroId?: string }) {
+export default function LobbyScene({
+  graphics,
+  heroId,
+  heroSize = 1,
+}: {
+  graphics: Graphics;
+  heroId?: string;
+  /** Shrinks the hero on show, for a screen that leaves it less room than the home screen does. */
+  heroSize?: number;
+}) {
   const high = graphics === 'high';
   const [still] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   return (
@@ -299,7 +308,7 @@ export default function LobbyScene({ graphics, heroId }: { graphics: Graphics; h
         <Bases />
         {high && <Forest />}
       </Suspense>
-      <Suspense fallback={null}>{heroId && <Hero heroId={heroId} />}</Suspense>
+      <Suspense fallback={null}>{heroId && <Hero heroId={heroId} size={heroSize} />}</Suspense>
       {high && <Bloom />}
     </Canvas>
   );

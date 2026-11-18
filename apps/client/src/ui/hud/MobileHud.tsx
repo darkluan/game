@@ -11,8 +11,16 @@ import { HeroPortrait } from '../HeroPortrait';
 import { Minimap } from '../Minimap';
 import { GameIcon } from '../icons/GameIcon';
 import { ItemBag, ShopPanel } from '../Shop';
-import { clock, teamKills } from './format';
-import { AbilityInfo, DeathNotice, EndScreen, EventFeed, type LayoutProps, Scoreboard, StatsGrid } from './parts';
+import {
+  AbilityInfo,
+  DeathNotice,
+  EndScreen,
+  EventFeed,
+  type LayoutProps,
+  Scoreboard,
+  StatsGrid,
+  TeamBar,
+} from './parts';
 import { Joystick } from './Joystick';
 
 /** How far the attack button looks for a target. */
@@ -134,7 +142,6 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
   // An installed app already fills the screen and is already sideways.
   const installed = useInstallStore((s) => s.state === 'installed');
   const offerFullscreen = fullscreen.supported && !fullscreen.active && !installed;
-  const [mine, theirs] = teamKills(hud);
   const walk = useCallback((dir: Vec2) => moveInDirection(game, dir), [game]);
   const halt = useCallback(() => game.send({ t: 'stop' }), [game]);
   const chip = 'pointer-events-auto touch-none rounded-md hud-panel px-2.5 py-1.5 text-xs';
@@ -145,12 +152,8 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
         <Minimap game={game} />
       </div>
 
-      <div className="absolute top-1 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-md hud-panel px-3 py-0.5 text-sm font-bold tabular-nums">
-        <span className="text-ally">{mine}</span>
-        <span>{clock(hud.timeSeconds)}</span>
-        <span className="text-enemy">{theirs}</span>
-      </div>
-      <EventFeed hud={hud} className="top-9 text-[11px]" />
+      <TeamBar hud={hud} compact />
+      <EventFeed hud={hud} className="top-12 text-[11px]" />
 
       <div className="absolute top-1 right-1 flex items-center gap-1.5">
         <span className="rounded-md hud-panel px-2.5 py-1.5 text-xs font-semibold text-gold tabular-nums">
