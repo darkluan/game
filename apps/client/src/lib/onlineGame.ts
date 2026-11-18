@@ -4,13 +4,17 @@ import {
   FLAG_DEAD,
   FLAG_SIEGE,
   FLAG_TARGETABLE,
+  HERO,
   HEROES,
   MAP,
   type MatchWelcome,
+  NavGrid,
+  SHRINE,
   type Snapshot,
   STATUS_FLAGS,
   type StatusType,
   TICK_RATE,
+  TOWER,
   type Vec2,
 } from '@game/core';
 import { BaseSession } from './baseSession';
@@ -33,6 +37,20 @@ const INTERPOLATION_DELAY_MS = 100;
 /** After a network stall, skip ahead instead of replaying a long backlog in fast motion. */
 const MAX_QUEUED_SNAPSHOTS = 8;
 const MOVING_EPSILON = 0.01;
+/**
+ * The player's own hero is shown walking the moment a move is ordered, ahead of the server's word
+ * on it. While it does, the shown position may run this far (in seconds of walking) ahead of the
+ * last position the server reported before it is pulled back.
+ */
+const PREDICTION_LEAD_SECONDS = 0.7;
+/** After arriving, the shown hero waits this long for the server's hero to catch up before giving way to it. */
+const PREDICTION_HOLD_MS = 900;
+/** How quickly the shown hero closes on the server's position once it stops predicting: the share of the gap closed per second. */
+const SETTLE_RATE = 9;
+/** A gap this wide is a respawn, a blink or a throw: jump across it instead of sliding. */
+const SNAP_DISTANCE = 7;
+/** Statuses under which the server will not let the hero walk, so the client must not show it walking. */
+const HELD_STATUSES: StatusType[] = ['stun', 'root', 'stone'];
 
 interface View extends ViewEntity {
   flags: number;
@@ -75,6 +93,21 @@ export class OnlineGame extends BaseSession implements GameSession {
     units: [] as UnitView[],
   };
   private startBuildings: View[] = [];
+  /** Walkable ground, built like the server's, for working out the path the hero will take. */
+  private readonly nav = new NavGrid(
+    MAP,
+    [
+      ...MAP.towers.map((t) => ({ pos: t.pos, radius: TOWER.radius })),
+      ...MAP.shrines.map((pos) => ({ pos, radius: SHRINE.radius })),
+    ],
+    HERO.radius,
+  );
+  /** Where the player's own hero is drawn: ahead of the server while a move is being predicted. */
+  private readonly shown: Vec2 = { x: 0, z: 0 };
+  private shownSet = false;
+  /** The move being predicted: the way-points still ahead, or null when the hero simply follows the server. */
+  private predicted: { path: Vec2[]; arrivedAt: number } | null = null;
+  private lastFrameAt = 0;
   private readonly lastScore = new Map<number, { level: number; kda: number[]; hpFraction: number; dead: boolean }>();
 
   constructor(
@@ -105,6 +138,79 @@ export class OnlineGame extends BaseSession implements GameSession {
 
   send(cmd: Command): void {
     this.connection.send('cmd', cmd);
+    if (cmd.t === 'move') this.predictMove(cmd.x, cmd.z);
+    // Anything else (an attack, a cast, a stop) is the server's to play out.
+    else if (cmd.t !== 'levelUp' && cmd.t !== 'buy' && cmd.t !== 'sell') this.predicted = null;
+  }
+
+  /** True when the server would refuse to let the hero walk right now. */
+  private held(): boolean {
+    const flags = this.flags(this.hero.id);
+    return (
+      this.hero.dead === true ||
+      (flags & FLAG_SIEGE) !== 0 ||
+      HELD_STATUSES.some((s) => (flags & STATUS_FLAGS[s]) !== 0)
+    );
+  }
+
+  /** Start showing the hero walking to a point at once, along the path the server will choose. */
+  private predictMove(x: number, z: number): void {
+    if (!this.current || !this.shownSet || this.held()) return;
+    const def = HEROES[this.hero.hero?.defId ?? ''];
+    const flying = def?.evolutions?.[(this.hero.hero?.stage ?? 0) - 1]?.flying === true;
+    const to = { x, z };
+    const path = flying ? [this.nav.nearestWalkable(to)] : this.nav.findPath(this.shown, to);
+    this.predicted = path.length > 0 ? { path, arrivedAt: 0 } : null;
+  }
+
+  /** Moves the shown position of the player's own hero for this frame. */
+  private advanceOwnHero(seconds: number): void {
+    const server = this.hero.pos;
+    if (!this.shownSet) {
+      this.shown.x = server.x;
+      this.shown.z = server.z;
+      this.shownSet = true;
+      return;
+    }
+    const gap = Math.hypot(server.x - this.shown.x, server.z - this.shown.z);
+    const speed = this.current?.you?.stats?.moveSpeed ?? 6;
+    const move = this.predicted;
+    // The server disagrees too much (it was slowed, blocked or thrown), or the hero cannot walk: give way to it.
+    if (move && (this.held() || gap > Math.max(2.5, speed * PREDICTION_LEAD_SECONDS))) this.predicted = null;
+    if (this.predicted) {
+      const path = this.predicted.path;
+      let left = speed * seconds;
+      while (left > 0 && path.length > 0) {
+        const dx = path[0].x - this.shown.x;
+        const dz = path[0].z - this.shown.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 1e-6) this.hero.facing = Math.atan2(dx, dz);
+        if (d <= left) {
+          this.shown.x = path[0].x;
+          this.shown.z = path[0].z;
+          path.shift();
+          left -= d;
+        } else {
+          this.shown.x += (dx / d) * left;
+          this.shown.z += (dz / d) * left;
+          left = 0;
+        }
+      }
+      if (path.length === 0) {
+        // Arrived: wait where it stands until the server's hero gets here too, then follow the server again.
+        if (this.predicted.arrivedAt === 0) this.predicted.arrivedAt = this.now();
+        if (gap < 0.35 || this.now() - this.predicted.arrivedAt > PREDICTION_HOLD_MS) this.predicted = null;
+      }
+      return;
+    }
+    if (gap > SNAP_DISTANCE) {
+      this.shown.x = server.x;
+      this.shown.z = server.z;
+      return;
+    }
+    const close = Math.min(1, seconds * SETTLE_RATE);
+    this.shown.x += (server.x - this.shown.x) * close;
+    this.shown.z += (server.z - this.shown.z) * close;
   }
 
   update(): boolean {
@@ -122,6 +228,9 @@ export class OnlineGame extends BaseSession implements GameSession {
       v.pos.z = v.from.z + (v.to.z - v.from.z) * alpha;
     }
     this.clock = ((this.fromTick + span * alpha) * TICK_MS) / 1000;
+    const frameAt = this.now();
+    this.advanceOwnHero(this.lastFrameAt === 0 ? 0 : Math.min(0.1, (frameAt - this.lastFrameAt) / 1000));
+    this.lastFrameAt = frameAt;
     if (applied) this.expireFx();
     return applied;
   }
@@ -259,13 +368,15 @@ export class OnlineGame extends BaseSession implements GameSession {
   }
 
   renderPos(e: ViewEntity, out: Vec2): Vec2 {
-    // update() already blended every position for this frame.
-    out.x = e.pos.x;
-    out.z = e.pos.z;
+    // update() already blended every position for this frame; the player's own hero may be shown ahead of it.
+    const own = e.id === this.hero.id && this.shownSet;
+    out.x = own ? this.shown.x : e.pos.x;
+    out.z = own ? this.shown.z : e.pos.z;
     return out;
   }
 
   isMoving(e: ViewEntity): boolean {
+    if (e.id === this.hero.id && this.predicted) return this.predicted.path.length > 0;
     const v = this.views.get(e.id);
     return v !== undefined && Math.hypot(v.to.x - v.from.x, v.to.z - v.from.z) > MOVING_EPSILON;
   }

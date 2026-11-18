@@ -142,4 +142,48 @@ describe('OnlineGame', () => {
     expect(game.roster()).toHaveLength(2);
     expect(game.hud().scores).toHaveLength(2);
   });
+
+  it('shows my hero walking the moment I order a move, before the server answers', () => {
+    const { me, game, serverTick, wait } = setup();
+    serverTick();
+    game.update();
+    const start = game.renderPos(game.hero, { x: 0, z: 0 }).z;
+    game.send({ t: 'move', x: me.pos.x, z: me.pos.z + 12 });
+    // The command is still on its way: the server's hero has not moved.
+    wait(100);
+    game.update();
+    expect(game.renderPos(game.hero, { x: 0, z: 0 }).z).toBeGreaterThan(start + 0.3);
+    expect(game.isMoving(game.hero)).toBe(true);
+    expect(me.pos.z).toBeCloseTo(start, 5);
+  });
+
+  it('ends a predicted move on the spot the server ends it', () => {
+    const { sim, me, game, serverTick } = setup();
+    serverTick();
+    game.update();
+    const cmd: Command = { t: 'move', x: me.pos.x, z: me.pos.z + 6 };
+    game.send(cmd);
+    sim.command('me', cmd);
+    for (let i = 0; i < 80; i++) {
+      serverTick();
+      game.update();
+    }
+    const shown = game.renderPos(game.hero, { x: 0, z: 0 });
+    expect(Math.hypot(shown.x - me.pos.x, shown.z - me.pos.z)).toBeLessThan(0.05);
+    expect(game.isMoving(game.hero)).toBe(false);
+  });
+
+  it('gives way to the server when the server never moves the hero', () => {
+    const { me, game, serverTick } = setup();
+    serverTick();
+    game.update();
+    // The order is lost: only the client believes the hero is walking.
+    game.send({ t: 'move', x: me.pos.x, z: me.pos.z + 30 });
+    for (let i = 0; i < 80; i++) {
+      serverTick();
+      game.update();
+    }
+    const shown = game.renderPos(game.hero, { x: 0, z: 0 });
+    expect(Math.hypot(shown.x - me.pos.x, shown.z - me.pos.z)).toBeLessThan(0.05);
+  });
 });
