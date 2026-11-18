@@ -103,6 +103,7 @@ export class LobbyRoom extends Room {
   private async startMatch(): Promise<void> {
     const options: MatchOptions = {
       internalKey: INTERNAL_KEY,
+      mode: 'private',
       code: this.roomId,
       players: this.roster.list().map(({ playerId, nickname, team, heroId }) => ({ playerId, nickname, team, heroId })),
     };

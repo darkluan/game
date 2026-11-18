@@ -2,17 +2,21 @@ import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { config } from '../config.js';
 
 /**
- * Guest accounts need no sign-up and no database: the token is a random player id plus an HMAC of it.
- * Whoever holds the token is that player. Accounts that survive a change of device come in phase 5.
+ * A player's token is their id plus an HMAC of it: whoever holds the token is that player, and
+ * checking one needs no database. Signing in with Google hands out the token of the linked account.
  */
 
 function sign(playerId: string): string {
   return createHmac('sha256', config.tokenSecret).update(playerId).digest('base64url');
 }
 
+export function tokenFor(playerId: string): string {
+  return `${playerId}.${sign(playerId)}`;
+}
+
 export function issueGuest(): { playerId: string; token: string } {
   const playerId = randomUUID();
-  return { playerId, token: `${playerId}.${sign(playerId)}` };
+  return { playerId, token: tokenFor(playerId) };
 }
 
 /** The player id a token proves, or null when the token is malformed or forged. */

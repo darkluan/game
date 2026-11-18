@@ -24,6 +24,7 @@ COPY --from=build --chown=node:node /app/packages/core/package.json packages/cor
 COPY --from=build --chown=node:node /app/packages/core/dist packages/core/dist
 COPY --from=build --chown=node:node /app/apps/server/package.json apps/server/
 COPY --from=build --chown=node:node /app/apps/server/dist apps/server/dist
+COPY --from=build --chown=node:node /app/apps/server/migrations apps/server/migrations
 USER node
 EXPOSE 2567
 CMD ["node", "apps/server/dist/index.js"]

@@ -4,6 +4,7 @@ import {
   type Command,
   HERO_IDS,
   heroSnapshot,
+  type MatchResult,
   type MatchWelcome,
   type PlayerSetup,
   type RosterEntry,
@@ -14,7 +15,9 @@ import {
   TICK_RATE,
 } from '@game/core';
 import { verifyGuest } from '../auth/guest.js';
+import { getStore } from '../db/index.js';
 import { createLogger } from '../logger.js';
+import { penalizeLeaver, recordMatch } from '../matchmaking/results.js';
 
 const logger = createLogger('MatchRoom');
 
@@ -28,7 +31,9 @@ export const matchOverChannel = (code: string): string => `match-over:${code}`;
 
 export interface MatchOptions {
   internalKey: string;
-  /** Lobby the match was started from. */
+  /** 'private': started from a lobby, not rated. 'ranked': made by the queue, rated. */
+  mode: 'private' | 'ranked';
+  /** Lobby the match was started from; empty for a ranked match. */
   code: string;
   players: { playerId: string; nickname: string; team: Team; heroId: string }[];
 }
@@ -58,6 +63,9 @@ export class MatchRoom extends Room {
 
   private sim!: Sim;
   private code = '';
+  private mode: MatchOptions['mode'] = 'private';
+  private readonly startedAt = new Date();
+  private heroIds = new Map<string, string>();
   private roster: RosterEntry[] = [];
   private readonly humans = new Set<string>();
   /** The connection currently controlling each human player's hero. */
@@ -72,6 +80,7 @@ export class MatchRoom extends Room {
     if (options?.internalKey !== INTERNAL_KEY) throw new ServerError(403, 'forbidden');
     await this.setPrivate(true);
     this.code = options.code;
+    this.mode = options.mode === 'ranked' ? 'ranked' : 'private';
 
     const players: PlayerSetup[] = [];
     const nicknames = new Map<string, string>();
@@ -83,6 +92,7 @@ export class MatchRoom extends Room {
           HERO_IDS.includes(p.heroId) && !taken.has(p.heroId) ? p.heroId : HERO_IDS.find((id) => !taken.has(id))!;
         taken.add(heroId);
         players.push({ playerId: p.playerId, team, heroId, isBot: false });
+        this.heroIds.set(p.playerId, heroId);
         nicknames.set(p.playerId, p.nickname);
         this.humans.add(p.playerId);
       }
@@ -125,7 +135,12 @@ export class MatchRoom extends Room {
     this.clientOf.set(auth.playerId, client);
     this.absentTicks.delete(auth.playerId);
     this.sim.setBot(auth.playerId, false);
-    const welcome: MatchWelcome = { heroId: this.sim.heroOf(auth.playerId)!.id, roster: this.roster, code: this.code };
+    const welcome: MatchWelcome = {
+      heroId: this.sim.heroOf(auth.playerId)!.id,
+      roster: this.roster,
+      code: this.code,
+      mode: this.mode,
+    };
     client.send('welcome', welcome);
     logger.log('player joined', { roomId: this.roomId, sessionId: client.sessionId });
   }
@@ -154,7 +169,49 @@ export class MatchRoom extends Room {
 
   onDispose(): void {
     // Also covers a match that was abandoned or crashed: the lobby must always be released.
-    this.presence.publish(matchOverChannel(this.code), this.roomId);
+    if (this.code) this.presence.publish(matchOverChannel(this.code), this.roomId);
+  }
+
+  /** A human is counted as having left when a bot is playing their hero at the end. */
+  private leftEarly(playerId: string): boolean {
+    return this.absentTicks.has(playerId) && this.sim.heroOf(playerId)?.hero.isBot === true;
+  }
+
+  /** Saves the decided match; a ranked one also updates ratings and tells each player their new MMR. */
+  private async report(winner: Team): Promise<void> {
+    const players = [...this.humans].flatMap((playerId) => {
+      const hero = this.sim.heroOf(playerId);
+      if (!hero) return [];
+      const { kills, deaths, assists } = hero.hero;
+      const heroId = this.heroIds.get(playerId) ?? hero.hero.defId;
+      return [{ playerId, team: hero.team, heroId, kills, deaths, assists, leftEarly: this.leftEarly(playerId) }];
+    });
+    try {
+      const outcomes = await recordMatch(getStore(), {
+        mode: this.mode,
+        startedAt: this.startedAt,
+        durationS: Math.round(this.sim.tick / TICK_RATE),
+        winner,
+        teamSize: TEAM_SIZE,
+        players,
+      });
+      if (this.mode !== 'ranked') return;
+      for (const [playerId, client] of this.clientOf) {
+        const outcome = outcomes.get(playerId);
+        if (outcome) client.send('result', outcome satisfies MatchResult);
+      }
+    } catch (err) {
+      logger.error('could not save match', err, { roomId: this.roomId });
+    }
+  }
+
+  /** Nobody stayed to finish a ranked match: everyone who was in it is treated as a leaver. */
+  private async penalizeAll(): Promise<void> {
+    try {
+      for (const playerId of this.humans) await penalizeLeaver(getStore(), playerId);
+    } catch (err) {
+      logger.error('could not save penalties', err, { roomId: this.roomId });
+    }
   }
 
   private advance(deltaMs: number): void {
@@ -182,7 +239,8 @@ export class MatchRoom extends Room {
     if (this.sim.winner !== null) {
       this.finished = true;
       logger.log('match decided', { roomId: this.roomId, winner: this.sim.winner, ticks: this.sim.tick });
-      this.presence.publish(matchOverChannel(this.code), this.roomId);
+      if (this.code) this.presence.publish(matchOverChannel(this.code), this.roomId);
+      void this.report(this.sim.winner);
       this.clock.setTimeout(() => void this.disconnect(), AFTER_MATCH_MS);
       return;
     }
@@ -190,6 +248,7 @@ export class MatchRoom extends Room {
     if (this.emptyTicks >= EMPTY_TIMEOUT_TICKS) {
       this.finished = true;
       logger.log('match abandoned', { roomId: this.roomId });
+      if (this.mode === 'ranked') void this.penalizeAll();
       void this.disconnect();
     }
   }

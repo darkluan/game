@@ -12,7 +12,9 @@ services:
       # Local only. Real deployments set their own secret (openssl rand -hex 32).
       TOKEN_SECRET: local-compose-secret-change-me-0123456789
     depends_on:
-      - postgres
+      # The server migrates the database at boot, so it must be accepting connections first.
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: postgres:17-alpine
@@ -21,7 +23,13 @@ services:
       POSTGRES_PASSWORD: moba
       POSTGRES_DB: moba
     ports:
-      - '5432:5432'
+      # Set POSTGRES_PORT when 5432 is already taken on this machine.
+      - '${POSTGRES_PORT:-5432}:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U moba -d moba']
+      interval: 2s
+      timeout: 3s
+      retries: 15
     volumes:
       - pgdata:/var/lib/postgresql/data
 

@@ -12,6 +12,12 @@ services:
     envVars:
       - key: TOKEN_SECRET
         generateValue: true
+      # PostgreSQL connection URL (e.g. from Neon or Supabase). Without it ranked matchmaking stays off.
+      - key: DATABASE_URL
+        sync: false
+      # OAuth client ID for Google sign-in. Leave empty to keep it off.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
       # Web pages allowed to call this server, comma-separated.
       - key: CORS_ALLOWED_ORIGINS
         value: https://tu-toc.pages.dev

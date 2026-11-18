@@ -31,4 +31,23 @@ export const config = {
   isProduction,
   tokenSecret: tokenSecret(),
   corsAllowedOrigins: listEnv('CORS_ALLOWED_ORIGINS'),
+  /** Empty: no database. Players and match history then live in memory, and ranked play is off in production. */
+  databaseUrl: process.env.DATABASE_URL ?? '',
+  /** Empty: Google sign-in is off. */
+  googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
+  matchmaking: {
+    /** How often the queue is scanned for a match. */
+    scanMs: intEnv('MATCH_SCAN_MS', 1000),
+    /** A player first accepts opponents within this many MMR. */
+    rangeStart: intEnv('MATCH_RANGE_START', 100),
+    /** The range grows by this much every `rangeStepSeconds` of waiting. */
+    rangeStep: intEnv('MATCH_RANGE_STEP', 50),
+    rangeStepSeconds: intEnv('MATCH_RANGE_STEP_SECONDS', 10),
+    /** After waiting this long, empty seats are filled with bots. */
+    botFillSeconds: intEnv('MATCH_BOT_FILL_SECONDS', 75),
+    acceptSeconds: intEnv('MATCH_ACCEPT_SECONDS', 10),
+    draftSeconds: intEnv('MATCH_DRAFT_SECONDS', 30),
+  },
+  /** Queue bans for leaving a ranked match: first, second and later offences within a day. */
+  leaverPenaltyMinutes: [5, 15, 60],
 } as const;
