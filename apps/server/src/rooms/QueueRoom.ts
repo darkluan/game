@@ -3,7 +3,7 @@ import { type Client, matchMaker, Room, ServerError } from 'colyseus';
 import { cleanNickname, HERO_IDS, PARTY_MAX_SIZE, type QueueStatus, ROOM_CODE_LENGTH, type Team } from '@game/core';
 import { verifyGuest } from '../auth/guest.js';
 import { config } from '../config.js';
-import { getStore, rankedAvailable } from '../db/index.js';
+import { getStore } from '../db/index.js';
 import { createLogger } from '../logger.js';
 import { findMatch, type MatchSettings, type Proposal, rangeOf, type Ticket } from '../matchmaking/matchmaker.js';
 import { mmrOf } from '../matchmaking/rating.js';
@@ -57,7 +57,9 @@ interface Pending {
 const seconds = (ms: number): number => Math.max(0, Math.ceil(ms / 1000));
 
 /**
- * The matchmaking queue. Every player looking for a ranked match is connected to this one room.
+ * The matchmaking queue. Every player looking for a match is connected to this one room. It runs
+ * with or without a database: without one, ratings are kept in memory and start again when the
+ * server restarts (the client says so; see `ranked` in /v1/config).
  * It forms parties, scans the queue for fair matches, runs the accept check and the hero draft,
  * then creates the match room and tells the players to join it.
  */
@@ -108,7 +110,6 @@ export class QueueRoom extends Room {
   async onAuth(_client: Client, options: { token?: unknown } | undefined): Promise<Auth> {
     const playerId = verifyGuest(options?.token);
     if (!playerId) throw new ServerError(401, 'invalid_token');
-    if (!rankedAvailable()) throw new ServerError(503, 'ranked_unavailable');
     return { playerId };
   }
 

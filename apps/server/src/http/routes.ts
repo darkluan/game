@@ -60,7 +60,7 @@ export function registerRoutes(app: Application, verifyGoogle: GoogleVerifier): 
     res.json(true);
   });
 
-  /** What this server offers, so the client knows which buttons to show. */
+  /** What this server offers. `ranked` is whether ratings are kept for good; matchmaking itself is always on. */
   app.get('/v1/config', (_req, res) => {
     res.json({ ranked: rankedAvailable(), googleClientId: config.googleClientId || null });
   });

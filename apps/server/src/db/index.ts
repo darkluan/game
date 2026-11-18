@@ -33,7 +33,10 @@ export async function initStore(): Promise<Store> {
   return store;
 }
 
-/** Ranked play needs ratings that survive a restart, so production requires a real database for it. */
+/**
+ * Whether ratings last: they need a real database to survive a restart. Finding a match works either
+ * way; without this the client tells players their rating is only kept for now.
+ */
 export function rankedAvailable(): boolean {
   return store.persistent || !config.isProduction;
 }
