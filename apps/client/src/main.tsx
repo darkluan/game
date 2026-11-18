@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import { watchInstallPrompt } from './lib/install';
 import { startOfflineCache } from './lib/offlineCache';
 import { routes } from './routes';
+import { OpenInBrowserNotice } from './ui/OpenInBrowserNotice';
 import { RotateNotice } from './ui/RotateNotice';
 import './index.css';
 
@@ -15,5 +16,6 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <RouterProvider router={router} />
     <RotateNotice />
+    <OpenInBrowserNotice />
   </StrictMode>,
 );
