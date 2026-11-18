@@ -238,13 +238,14 @@ interface AbilityDef {
 ### 4.6 Cơ sở dữ liệu
 
 ```
-players(id, guest_token, google_id, nickname, mu, sigma, games_played, created_at)
+players(id, google_id, nickname, mu, sigma, games_played, created_at)
 matches(id, mode, started_at, duration_s, winner_team, had_bots)
 match_players(match_id, player_id, team, hero_id, kills, deaths, assists, mu_before, mu_after, left_early)
 penalties(player_id, reason, until)
 ```
 
-`mu` và `sigma` là hai giá trị của OpenSkill. MMR dùng để ghép = `mu - 3 * sigma`.
+`mu` và `sigma` là hai giá trị của OpenSkill. MMR dùng để ghép = `(mu - 3 * sigma) * 40`, làm tròn; người mới bắt đầu ở 0.
+Token khách là mã có chữ ký (id + HMAC) nên không cần lưu trong bảng `players`.
 
 ### 4.7 Docker cho server
 
@@ -252,7 +253,7 @@ penalties(player_id, reason, until)
 - Lệnh build: `docker build -f apps/server/Dockerfile -t moba-server .`
 - Server là stateful (mỗi trận sống trong bộ nhớ một tiến trình) và dùng WebSocket: nền tảng triển khai phải hỗ trợ WebSocket, không tự tắt container khi rảnh, và khi deploy bản mới cần chờ các trận đang chạy kết thúc.
 - Chỉ đóng gói server. Client là file tĩnh, triển khai lên CDN.
-- Cấu hình qua biến môi trường: `PORT`, `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `TOKEN_SECRET`, `CORS_ALLOWED_ORIGINS`.
+- Cấu hình qua biến môi trường: `PORT`, `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `TOKEN_SECRET`, `CORS_ALLOWED_ORIGINS`. Các mốc thời gian ghép trận chỉnh được bằng `MATCH_*` (xem `apps/server/.env.example`).
 
 Dockerfile khởi điểm (cần chạy thử và chỉnh khi dựng project):
 
@@ -335,22 +336,22 @@ CMD ["node", "apps/server/dist/index.js"]
 
 ### Giai đoạn 4: Điểm khác biệt (1-2 tuần)
 
-- [ ] Ba bệ di vật và hiệu ứng
-- [ ] Cổ thú ở phút thứ 7
-- [ ] Thông báo sự kiện trên màn hình và bản đồ nhỏ
+- [x] Ba bệ di vật và hiệu ứng
+- [x] Cổ thú ở phút thứ 7
+- [x] Thông báo sự kiện trên màn hình và bản đồ nhỏ
 
 **Xong khi:** trận trung bình kết thúc trong 9-12 phút.
 
 ### Giai đoạn 5: Ghép trận (2-3 tuần)
 
-- [ ] PostgreSQL, migration, lưu người chơi và lịch sử trận
-- [ ] Đăng nhập Google tùy chọn
-- [ ] `QueueRoom`: hàng chờ, nới rộng phạm vi theo thời gian
-- [ ] Chia đội cân bằng, hỗ trợ nhóm 2-3 người
-- [ ] Bảng Chấp nhận, xử lý từ chối
-- [ ] Cập nhật MMR bằng OpenSkill
-- [ ] Lấp bot khi chờ lâu
-- [ ] Phạt thoát trận
+- [x] PostgreSQL, migration, lưu người chơi và lịch sử trận
+- [ ] Đăng nhập Google tùy chọn *(đã viết xong; chưa thử với Google thật vì chưa có `GOOGLE_CLIENT_ID`)*
+- [x] `QueueRoom`: hàng chờ, nới rộng phạm vi theo thời gian
+- [x] Chia đội cân bằng, hỗ trợ nhóm 2-3 người
+- [x] Bảng Chấp nhận, xử lý từ chối
+- [x] Cập nhật MMR bằng OpenSkill
+- [x] Lấp bot khi chờ lâu
+- [x] Phạt thoát trận
 
 **Xong khi:** người lạ bấm Tìm trận và được xếp vào trận cân bằng, hoặc trận có bot sau tối đa 75 giây.
 
