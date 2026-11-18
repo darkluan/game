@@ -16,6 +16,11 @@ const list: ItemDef[] = [
   { id: 'spell_book', name: 'Sách phép', cost: 450, stats: { abilityDamage: 0.12 } },
   { id: 'ancient_staff', name: 'Trượng cổ', cost: 900, stats: { abilityDamage: 0.28, mana: 100 } },
   { id: 'hourglass', name: 'Đồng hồ cát', cost: 600, stats: { cooldownReduction: 0.15 } },
+  { id: 'guardian_plate', name: 'Giáp hộ vệ', cost: 950, stats: { armor: 22, hp: 260 } },
+  { id: 'storm_blade', name: 'Kiếm bão', cost: 950, stats: { attack: 20, attackSpeed: 0.2 } },
+  { id: 'phoenix_feather', name: 'Lông phượng', cost: 750, stats: { hp: 200, hpRegen: 6, moveSpeed: 0.3 } },
+  { id: 'arcane_orb', name: 'Cầu bí thuật', cost: 850, stats: { abilityDamage: 0.18, cooldownReduction: 0.1 } },
+  { id: 'wind_cloak', name: 'Áo choàng gió', cost: 600, stats: { moveSpeed: 0.5, armor: 10, attackSpeed: 0.1 } },
 ];
 
 export const ITEMS: Record<string, ItemDef> = Object.fromEntries(list.map((item) => [item.id, item]));

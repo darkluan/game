@@ -37,6 +37,8 @@ export const SHRINE = { hp: 4500, armor: 40, radius: 2.5 } as const;
 
 export const HERO = {
   radius: 0.6,
+  /** Multiplies every hero's own health (base, per level and dragon form; not items), so fights last longer. */
+  toughness: 1.18,
   /** Idle heroes pick a fight with enemies this far beyond their attack range. */
   idleAcquireBonus: 3,
   respawnBaseTicks: seconds(5),

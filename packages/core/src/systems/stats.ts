@@ -34,7 +34,7 @@ export function recomputeStats(sim: Sim, h: HeroEntity): void {
   const siege = hero.siege ? def.abilities.W.params : undefined;
   const siegeLevel = Math.max(0, hero.abilityLevels.W - 1);
 
-  const maxHp = Math.round(def.base.hp + def.base.hpPerLevel * levels + evolution.hp + items.hp);
+  const maxHp = Math.round((def.base.hp + def.base.hpPerLevel * levels + evolution.hp) * HERO.toughness + items.hp);
   if (!h.dead && maxHp > h.health.maxHp) h.health.hp += maxHp - h.health.maxHp;
   h.health.maxHp = maxHp;
   h.health.hp = Math.min(h.health.hp, maxHp);

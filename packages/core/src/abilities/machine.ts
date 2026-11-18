@@ -115,4 +115,39 @@ export const machineEffects: Record<string, AbilityEffect> = {
     damage(target, param('damage') * (low ? param('lowMult') : 1));
     if (sim.isTargetable(target)) caster.hero.order = { t: 'attack', targetId: target.id };
   },
+
+  // ---- Titan-9 ----
+
+  /** A hydraulic punch: damage and a stun, then keep hitting. */
+  titan_punch({ sim, caster, target, param, damage }) {
+    if (!target) return;
+    damage(target, param('damage'));
+    sim.addStatus(target, 'stun', param('stunTicks'));
+    if (sim.isTargetable(target)) caster.hero.order = { t: 'attack', targetId: target.id };
+  },
+
+  /** A barrier over himself and every allied hero close by. */
+  titan_barrier({ sim, caster, def, param }) {
+    for (const e of sim.alliesWithin(caster.team, caster.pos, def.range)) {
+      if (e.hero) sim.addStatus(e, 'shield', param('durationTicks'), param('shield'));
+    }
+  },
+
+  /** A magnet along a line: enemies on it are hurt and dragged toward him. */
+  titan_magnet({ sim, caster, point, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
+      damage(e, param('damage'));
+      // Pushing away from the point mirrored through the enemy moves it toward the caster.
+      sim.knockback(e, { x: 2 * e.pos.x - caster.pos.x, z: 2 * e.pos.z - caster.pos.z }, param('pull'));
+    }
+  },
+
+  /** The core vents: heavy damage, a slow and a silence for everything around him. */
+  titan_meltdown({ sim, caster, param, damage }) {
+    for (const e of sim.enemiesWithin(caster.team, caster.pos, param('radius'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+      sim.addStatus(e, 'silence', param('silenceTicks'));
+    }
+  },
 };

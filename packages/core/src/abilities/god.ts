@@ -117,4 +117,38 @@ export const godEffects: Record<string, AbilityEffect> = {
       sim.addStatus(e, 'stun', param('stunTicks'));
     }
   },
+
+  // ---- Aeris ----
+
+  /** A piercing blade of wind. */
+  aeris_gale({ caster, point, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) damage(e, param('damage'));
+  },
+
+  /** A whirlwind at a point: damage, and everything in it is thrown outward. */
+  aeris_cyclone({ sim, caster, point, param, damage }) {
+    for (const e of sim.enemiesWithin(caster.team, point, param('radius'))) {
+      damage(e, param('damage'));
+      sim.knockback(e, point, param('knockback'));
+    }
+  },
+
+  /** Ride the wind: faster, behind a thin shield. */
+  aeris_drift({ sim, caster, param }) {
+    sim.addStatus(caster, 'haste', param('buffTicks'), param('haste'));
+    sim.addStatus(caster, 'shield', param('buffTicks'), param('shield'));
+  },
+
+  /** A storm over a wide area: it keeps hurting, and slows whoever it catches as it lands. */
+  aeris_tempest({ sim, caster, point, param, power }) {
+    for (const e of sim.enemiesWithin(caster.team, point, param('radius')))
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+    spawnZone(sim, caster, point, {
+      effect: 'burn',
+      radius: param('radius'),
+      lifeTicks: param('lifeTicks'),
+      everyTicks: seconds(0.5),
+      value: (param('burn') * power) / 2,
+    });
+  },
 };

@@ -1,6 +1,7 @@
 import { seconds } from '../data/balance.js';
 import type { AbilityEffect } from '../systems/ability.js';
 import { spawnZone } from '../systems/summons.js';
+import { mostWounded } from './god.js';
 
 const MAX_TRAPS = 3;
 /** Mira's starfall hits twice a second. */
@@ -79,6 +80,44 @@ export const humanEffects: Record<string, AbilityEffect> = {
   lyra_final_shot({ sim, caster, point, param, damage, enemiesOnLine }) {
     for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
       damage(e, param('damage') * (sim.hasStatus(e, 'mark') ? param('markedMult') : 1));
+    }
+  },
+
+  // ---- Elna ----
+
+  /** A piercing bolt that damages and slows. */
+  elna_bolt({ sim, caster, point, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+    }
+  },
+
+  /** Heal the most wounded allied hero in range and speed them up. */
+  elna_mend({ sim, caster, def, param }) {
+    const heroes = sim.alliesWithin(caster.team, caster.pos, def.range).filter((e) => e.hero);
+    const patient = mostWounded(heroes) ?? caster;
+    sim.heal(patient, param('heal'));
+    sim.addStatus(patient, 'haste', param('hasteTicks'), param('haste'));
+  },
+
+  /** A cloud of smoke: enemy heroes inside can barely see. */
+  elna_smoke({ sim, caster, point, param }) {
+    spawnZone(sim, caster, point, {
+      effect: 'blind',
+      radius: param('radius'),
+      lifeTicks: param('lifeTicks'),
+      everyTicks: seconds(0.25),
+      value: 0,
+    });
+  },
+
+  /** Every allied hero and minion in range hits harder and takes less. */
+  elna_rally({ sim, caster, def, param }) {
+    for (const e of sim.alliesWithin(caster.team, caster.pos, def.range)) {
+      if (!e.hero && !e.minion) continue;
+      sim.addStatus(e, 'attack', param('buffTicks'), param('attack'));
+      sim.addStatus(e, 'armor', param('buffTicks'), param('armor'));
     }
   },
 

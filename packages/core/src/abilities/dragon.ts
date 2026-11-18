@@ -124,4 +124,40 @@ export const dragonEffects: Record<string, AbilityEffect> = {
     sim.addStatus(target, 'stun', param('stunTicks'));
     if (sim.isTargetable(target)) caster.hero.order = { t: 'attack', targetId: target.id };
   },
+
+  // ---- Nyx ----
+
+  /** Venom spat along a line: damage now and poison after. */
+  nyx_spit({ sim, caster, point, param, damage, enemiesOnLine, power }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'burn', param('burnTicks'), param('burn') * power, caster.id);
+    }
+  },
+
+  /** A pool of acid that eats at whoever stands in it. */
+  nyx_pool({ sim, caster, point, param, power }) {
+    spawnZone(sim, caster, point, {
+      effect: 'burn',
+      radius: param('radius'),
+      lifeTicks: param('lifeTicks'),
+      everyTicks: BURN_PULSE_TICKS,
+      value: (param('burn') * power) / 2,
+    });
+  },
+
+  /** A quick glide, then a burst of speed. */
+  nyx_glide({ sim, caster, def, param, dash }) {
+    dash(def.range);
+    sim.addStatus(caster, 'haste', param('hasteTicks'), param('haste'));
+  },
+
+  /** Plague over an area: heavy damage, and everything in it is slowed and marked. */
+  nyx_plague({ sim, caster, point, param, damage }) {
+    for (const e of sim.enemiesWithin(caster.team, point, param('radius'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+      sim.addStatus(e, 'mark', param('markTicks'), param('mark'));
+    }
+  },
 };

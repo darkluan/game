@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FOLLOWERS, HEAT, HEROES, MINION, seconds } from '../src/index.js';
+import { FOLLOWERS, HEAT, HERO, HEROES, MINION, seconds } from '../src/index.js';
 import { arena, hero, makeSim, place, run } from './helpers.js';
 
 describe('machines (Heat)', () => {
@@ -92,7 +92,9 @@ describe('dragons (evolution)', () => {
     expect(l5.radius).toBeGreaterThan(l4.radius);
     expect(l9.radius).toBeGreaterThan(l5.radius);
     const perLevel = HEROES.baru.base.hpPerLevel;
-    expect(l5.maxHp - l4.maxHp).toBe(perLevel + HEROES.baru.evolutions![0].hp);
+    // Both totals are rounded, so the step between them can be one off.
+    const expected = (perLevel + HEROES.baru.evolutions![0].hp) * HERO.toughness;
+    expect(Math.abs(l5.maxHp - l4.maxHp - expected)).toBeLessThanOrEqual(1);
   });
 
   it('Ignar flies straight over walls after the second evolution', () => {
