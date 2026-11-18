@@ -27,7 +27,7 @@ const MIN_FPS_FOR_HIGH = 28;
 const SHADOW_REACH = 42;
 
 /** Runs the game, follows the hero with the camera and sun, and tracks the ground point under the mouse. */
-function GameLoop({ game, shadows }: { game: GameSession; shadows: boolean }) {
+function GameLoop({ game, shadows, touch }: { game: GameSession; shadows: boolean; touch: boolean }) {
   const setHud = useGameStore((s) => s.setHud);
   const lowerGraphics = useSettingsStore((s) => s.lowerGraphics);
   // Only high graphics has anything to give up when frames are slow.
@@ -66,7 +66,8 @@ function GameLoop({ game, shadows }: { game: GameSession; shadows: boolean }) {
       ref={sun}
       intensity={2.2}
       castShadow={shadows}
-      shadow-mapSize={[2048, 2048]}
+      // A phone's screen is small: a quarter of the shadow detail looks the same and costs far less.
+      shadow-mapSize={touch ? [1024, 1024] : [2048, 2048]}
       shadow-camera-left={-SHADOW_REACH}
       shadow-camera-right={SHADOW_REACH}
       shadow-camera-top={SHADOW_REACH}
@@ -84,13 +85,13 @@ export default function GameScene({ game, graphics }: { game: GameSession; graph
     <Canvas
       camera={{ fov: 38, near: 1, far: 300 }}
       // Low still draws sharper than one pixel per point: on a phone that would look smeared.
-      dpr={high ? [1, 2] : [1, 1.5]}
+      dpr={high ? [1, touch ? 1.75 : 2] : [1, 1.5]}
       shadows={high ? 'percentage' : false}
       gl={{ antialias: high }}
     >
       <color attach="background" args={[COLORS.sky]} />
       <hemisphereLight args={['#dfeaff', '#3a4a35', 1.3]} />
-      <GameLoop game={game} shadows={high} />
+      <GameLoop game={game} shadows={high} touch={touch} />
       <InputController game={game} touch={touch} />
       {/* Models load in the background; the match is already running underneath. */}
       <Suspense fallback={null}>

@@ -34,6 +34,12 @@ function initialState(): InstallState {
   return ios ? 'ios' : 'unavailable';
 }
 
+/**
+ * True when the page was opened from its home-screen icon, where it already fills the screen. Unlike
+ * the store's state it does not change when the game is installed from a browser tab that stays open.
+ */
+export const launchedAsApp = initialState() === 'installed';
+
 export const useInstallStore = create<InstallStore>((set) => ({
   state: initialState(),
   install: async () => {

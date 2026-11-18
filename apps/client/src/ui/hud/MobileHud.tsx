@@ -1,11 +1,11 @@
 import { tr } from '@/i18n';
 import { useCallback, useState } from 'react';
-import type { Vec2 } from '@game/core';
+import { ITEMS, type Vec2 } from '@game/core';
 import { attackNearest, castSlot, moveInDirection } from '@/input/commands';
 import type { AbilityHud, GameSession, HudState } from '@/lib/session';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import { useGameStore } from '@/store/gameStore';
-import { useInstallStore } from '@/lib/install';
+import { launchedAsApp } from '@/lib/install';
 import { useSettingsStore } from '@/store/settingsStore';
 import { HeroPortrait } from '../HeroPortrait';
 import { Minimap } from '../Minimap';
@@ -94,6 +94,22 @@ function Vitals({ hud }: { hud: HudState }) {
     <div className="absolute bottom-2 left-1/2 flex w-[38vw] -translate-x-1/2 items-end gap-2">
       <HeroPortrait heroId={hud.heroDefId} className="cut-corners-sm size-10 shrink-0 border-b-2 border-primary" />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {/* What the hero carries, always in view. Selling is done in the menu, so a stray tap here does nothing. */}
+        <div className="flex gap-1" aria-label={tr('Túi đồ')}>
+          {Array.from({ length: hud.itemSlots }, (_, i) => {
+            const item = ITEMS[hud.items[i]];
+            return (
+              <span
+                key={i}
+                className={`flex size-6 items-center justify-center rounded-sm border bg-background/70 ${
+                  item ? 'border-border text-gold' : 'border-dashed border-border/60'
+                }`}
+              >
+                {item && <GameIcon id={item.id} className="size-5" />}
+              </span>
+            );
+          })}
+        </div>
         <div className="flex justify-between text-[11px] font-semibold tabular-nums">
           <span>
             {tr('Cấp {level}', { level: hud.level })}
@@ -140,7 +156,7 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const fullscreen = useFullscreen();
   // An installed app already fills the screen and is already sideways.
-  const installed = useInstallStore((s) => s.state === 'installed');
+  const installed = launchedAsApp;
   const offerFullscreen = fullscreen.supported && !fullscreen.active && !installed;
   const walk = useCallback((dir: Vec2) => moveInDirection(game, dir), [game]);
   const halt = useCallback(() => game.send({ t: 'stop' }), [game]);
@@ -148,7 +164,8 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
   const option = 'rounded-md border border-border px-3 py-2';
 
   return (
-    <div className="pointer-events-none absolute inset-0 text-foreground select-none">
+    // Kept clear of the notch and the rounded corners of a phone held sideways.
+    <div className="pointer-events-none absolute top-[env(safe-area-inset-top)] right-[env(safe-area-inset-right)] bottom-[env(safe-area-inset-bottom)] left-[env(safe-area-inset-left)] text-foreground select-none">
       <div className="absolute top-1 left-1 origin-top-left scale-[0.62]">
         <Minimap game={game} />
       </div>
@@ -199,9 +216,15 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
             <button type="button" onClick={toggleGraphics} aria-pressed={graphics === 'high'} className={option}>
               {graphics === 'high' ? tr('Đồ họa: cao') : tr('Đồ họa: thấp')}
             </button>
-            {fullscreen.active && (
-              <button type="button" onClick={fullscreen.leave} className={option}>
-                {tr('Thoát toàn màn hình')}
+            {fullscreen.supported && !installed && (
+              // click, not pointerdown: browsers only allow going full screen from a finished tap.
+              <button
+                type="button"
+                onClick={fullscreen.active ? fullscreen.leave : () => void fullscreen.enter()}
+                aria-pressed={fullscreen.active}
+                className={option}
+              >
+                {fullscreen.active ? tr('Thoát toàn màn hình') : tr('Toàn màn hình')}
               </button>
             )}
             <button type="button" onClick={actions.exit} className={`${option} text-danger`}>

@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { AbilitiesShownContext } from '@/ui/abilitiesShown';
 import { AbilityPanel } from '@/ui/AbilityPanel';
 import { HeroTurnArea } from '@/ui/HeroTurnArea';
+import { FullscreenButton } from '@/ui/FullscreenButton';
 import { LangSwitch } from '@/ui/LangSwitch';
 import { SoundSettings } from '@/ui/SoundSettings';
 
@@ -169,7 +170,10 @@ export function LobbyShell({ children, aside, actions, heroId, sides }: Props) {
           </footer>
         )}
       </div>
-      <LangSwitch className="absolute right-4 bottom-3 squat:right-3 squat:bottom-2" />
+      <div className="absolute right-4 bottom-3 flex items-center gap-2 squat:right-3 squat:bottom-2">
+        <FullscreenButton />
+        <LangSwitch />
+      </div>
     </div>
   );
 }
