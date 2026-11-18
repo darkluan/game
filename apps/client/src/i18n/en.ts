@@ -249,6 +249,29 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  'Kỹ năng': 'Abilities',
+  'Quyền riêng tư': 'Privacy',
+  'Về trang chính': 'Back to the home screen',
+  'Chơi không cần tài khoản': 'Playing needs no account',
+  'Bạn chơi được ngay mà không cần đăng ký. Lần đầu vào phòng hoặc tìm trận, máy chủ cấp cho trình duyệt của bạn một mã khách ngẫu nhiên. Mã này không chứa tên, email hay số điện thoại.':
+    'You can play at once without signing up. The first time you enter a room or look for a match, the server gives your browser a random guest id. It holds no name, email or phone number.',
+  'Những gì được lưu trên máy của bạn': 'What is kept on your device',
+  'Trình duyệt lưu các lựa chọn của bạn: biệt danh, tướng đã chọn, ngôn ngữ, âm thanh, đồ họa, và mã khách nói trên. Trình duyệt cũng giữ một bản các tệp của game để lần sau vào nhanh hơn. Xóa dữ liệu trang web trong trình duyệt là xóa hết những thứ này.':
+    "Your browser keeps your choices: nickname, chosen hero, language, sound, graphics, and the guest id above. It also keeps a copy of the game's files so the next visit starts faster. Clearing the site's data in your browser removes all of it.",
+  'Những gì máy chủ lưu': 'What the server keeps',
+  'Máy chủ lưu mã khách, biệt danh bạn đặt, điểm trình độ, số trận đã chơi, và kết quả các trận ghép tự động: tướng đã dùng, số hạ gục, số lần bị hạ, số hỗ trợ. Nếu bạn rời một trận ghép giữa chừng, máy chủ ghi lại thời hạn tạm khóa tìm trận.':
+    'The server keeps your guest id, the nickname you set, your rating, how many matches you have played, and the results of matchmade games: the hero you used, kills, deaths and assists. If you leave a matchmade game part-way, the server records how long you are kept out of the queue.',
+  'Tin nhắn chat và tín hiệu trong trận chỉ được chuyển tới người nhận rồi bỏ, không được lưu. Chữ gõ trong chat được lọc từ tục tự động trước khi gửi đi.':
+    'Chat messages and map signals are passed on to their receivers and then dropped; they are not stored. Typed chat is filtered for bad words automatically before it is sent on.',
+  'Đăng nhập bằng Google': 'Signing in with Google',
+  'Đăng nhập Google là tùy chọn, để giữ điểm của bạn khi đổi máy. Khi bạn đăng nhập, game chỉ lưu mã định danh tài khoản do Google cấp. Game không lưu và không đọc email, tên, ảnh đại diện hay danh bạ của bạn.':
+    'Signing in with Google is optional; it keeps your rating when you change devices. When you sign in, the game stores only the account id Google gives it. It does not store or read your email, name, picture or contacts.',
+  'Bên thứ ba': 'Third parties',
+  'Trang web chạy trên Cloudflare Pages và máy chủ game chạy trên Render. Hai dịch vụ này thấy địa chỉ IP của bạn khi bạn kết nối, như mọi trang web khác. Game không dùng quảng cáo, không dùng công cụ theo dõi và không bán hay chia sẻ dữ liệu cho ai.':
+    'The site is served by Cloudflare Pages and the game server runs on Render. Both see your IP address when you connect, as any website does. The game has no advertising and no trackers, and does not sell or share data with anyone.',
+  'Xóa dữ liệu': 'Deleting your data',
+  'Xóa dữ liệu trang web trong trình duyệt sẽ bỏ mã khách khỏi máy của bạn; phần điểm gắn với mã đó trên máy chủ không còn ai dùng được nữa. Muốn xóa hẳn dữ liệu gắn với tài khoản Google, hãy liên hệ người vận hành game.':
+    "Clearing the site's data in your browser removes the guest id from your device; nobody can use the rating tied to it on the server any more. To have data tied to a Google account deleted for good, contact the game's operator.",
   'Chạm + để nâng ngay · giữ + để xem trước': 'Tap + to level up · hold + to preview',
   'Bản thử nghiệm': 'Beta',
   'Chat (Enter)': 'Chat (Enter)',
@@ -338,8 +361,6 @@ export const EN: Record<string, string> = {
   Tầm: 'Range',
   'Số đậm: cấp hiện tại. Số vàng: cấp kế tiếp.': 'Bold: current level. Gold: next level.',
   'Giữ và kéo để xoay tướng': 'Press and drag to turn the hero',
-  'Xem chỉ số': 'Show numbers',
-  'Ẩn chỉ số': 'Hide numbers',
   'Theo cấp chiêu': 'By ability level',
   '{v} giây': '{v} s',
   'Sát thương': 'Damage',

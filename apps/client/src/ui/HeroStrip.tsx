@@ -1,8 +1,7 @@
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import { HERO_IDS, HEROES, type Race, RACES } from '@game/core';
 import { tr } from '@/i18n';
 import { useSquatLayout } from '@/hooks/useSquatLayout';
-import { AbilitiesShownContext } from './abilitiesShown';
 import { AbilityPanel } from './AbilityPanel';
 import { HeroPortrait } from './HeroPortrait';
 import { RACE_TEXT, ROLE_NAMES } from './heroText';
@@ -28,10 +27,10 @@ interface Props {
  * picked hero named above. Where the frame does not already show the abilities, they come first.
  */
 export function HeroStrip({ value, onChange, taken = [], label }: Props) {
-  const abilitiesShown = useContext(AbilitiesShownContext);
   const hero = HEROES[value] ?? HEROES[HERO_IDS[0]];
   const squat = useSquatLayout();
   const [tab, setTab] = useState<Race>(hero.race);
+  const [skillsOpen, setSkillsOpen] = useState(false);
   const portrait = (id: string) => {
     const def = HEROES[id];
     const unavailable = taken.includes(id) && id !== value;
@@ -51,15 +50,40 @@ export function HeroStrip({ value, onChange, taken = [], label }: Props) {
       </button>
     );
   };
+  // The abilities open over the hero on request, and stay out of its way otherwise.
+  const skills = skillsOpen && (
+    <div className="absolute bottom-full left-1/2 z-30 mb-2 flex max-h-[calc(100dvh-7.5rem)] w-[min(31rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 overflow-y-auto rounded-xl hud-sheet p-2.5">
+      <AbilityPanel key={hero.id} heroId={hero.id} />
+      <button
+        type="button"
+        onClick={() => setSkillsOpen(false)}
+        className="cursor-pointer self-end rounded-md border border-border px-3 py-1 text-xs"
+      >
+        {tr('Đóng')}
+      </button>
+    </div>
+  );
+  const skillsButton = (
+    <button
+      type="button"
+      onClick={() => setSkillsOpen((open) => !open)}
+      aria-expanded={skillsOpen}
+      className="cursor-pointer rounded-md border border-primary px-2 py-0.5 text-[10px] font-bold tracking-wider text-primary uppercase"
+    >
+      {tr('Kỹ năng')}
+    </button>
+  );
   if (squat) {
     // A phone held sideways: one low row along the bottom, under the hero standing in the backdrop.
     // One race at a time, so its four portraits stay big enough for a thumb.
     return (
-      <div className="flex w-full items-center gap-3 text-left">
-        <p className="flex min-w-0 flex-col leading-tight">
+      <div className="relative flex w-full items-center gap-3 text-left">
+        {skills}
+        <div className="flex min-w-0 flex-col gap-0.5 leading-tight">
           <span className="truncate text-sm font-black tracking-wide uppercase">{hero.name}</span>
           <span className={`truncate text-[11px] font-semibold ${RACE_TEXT[hero.race]}`}>{ROLE_NAMES[hero.role]}</span>
-        </p>
+          {skillsButton}
+        </div>
         <div role="tablist" className="grid shrink-0 grid-cols-2 gap-1">
           {RACE_ORDER.map((race) => (
             <button
@@ -83,11 +107,12 @@ export function HeroStrip({ value, onChange, taken = [], label }: Props) {
     );
   }
   return (
-    <div className="flex w-full flex-col gap-2 text-left">
-      {!abilitiesShown && <AbilityPanel key={hero.id} heroId={hero.id} />}
-      <p className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+    <div className="relative flex w-full flex-col gap-2 text-left">
+      {skills}
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
         <span className="text-xl leading-tight font-black tracking-wide uppercase squat:text-base">{hero.name}</span>
         <span className="text-sm text-muted-foreground squat:text-xs">{tr(hero.title)}</span>
+        {skillsButton}
         <span className={`ml-auto text-sm font-semibold squat:text-xs ${RACE_TEXT[hero.race]}`}>
           {tr(RACES[hero.race].name)}
           <span className="ml-2 font-normal text-muted-foreground">{ROLE_NAMES[hero.role]}</span>

@@ -13,6 +13,7 @@ export const routes: RouteObject[] = [
       { path: '/r/:code', lazy: page(() => import('./pages/room')) },
       { path: '/q', lazy: page(() => import('./pages/queue')) },
       { path: '/credits', lazy: page(() => import('./pages/credits')) },
+      { path: '/privacy', lazy: page(() => import('./pages/privacy')) },
       // A development tool for making the hero portrait images; not shipped as a page of the game.
       ...(import.meta.env.DEV ? [{ path: '/portrait/:heroId', lazy: page(() => import('./pages/portrait')) }] : []),
       { path: '*', lazy: page(() => import('./pages/not-found')) },

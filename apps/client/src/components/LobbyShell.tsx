@@ -5,8 +5,6 @@ import { useWideLayout } from '@/hooks/useWideLayout';
 import { useServerStatus } from '@/net/serverStatus';
 import { useSquatLayout } from '@/hooks/useSquatLayout';
 import { useSettingsStore } from '@/store/settingsStore';
-import { AbilitiesShownContext } from '@/ui/abilitiesShown';
-import { AbilityPanel } from '@/ui/AbilityPanel';
 import { HeroTurnArea } from '@/ui/HeroTurnArea';
 import { FullscreenButton } from '@/ui/FullscreenButton';
 import { LangSwitch } from '@/ui/LangSwitch';
@@ -94,7 +92,7 @@ export function LobbyShell({ children, aside, actions, heroId, sides, titled = f
   // On a wide screen the 3D hero stands in the backdrop, between the columns. A phone held sideways
   // has no room there: it gets a small lit stage of its own in a narrow middle column instead.
   const showHero = wide;
-  // The abilities float over the 3D hero only where there is one: a wide screen, with a hero and its picker shown.
+  // A wide screen with a hero and its picker shown: the middle column is kept clear for the 3D hero.
   const overHero = wide && heroId !== undefined && aside !== undefined && aside !== null && aside !== false;
   const column =
     'mx-auto flex w-full max-w-xl flex-col items-center gap-6 xl:gap-4 text-center lg:mx-0 lg:items-start lg:text-left squat:relative squat:z-10 squat:mx-0 squat:items-start squat:gap-2 squat:text-left';
@@ -148,14 +146,6 @@ export function LobbyShell({ children, aside, actions, heroId, sides, titled = f
             </div>
             {showHero && heroId && (
               <div className="flex min-w-0 flex-col items-center gap-3 xl:col-start-2 xl:row-start-1 squat:col-start-2 squat:row-start-1">
-                {/* A phone has no room for the abilities over the hero's head as well. */}
-                {wide && (
-                  <AbilityPanel
-                    key={heroId}
-                    heroId={heroId}
-                    className="glass-panel w-full max-w-[31rem] animate-rise rounded-xl p-3"
-                  />
-                )}
                 <HeroTurnArea className="flex min-h-40 w-full flex-1 items-end justify-center pb-1 text-xs text-muted-foreground/70 squat:min-h-24">
                   {tr('Giữ và kéo để xoay tướng')}
                 </HeroTurnArea>
@@ -163,25 +153,19 @@ export function LobbyShell({ children, aside, actions, heroId, sides, titled = f
             )}
             {squat && heroId && <PhoneHeroStage heroId={heroId} className="col-start-2 row-start-1" />}
             <div className="col-span-2 min-w-0 xl:col-span-3 xl:row-start-2 squat:relative squat:z-10 squat:col-span-3 squat:col-start-1 squat:row-start-2">
-              <AbilitiesShownContext value={showHero && heroId !== undefined}>{children}</AbilitiesShownContext>
+              {children}
             </div>
           </main>
         ) : (
           <main
-            className={`grid flex-1 grid-cols-[minmax(0,1fr)] content-center gap-6 px-5 py-6 lg:px-24 squat:content-start squat:gap-2 squat:px-4 squat:py-1 squat:pb-10 ${aside ? 'xl:grid-cols-[minmax(0,24rem)_1fr_24rem] xl:gap-x-8 xl:px-16 squat:grid-cols-[minmax(0,9fr)_minmax(0,6fr)_minmax(0,11fr)] squat:gap-x-3' : ''}`}
+            className={`grid flex-1 grid-cols-[minmax(0,1fr)] content-center gap-6 px-5 py-6 lg:px-24 squat:content-start squat:gap-2 squat:px-4 squat:py-1 squat:pb-10 ${aside ? 'xl:grid-cols-[minmax(0,24rem)_1fr_28rem] xl:gap-x-8 xl:px-16 squat:grid-cols-[minmax(0,9fr)_minmax(0,6fr)_minmax(0,11fr)] squat:gap-x-3' : ''}`}
           >
-            <AbilitiesShownContext value={overHero}>
+            <>
               <div className={`${column} xl:col-start-1 xl:self-end squat:col-start-1`}>{children}</div>
               {overHero && heroId && (
-                // The empty middle column: the abilities over the head of the hero standing in the backdrop,
-                // and under them the hero itself, which can be dragged round.
+                // The empty middle column: the hero standing in the backdrop, with nothing in front of it,
+                // which can be dragged round. Its abilities are listed in the picker beside it.
                 <div className="flex flex-col gap-3 self-stretch xl:col-start-2 xl:row-span-2 xl:row-start-1">
-                  <AbilityPanel
-                    key={heroId}
-                    heroId={heroId}
-                    // Wide enough for the six ability tabs to sit on one row.
-                    className="glass-panel w-full max-w-[31rem] animate-rise self-center rounded-xl p-3"
-                  />
                   <HeroTurnArea className="flex min-h-64 flex-1 items-end justify-center pb-1 text-xs text-muted-foreground/70">
                     {tr('Giữ và kéo để xoay tướng')}
                   </HeroTurnArea>
@@ -202,16 +186,21 @@ export function LobbyShell({ children, aside, actions, heroId, sides, titled = f
                   {actions}
                 </div>
               )}
-            </AbilitiesShownContext>
+            </>
           </main>
         )}
         {/* A pick room on a wide screen gives the whole bottom edge to its dock. */}
         {!(sides && wide) && (
           <footer className="px-5 py-4 pr-28 lg:px-10 lg:pr-28 squat:px-4 squat:py-2 squat:pr-28">
             <SoundSettings />
-            <Link to="/credits" className="mt-2 block text-center text-xs text-muted-foreground underline lg:text-left">
-              {tr('Ghi công')}
-            </Link>
+            <p className="mt-2 flex justify-center gap-4 text-xs text-muted-foreground lg:justify-start">
+              <Link to="/credits" className="underline">
+                {tr('Ghi công')}
+              </Link>
+              <Link to="/privacy" className="underline">
+                {tr('Quyền riêng tư')}
+              </Link>
+            </p>
           </footer>
         )}
       </div>

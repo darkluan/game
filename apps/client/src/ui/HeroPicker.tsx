@@ -1,10 +1,9 @@
 import { tr } from '@/i18n';
-import { lazy, Suspense, useContext, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { HERO_IDS, HEROES, type Race, RACES } from '@game/core';
 import { useNarrowLayout } from '@/hooks/useNarrowLayout';
 import { useSquatLayout } from '@/hooks/useSquatLayout';
 import { useWideLayout } from '@/hooks/useWideLayout';
-import { AbilitiesShownContext } from './abilitiesShown';
 import { AbilityPanel } from './AbilityPanel';
 import { HeroPortrait } from './HeroPortrait';
 import { HeroTurnArea } from './HeroTurnArea';
@@ -44,7 +43,6 @@ export function HeroPicker({ value, onChange, taken = [], label }: Props) {
   const squat = useSquatLayout();
   const narrow = useNarrowLayout();
   // On a wide screen the lobby frame shows the abilities over the 3D hero instead.
-  const abilitiesShown = useContext(AbilitiesShownContext);
   const hero = HEROES[value] ?? HEROES[HERO_IDS[0]];
   const race = RACES[hero.race];
   // The race whose heroes are listed when the list is tabbed; it starts on the picked hero's own race.
@@ -105,7 +103,7 @@ export function HeroPicker({ value, onChange, taken = [], label }: Props) {
         </p>
       </div>
 
-      {!abilitiesShown && <AbilityPanel heroId={hero.id} />}
+      <AbilityPanel heroId={hero.id} />
 
       {tabbed ? (
         // On a phone there is no room for four columns: one race at a time, chosen by tab.
