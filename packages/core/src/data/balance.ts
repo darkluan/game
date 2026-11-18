@@ -146,6 +146,11 @@ export const BOT = {
   /** Bots flash toward home below this share of health with an enemy hero this close. */
   spellFlashBelow: 0.2,
   spellFlashWithin: 5,
+  /** Heroes that attack from no farther than this are fighters who have to close the distance. */
+  meleeReach: 3,
+  /** Such a bot flashes onto an enemy hero below this share of health, when it is more than this far out of reach. */
+  flashEngageBelow: 0.55,
+  flashEngageBeyond: 1.5,
   /** A retreating bot recalls instead of walking when home is farther than this and no enemy hero is in sight. */
   recallBeyond: 28,
   returnAbove: 0.8,

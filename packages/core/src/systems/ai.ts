@@ -1,4 +1,4 @@
-import { BOT, TOWER } from '../data/balance.js';
+import { BOT, SPELLS, TOWER } from '../data/balance.js';
 import { BOT_BUILDS } from '../data/items.js';
 import { dist } from '../math.js';
 import type { HeroEntity, Sim, UnitEntity } from '../sim/Sim.js';
@@ -227,6 +227,17 @@ class BotBrain {
       return;
     }
     if (enemyHero && (!towerThreatens(sim, h, enemyHero) || hpPct(enemyHero) < 0.25)) {
+      // A fighter who must get close jumps onto a wounded enemy that is just out of reach, as a player would.
+      const gap = dist(h.pos, enemyHero.pos) - h.attacker.range;
+      if (
+        h.attacker.range <= BOT.meleeReach &&
+        gap > BOT.flashEngageBeyond &&
+        gap <= SPELLS.flash.range &&
+        hpPct(enemyHero) < BOT.flashEngageBelow &&
+        hpPct(h) > hpPct(enemyHero)
+      ) {
+        this.issue({ t: 'spell', spell: 'flash', x: enemyHero.pos.x, z: enemyHero.pos.z });
+      }
       this.fight(enemyHero);
       return;
     }
