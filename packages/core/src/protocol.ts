@@ -1,7 +1,8 @@
-import { RELIC, xpToNext } from './data/balance.js';
+import { RELIC, TICK_RATE, xpToNext } from './data/balance.js';
 import type { HeroEntity, Sim } from './sim/Sim.js';
 import type { TeamSynergy } from './races/index.js';
 import { canShop, discountOf } from './systems/shop.js';
+import { abilityPower } from './systems/stats.js';
 import {
   ABILITY_SLOTS,
   type Entity,
@@ -70,6 +71,20 @@ export interface EntitySnap {
   kda?: [number, number, number];
 }
 
+/** A hero's fighting numbers as they stand now, with level, items, form and followers counted in. */
+export interface HeroStats {
+  /** Damage of one basic attack. */
+  attack: number;
+  armor: number;
+  /** Basic attacks per second. */
+  attackSpeed: number;
+  /** Units per second. */
+  moveSpeed: number;
+  attackRange: number;
+  /** Multiplier on ability damage. */
+  abilityPower: number;
+}
+
 /** The receiving player's own hero: what only they should see. */
 export interface YouSnap {
   id: number;
@@ -99,6 +114,7 @@ export interface YouSnap {
   discount: number;
   /** What the team's mix of races earns it. */
   synergy: TeamSynergy;
+  stats: HeroStats;
 }
 
 export interface Snapshot {
@@ -236,6 +252,14 @@ export function youSnapshotOf(sim: Sim, h: HeroEntity): YouSnap {
     canShop: canShop(sim, h),
     discount: discountOf(sim.heroDef(hero.defId), sim.synergy[h.team]),
     synergy: sim.synergy[h.team],
+    stats: {
+      attack: Math.round(h.attacker.damage),
+      armor: Math.round(h.health.armor),
+      attackSpeed: round2(TICK_RATE / h.attacker.intervalTicks),
+      moveSpeed: round2(h.mover.speed),
+      attackRange: round2(h.attacker.range),
+      abilityPower: round2(abilityPower(sim, h)),
+    },
   };
 }
 
