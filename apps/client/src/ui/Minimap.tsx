@@ -1,10 +1,13 @@
 import { tr } from '@/i18n';
 import { useEffect, useRef } from 'react';
+import type { Vec2 } from '@game/core';
 import type { GameSession } from '@/lib/session';
 import { minimapPoint } from '@/lib/minimapPoint';
 import { useGameStore } from '@/store/gameStore';
 
 const WIDTH = 250;
+/** Holding the minimap this long looks at the spot instead of walking to it. */
+const HOLD_TO_LOOK_MS = 220;
 
 /** Reads the design tokens so the map uses the same colours as the rest of the HUD. */
 function tokens() {
@@ -26,6 +29,8 @@ export function Minimap({ game }: { game: GameSession }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   // Redraw whenever the HUD state changes, i.e. once per game tick.
   const hud = useGameStore((s) => s.hud);
+  const setPeek = useGameStore((s) => s.setPeek);
+  const press = useRef<{ at: Vec2; alt: boolean; timer: number } | null>(null);
   const { halfWidth, halfDepth } = game.map;
   const scale = WIDTH / (halfWidth * 2);
   const height = Math.round(halfDepth * 2 * scale);
@@ -121,15 +126,37 @@ export function Minimap({ game }: { game: GameSession }) {
       width={WIDTH}
       height={height}
       role="img"
-      aria-label={tr('Bản đồ nhỏ. Bấm để di chuyển tới đó.')}
+      aria-label={tr('Bản đồ nhỏ. Bấm để di chuyển tới đó, giữ để nhìn tới đó.')}
       // Lets a signal button dragged onto the map find it.
       data-minimap
       className="pointer-events-auto cursor-pointer rounded-md hud-panel"
+      // A quick press walks there (or, with Alt, calls the team there). Holding looks there instead:
+      // the camera goes to the spot and follows the finger until it lifts.
       onPointerDown={(e) => {
-        const { x, z } = minimapPoint(e.currentTarget, e.clientX, e.clientY, game.map);
-        // Alt+click calls the team to the spot instead of walking there.
-        if (game.chatEnabled && e.altKey) game.sendChat({ k: 'ping', type: 'gather', x, z });
-        else game.send({ t: 'move', x, z });
+        const target = e.currentTarget;
+        target.setPointerCapture(e.pointerId);
+        const at = minimapPoint(target, e.clientX, e.clientY, game.map);
+        const timer = window.setTimeout(() => setPeek(press.current?.at ?? at), HOLD_TO_LOOK_MS);
+        press.current = { at, alt: e.altKey, timer };
+      }}
+      onPointerMove={(e) => {
+        if (!press.current) return;
+        press.current.at = minimapPoint(e.currentTarget, e.clientX, e.clientY, game.map);
+        if (useGameStore.getState().peek) setPeek(press.current.at);
+      }}
+      onPointerUp={() => {
+        const held = press.current;
+        press.current = null;
+        if (!held) return;
+        window.clearTimeout(held.timer);
+        if (useGameStore.getState().peek) setPeek(null);
+        else if (game.chatEnabled && held.alt) game.sendChat({ k: 'ping', type: 'gather', x: held.at.x, z: held.at.z });
+        else game.send({ t: 'move', x: held.at.x, z: held.at.z });
+      }}
+      onPointerCancel={() => {
+        window.clearTimeout(press.current?.timer);
+        press.current = null;
+        setPeek(null);
       }}
     />
   );

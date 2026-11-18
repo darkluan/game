@@ -27,6 +27,9 @@ interface GameStore {
   setScoreboard: (open: boolean) => void;
   setChatOpen: (open: boolean, typing?: boolean) => void;
   setPingWheel: (wheel: { x: number; y: number; at: Vec2 } | null) => void;
+  /** A point of the map the player is holding the minimap on: the camera looks there instead of at the hero. */
+  peek: Vec2 | null;
+  setPeek: (at: Vec2 | null) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -53,10 +56,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       scoreboardOpen: false,
       chatOpen: false,
       pingWheel: null,
+      peek: null,
     }),
   setHud: (hud) => set({ hud }),
   toggleShop: () => set({ shopOpen: !get().shopOpen }),
   setScoreboard: (scoreboardOpen) => set({ scoreboardOpen }),
   setChatOpen: (chatOpen, typing = false) => set({ chatOpen, chatTyping: chatOpen && typing }),
   setPingWheel: (pingWheel) => set({ pingWheel }),
+  peek: null,
+  setPeek: (peek) => set({ peek }),
 }));

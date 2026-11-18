@@ -43,7 +43,8 @@ function GameLoop({ game, shadows, touch }: { game: GameSession; shadows: boolea
   useFrame(({ camera, raycaster, pointer }, delta) => {
     if (game.update(delta)) setHud(game.hud());
     if (slow?.frame(delta)) lowerGraphics();
-    const p = game.renderPos(game.hero, scratch.pos);
+    // The camera follows the hero, unless the player is holding the minimap on some other place.
+    const p = useGameStore.getState().peek ?? game.renderPos(game.hero, scratch.pos);
     camera.position.set(p.x + CAMERA_OFFSET.x, CAMERA_OFFSET.y, p.z + CAMERA_OFFSET.z);
     camera.lookAt(p.x, 0, p.z);
     camera.updateMatrixWorld();
