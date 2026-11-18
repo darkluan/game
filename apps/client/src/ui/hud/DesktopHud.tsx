@@ -199,9 +199,10 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
         )}
       </p>
 
-      {/* The console. Three blocks: who you are, what you can do, what you carry. */}
-      <div className="pointer-events-auto hud-console bottom-0 left-[262px] flex min-w-[940px] items-stretch gap-4 px-6 pt-3.5 pb-2 min-[1500px]:left-1/2 min-[1500px]:-translate-x-1/2">
-        <div className="flex w-52 shrink-0 flex-col justify-between gap-1 text-xs">
+      {/* The console. Three blocks: who you are, what you can do, what you carry. In a window too narrow
+          for all of it beside the minimap, the first block keeps to the portrait and the level. */}
+      <div className="pointer-events-auto hud-console bottom-0 left-[262px] flex items-stretch min-[1280px]:min-w-[940px] gap-4 px-6 pt-3.5 pb-2 min-[1500px]:left-1/2 min-[1500px]:-translate-x-1/2">
+        <div className="flex shrink-0 flex-col justify-between gap-1 text-xs min-[1280px]:w-52">
           <div className="flex items-center gap-2">
             {/* The portrait in a frame of its race's colour, the hero's level pinned to its corner. */}
             <div className="relative shrink-0">
@@ -213,19 +214,21 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
                 {hud.level}
               </span>
             </div>
-            <div>
+            <div className="max-[1279px]:hidden">
               <p className="text-sm leading-tight font-semibold">{hud.heroName}</p>
               <p className={RACE_TEXT[hud.race]}>{raceName(hud.race)}</p>
             </div>
           </div>
-          <StatsGrid hud={hud} />
-          {hud.synergy.map((line) => (
-            <p key={line} className="text-[10px] leading-tight text-primary">
-              {line}
-            </p>
-          ))}
+          <div className="flex flex-col gap-1 max-[1279px]:hidden">
+            <StatsGrid hud={hud} />
+            {hud.synergy.map((line) => (
+              <p key={line} className="text-[10px] leading-tight text-primary">
+                {line}
+              </p>
+            ))}
+          </div>
           <div>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground max-[1279px]:hidden">
               {tr('Cấp {level}', { level: hud.level })}
               {hud.skillPoints > 0 && (
                 <span className="ml-1 font-semibold text-primary">
