@@ -123,9 +123,9 @@ Tên là tạm đặt. Đội hình ra mắt 8 tướng, MVP làm 4 tướng đ�
 2. Server quét hàng chờ mỗi 1-2 giây, tìm 6 người có MMR gần nhau.
 3. Phạm vi MMR ban đầu hẹp (cộng trừ 100), nới thêm 50 mỗi 10 giây chờ.
 4. Đủ 6 người: thử các cách chia đội, chọn cách có MMR trung bình hai đội sát nhau nhất. Nhóm đi chung luôn cùng đội và được cộng thêm MMR khi tính.
-5. Bảng Chấp nhận 10 giây. Ai từ chối hoặc không bấm bị loại khỏi hàng chờ, người còn lại quay về đầu hàng.
+5. Bảng Chấp nhận 15 giây. Ai từ chối hoặc không bấm bị loại khỏi hàng chờ, người còn lại quay về đầu hàng.
 6. Chọn tướng 30 giây, một đội không trùng tướng.
-7. Chờ quá 75 giây: lấp chỗ trống bằng bot (ghi rõ là bot). Trận có bot thì MMR thay đổi ít hơn.
+7. Chờ quá 45 giây: lấp chỗ trống bằng bot (ghi rõ là bot). Trận có bot thì MMR thay đổi ít hơn.
 8. Sau trận: cập nhật MMR bằng OpenSkill, lưu lịch sử.
 9. Thoát giữa trận: bot thay, người thoát bị khóa tìm trận 5 phút, 15 phút, 1 giờ nếu tái phạm.
 
@@ -361,7 +361,7 @@ CMD ["node", "apps/server/dist/index.js"]
 - [x] Lấp bot khi chờ lâu
 - [x] Phạt thoát trận
 
-**Xong khi:** người lạ bấm Tìm trận và được xếp vào trận cân bằng, hoặc trận có bot sau tối đa 75 giây.
+**Xong khi:** người lạ bấm Tìm trận và được xếp vào trận cân bằng, hoặc trận có bot sau tối đa 45 giây.
 
 ### Giai đoạn 6: Hoàn thiện (3-4 tuần)
 
