@@ -40,8 +40,14 @@ const TIP =
 
 function AbilityButton({ ability, game }: { ability: AbilityHud; game: GameSession }) {
   const learned = ability.level > 0;
+  const setAimSlot = useGameStore((s) => s.setAimSlot);
   return (
-    <div className="relative flex flex-col items-center gap-1">
+    // With the pointer over an ability, the scene shows how far it reaches and where it would land.
+    <div
+      className="relative flex flex-col items-center gap-1"
+      onPointerEnter={() => setAimSlot(ability.slot)}
+      onPointerLeave={() => setAimSlot(null)}
+    >
       {/* peer-hover: the level-up button shows what the next level brings, the ability itself what it has now. */}
       <button
         type="button"

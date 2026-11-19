@@ -1,5 +1,5 @@
 import type { AbilitySlot, SpellId, Vec2 } from '@game/core';
-import type { GameSession } from '@/lib/session';
+import type { GameSession, ViewEntity } from '@/lib/session';
 
 /** Click on the ground: attack the enemy under the cursor, else walk there. */
 export function clickGround(game: GameSession, at: Vec2): void {
@@ -20,28 +20,34 @@ export function clickGround(game: GameSession, at: Vec2): void {
   }
 }
 
+/** Where a cast of this ability would go right now: on the hero itself, at one enemy (none, if there is none in reach), or at a point. */
+export type CastAim = { on: 'self' } | { on: 'unit'; target: ViewEntity | null } | { on: 'point'; point: Vec2 };
+
 /**
  * Quick cast: aim at the cursor. Without a cursor aim (HUD button) or without an enemy under it,
- * unit-targeted abilities fall back to the nearest enemy in range.
+ * unit-targeted abilities fall back to the nearest enemy in range. The drawing of where a held
+ * ability would land asks the same question, so what is shown is what is cast.
  */
-export function castSlot(game: GameSession, slot: AbilitySlot, aim: Vec2 | null): void {
+export function aimOf(game: GameSession, slot: AbilitySlot, aim: Vec2 | null): CastAim {
   const def = game.ability(slot);
-  if (def.targeting === 'self') {
-    game.send({ t: 'cast', slot });
-    return;
-  }
-  if (def.targeting === 'unit') {
-    const target = (aim && game.pickEnemy(aim, 1.5)) ?? game.nearestEnemy(def.range);
-    if (target) game.send({ t: 'cast', slot, targetId: target.id });
-    return;
-  }
+  if (def.targeting === 'self') return { on: 'self' };
+  if (def.targeting === 'unit')
+    return { on: 'unit', target: (aim && game.pickEnemy(aim, 1.5)) ?? game.nearestEnemy(def.range) };
   const hero = game.hero;
   const point = aim ??
     game.nearestEnemy(def.range + 2)?.pos ?? {
       x: hero.pos.x + Math.sin(hero.facing) * def.range,
       z: hero.pos.z + Math.cos(hero.facing) * def.range,
     };
-  game.send({ t: 'cast', slot, x: point.x, z: point.z });
+  return { on: 'point', point };
+}
+
+export function castSlot(game: GameSession, slot: AbilitySlot, aim: Vec2 | null): void {
+  const where = aimOf(game, slot, aim);
+  if (where.on === 'self') game.send({ t: 'cast', slot });
+  else if (where.on === 'unit') {
+    if (where.target) game.send({ t: 'cast', slot, targetId: where.target.id });
+  } else game.send({ t: 'cast', slot, x: where.point.x, z: where.point.z });
 }
 
 /**

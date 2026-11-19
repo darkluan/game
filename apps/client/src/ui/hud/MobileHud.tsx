@@ -93,6 +93,7 @@ function RoundAbility({
   onPreview: (slot: AbilitySlot) => void;
 }) {
   const spot = ABILITY_SPOTS[ability.slot];
+  const setAimSlot = useGameStore((s) => s.setAimSlot);
   const hold = useRef<number | undefined>(undefined);
   const cooling = ability.level > 0 && ability.cooldownLeft > 0;
   return (
@@ -101,8 +102,18 @@ function RoundAbility({
         type="button"
         aria-label={ability.name}
         disabled={!ability.usable}
-        // pointerdown, not click: on a phone a click waits for the finger to lift.
-        onPointerDown={() => castSlot(game, ability.slot, null)}
+        // A finger down shows where the ability would land; lifting it casts. Sliding off the button
+        // before lifting calls it off, which is how a cast is taken back.
+        onPointerDown={() => setAimSlot(ability.slot)}
+        onPointerUp={(e) => {
+          setAimSlot(null);
+          const box = e.currentTarget.getBoundingClientRect();
+          const inside =
+            e.clientX >= box.left && e.clientX <= box.right && e.clientY >= box.top && e.clientY <= box.bottom;
+          if (inside) castSlot(game, ability.slot, null);
+        }}
+        onPointerCancel={() => setAimSlot(null)}
+        onContextMenu={(e) => e.preventDefault()}
         className={`pointer-events-auto relative size-full touch-none overflow-hidden rounded-full border-2 bg-panel text-sm font-bold ${
           ability.usable
             ? 'border-primary shadow-[inset_0_0_14px_color-mix(in_srgb,var(--primary)_45%,transparent)]'

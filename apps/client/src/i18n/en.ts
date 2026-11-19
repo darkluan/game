@@ -211,6 +211,8 @@ export const EN: Record<string, string> = {
   'Hai Thần: mỗi tín đồ mạnh gấp rưỡi': 'Two Gods: each follower counts for one and a half',
   'Hai Người máy: Nhiệt giảm nhanh gấp rưỡi': 'Two Machines: Heat drops one and a half times faster',
   'Ba tộc khác nhau: cả đội chạy nhanh hơn 6%': 'Three different races: the team moves 6% faster',
+  'Cộng hưởng tộc': 'Race synergy',
+  'đội bạn đang có': 'your team has this',
   Bạn: 'You',
   Máy: 'Bot',
 
@@ -453,7 +455,8 @@ export const EN: Record<string, string> = {
   'Dùng chiêu': 'Cast an ability',
   'Đưa chuột về hướng muốn đánh rồi bấm phím của chiêu (Q W E R). Chiêu nhắm vào một kẻ địch cần có địch trong tầm.':
     'Point the mouse where you want to hit and press the ability key (Q W E R). An ability aimed at one enemy needs an enemy in range.',
-  'Bấm nút chiêu: chiêu tự nhắm kẻ địch gần nhất.': 'Tap an ability button: it aims at the nearest enemy by itself.',
+  'Bấm nút chiêu: chiêu tự nhắm kẻ địch gần nhất. Giữ nút để xem chiêu sẽ trúng đâu, thả ra để ra chiêu, kéo ngón tay ra ngoài nút để hủy.':
+    'Tap an ability button: it aims at the nearest enemy by itself. Hold the button to see where it will land, let go to cast, slide your finger off the button to call it off.',
   'Đánh lính lên cấp': 'Fight minions to level up',
   'Đi cùng lính ra giữa đường và bấm vào kẻ địch để đánh. Hạ lính ở đòn cuối sẽ được vàng. Lên cấp 2 để tiếp tục.':
     'Follow your minions to the middle of the lane and click enemies to attack. Landing the last hit on a minion gives gold. Reach level 2 to continue.',

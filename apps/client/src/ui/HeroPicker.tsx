@@ -7,6 +7,7 @@ import { AbilityPanel } from './AbilityPanel';
 import { HeroPortrait } from './HeroPortrait';
 import { HeroTurnArea } from './HeroTurnArea';
 import { RACE_TEXT, ROLE_NAMES } from './heroText';
+import { SynergyNote } from './SynergyNote';
 
 // three.js is most of the bundle; the picker works before it arrives.
 const HeroStage = lazy(() => import('@/scene/HeroStage'));
@@ -118,6 +119,7 @@ export function HeroPicker({ value, onChange, taken = [], label }: Props) {
       <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-1.5">
         {HERO_IDS.filter((id) => HEROES[id].race === shownRace).map(heroCard)}
       </div>
+      <SynergyNote heroId={hero.id} teammates={taken} />
 
       {/* What the picked hero does, with every number, under the choice of heroes. */}
       <AbilityPanel heroId={hero.id} />

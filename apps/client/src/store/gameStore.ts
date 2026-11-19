@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { playCue, unlockAudio } from '@/lib/audio';
 import { LocalGame } from '@/lib/localGame';
 import type { GameSession, HudState } from '@/lib/session';
-import type { Vec2 } from '@game/core';
+import type { AbilitySlot, Vec2 } from '@game/core';
 import { useTutorialStore } from './tutorialStore';
 import { useSettingsStore } from './settingsStore';
 
@@ -30,6 +30,9 @@ interface GameStore {
   /** A point of the map the player is holding the minimap on: the camera looks there instead of at the hero. */
   peek: Vec2 | null;
   setPeek: (at: Vec2 | null) => void;
+  /** The ability the player is holding (a finger on its button) or pointing at: the scene draws where it would land. */
+  aimSlot: AbilitySlot | null;
+  setAimSlot: (slot: AbilitySlot | null) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -65,4 +68,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setPingWheel: (pingWheel) => set({ pingWheel }),
   peek: null,
   setPeek: (peek) => set({ peek }),
+  aimSlot: null,
+  setAimSlot: (aimSlot) => set({ aimSlot }),
 }));

@@ -5,6 +5,7 @@ import { useSquatLayout } from '@/hooks/useSquatLayout';
 import { AbilityPanel } from './AbilityPanel';
 import { HeroPortrait } from './HeroPortrait';
 import { RACE_TEXT, ROLE_NAMES } from './heroText';
+import { SynergyNote } from './SynergyNote';
 
 const RACE_ORDER: readonly Race[] = ['human', 'dragon', 'god', 'machine'];
 const RACE_EDGE = {
@@ -54,6 +55,8 @@ export function HeroStrip({ value, onChange, taken = [], label }: Props) {
   const skills = skillsOpen && (
     <div className="absolute bottom-full left-1/2 z-30 mb-2 flex max-h-[calc(100dvh-7.5rem)] w-[min(31rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 overflow-y-auto rounded-xl hud-sheet p-2.5">
       <AbilityPanel key={hero.id} heroId={hero.id} />
+      {/* A phone held sideways has no room for this beside the portraits. */}
+      {squat && <SynergyNote heroId={hero.id} teammates={taken} />}
       <button
         type="button"
         onClick={() => setSkillsOpen(false)}
@@ -130,6 +133,7 @@ export function HeroStrip({ value, onChange, taken = [], label }: Props) {
           </div>
         ))}
       </div>
+      <SynergyNote heroId={hero.id} teammates={taken} />
     </div>
   );
 }

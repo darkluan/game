@@ -35,7 +35,9 @@ const STEPS: Step[] = [
     desktop: tr(
       'Đưa chuột về hướng muốn đánh rồi bấm phím của chiêu (Q W E R). Chiêu nhắm vào một kẻ địch cần có địch trong tầm.',
     ),
-    touch: tr('Bấm nút chiêu: chiêu tự nhắm kẻ địch gần nhất.'),
+    touch: tr(
+      'Bấm nút chiêu: chiêu tự nhắm kẻ địch gần nhất. Giữ nút để xem chiêu sẽ trúng đâu, thả ra để ra chiêu, kéo ngón tay ra ngoài nút để hủy.',
+    ),
     done: (hud) => hud.abilities.some((a) => a.cooldownLeft > 0),
   },
   {
