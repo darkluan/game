@@ -25,6 +25,7 @@ import {
   TeamBar,
 } from './parts';
 import { SPELL_TONE } from './spellTone';
+import { AIM_CANCEL_ID, useAimDrag } from './useAimDrag';
 import { Joystick } from './Joystick';
 import { PingButtons } from './Pings';
 import { QuickChat } from './QuickChat';
@@ -50,13 +51,15 @@ const SPELL_SIZE = 48;
 
 function RoundSpell({ spell, game }: { spell: SpellHud; game: GameSession }) {
   const spot = SPELL_SPOTS[spell.id];
+  const aim = useAimDrag(game, 'flash', (at) => castSpell(game, 'flash', at));
   return (
     <button
       type="button"
       aria-label={spell.name}
       disabled={!spell.usable}
-      // Flash goes the way the hero faces: on a phone that is the way the stick was last pushed.
-      onPointerDown={() => castSpell(game, spell.id, null)}
+      // The flash is aimed by dragging, like an ability; a tap sends it the way the hero faces. The
+      // other two have nothing to aim and go at a touch.
+      {...(spell.id === 'flash' ? aim : { onPointerDown: () => castSpell(game, spell.id, null) })}
       style={{ right: spot.right, bottom: spot.bottom, width: SPELL_SIZE, height: SPELL_SIZE }}
       className={`pointer-events-auto absolute touch-none overflow-hidden rounded-full border-2 bg-panel text-sm font-bold ${
         spell.usable ? SPELL_TONE[spell.id].border : 'border-border text-muted-foreground'
@@ -79,6 +82,26 @@ function RoundSpell({ spell, game }: { spell: SpellHud; game: GameSession }) {
   );
 }
 
+/**
+ * Where a cast being aimed can be called off: it appears once the finger has left the button, and a
+ * finger lifted on it casts nothing. It lights up while the finger is over it.
+ */
+function AimCancel() {
+  const aiming = useGameStore((s) => s.aimSlot !== null && s.aimOffset !== null);
+  const over = useGameStore((s) => s.aimCancel);
+  if (!aiming) return null;
+  return (
+    <div
+      id={AIM_CANCEL_ID}
+      className={`absolute top-[5.5rem] right-[13.5rem] flex size-14 items-center justify-center rounded-full border-2 text-[10px] font-bold uppercase ${
+        over ? 'scale-110 border-danger bg-danger text-background' : 'border-danger bg-panel/80 text-danger'
+      }`}
+    >
+      {tr('Hủy')}
+    </div>
+  );
+}
+
 /** Holding + this long shows the next level instead of buying it. */
 const HOLD_TO_PREVIEW_MS = 350;
 
@@ -93,7 +116,7 @@ function RoundAbility({
   onPreview: (slot: AbilitySlot) => void;
 }) {
   const spot = ABILITY_SPOTS[ability.slot];
-  const setAimSlot = useGameStore((s) => s.setAimSlot);
+  const aim = useAimDrag(game, ability.slot, (at) => castSlot(game, ability.slot, at));
   const hold = useRef<number | undefined>(undefined);
   const cooling = ability.level > 0 && ability.cooldownLeft > 0;
   return (
@@ -102,18 +125,8 @@ function RoundAbility({
         type="button"
         aria-label={ability.name}
         disabled={!ability.usable}
-        // A finger down shows where the ability would land; lifting it casts. Sliding off the button
-        // before lifting calls it off, which is how a cast is taken back.
-        onPointerDown={() => setAimSlot(ability.slot)}
-        onPointerUp={(e) => {
-          setAimSlot(null);
-          const box = e.currentTarget.getBoundingClientRect();
-          const inside =
-            e.clientX >= box.left && e.clientX <= box.right && e.clientY >= box.top && e.clientY <= box.bottom;
-          if (inside) castSlot(game, ability.slot, null);
-        }}
-        onPointerCancel={() => setAimSlot(null)}
-        onContextMenu={(e) => e.preventDefault()}
+        // Hold to see where it would land, drag to aim it, lift to cast; see useAimDrag.
+        {...aim}
         className={`pointer-events-auto relative size-full touch-none overflow-hidden rounded-full border-2 bg-panel text-sm font-bold ${
           ability.usable
             ? 'border-primary shadow-[inset_0_0_14px_color-mix(in_srgb,var(--primary)_45%,transparent)]'
@@ -358,6 +371,8 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
         </div>
       )}
       {shopOpen && <ShopPanel hud={hud} game={game} onClose={toggleShop} />}
+
+      <AimCancel />
 
       <div className="absolute bottom-5 left-6">
         <Joystick onMove={walk} onRelease={halt} />

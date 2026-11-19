@@ -31,8 +31,16 @@ interface GameStore {
   peek: Vec2 | null;
   setPeek: (at: Vec2 | null) => void;
   /** The ability the player is holding (a finger on its button) or pointing at: the scene draws where it would land. */
-  aimSlot: AbilitySlot | null;
+  aimSlot: AbilitySlot | 'flash' | null;
   setAimSlot: (slot: AbilitySlot | null) => void;
+  /**
+   * Where a finger dragged from the button is aiming it, as a step on the ground from the hero; null
+   * while it has not been dragged (the cast then picks its own target). `aimCancel`: the drag is
+   * over the spot that calls the cast off.
+   */
+  aimOffset: Vec2 | null;
+  aimCancel: boolean;
+  setAim: (slot: AbilitySlot | 'flash' | null, offset?: Vec2 | null, cancel?: boolean) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -69,5 +77,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   peek: null,
   setPeek: (peek) => set({ peek }),
   aimSlot: null,
-  setAimSlot: (aimSlot) => set({ aimSlot }),
+  setAimSlot: (aimSlot) => set({ aimSlot, aimOffset: null, aimCancel: false }),
+  aimOffset: null,
+  aimCancel: false,
+  setAim: (aimSlot, aimOffset = null, aimCancel = false) => set({ aimSlot, aimOffset, aimCancel }),
 }));

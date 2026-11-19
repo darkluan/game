@@ -13,7 +13,7 @@ import {
   type Texture,
   Vector3,
 } from 'three';
-import type { Vec2 } from '@game/core';
+import { SPELLS, type Vec2 } from '@game/core';
 import { aimOf } from '@/input/commands';
 import { STRIKE_SECONDS } from '@/lib/baseSession';
 import type { GameSession } from '@/lib/session';
@@ -296,11 +296,32 @@ export function AimPreview({ game }: { game: GameSession }) {
     const [reachMesh, stripMesh, areaMesh, rimMesh] = parts as Mesh[];
     for (const part of parts as Mesh[]) part.visible = false;
     for (const edge of edges.current) if (edge) edge.visible = false;
-    const slot = useGameStore.getState().aimSlot;
-    if (!slot) return;
-    const def = game.ability(slot);
+    const { aimSlot: slot, aimOffset, aimCancel } = useGameStore.getState();
+    // Over the cancel spot nothing would be cast, so nothing is drawn.
+    if (!slot || aimCancel) return;
     const hero = game.renderPos(game.hero, pos);
     const [hx, hz] = [hero.x, hero.z];
+    // Aimed by a dragging finger, or left to pick its own target.
+    const aim = aimOffset ? { x: hx + aimOffset.x, z: hz + aimOffset.z } : null;
+    if (slot === 'flash') {
+      // The flash: its reach, and a disc where the hero would come down.
+      const range = SPELLS.flash.range;
+      reachMesh.visible = true;
+      reachMesh.position.set(hx, AIM_LIFT, hz);
+      reachMesh.scale.setScalar(range);
+      const [dx, dz] = aim ? [aim.x - hx, aim.z - hz] : [Math.sin(game.hero.facing), Math.cos(game.hero.facing)];
+      const far = Math.hypot(dx, dz) || 1;
+      // Aimed short of its reach, it comes down where it was aimed.
+      const jump = aim ? Math.min(far, range) : range;
+      const [lx, lz] = [hx + (dx / far) * jump, hz + (dz / far) * jump];
+      for (const part of [areaMesh, rimMesh]) {
+        part.visible = true;
+        part.position.set(lx, AIM_LIFT + 0.01, lz);
+        part.scale.setScalar(game.hero.radius + 0.5);
+      }
+      return;
+    }
+    const def = game.ability(slot);
     const radius = def.params.radius?.[0];
     if (def.range > 0) {
       reachMesh.visible = true;
@@ -338,7 +359,7 @@ export function AimPreview({ game }: { game: GameSession }) {
         }
       });
     };
-    const where = aimOf(game, slot, null);
+    const where = aimOf(game, slot, aim);
     if (where.on === 'self') disc(hx, hz, radius ?? game.hero.radius + 0.8);
     else if (where.on === 'unit') {
       if (!where.target) return;

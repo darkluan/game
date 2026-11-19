@@ -246,6 +246,7 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  Hủy: 'Cancel',
   'Lịch sử chat': 'Chat history',
   'Phép hỗ trợ': 'Helper spells',
   'D hồi máu cho bạn, F lướt nhanh một đoạn về phía con trỏ để đuổi hoặc chạy. T đưa bạn về căn cứ sau 5 giây đứng yên; bị đánh là hỏng.':
@@ -455,8 +456,8 @@ export const EN: Record<string, string> = {
   'Dùng chiêu': 'Cast an ability',
   'Đưa chuột về hướng muốn đánh rồi bấm phím của chiêu (Q W E R). Chiêu nhắm vào một kẻ địch cần có địch trong tầm.':
     'Point the mouse where you want to hit and press the ability key (Q W E R). An ability aimed at one enemy needs an enemy in range.',
-  'Bấm nút chiêu: chiêu tự nhắm kẻ địch gần nhất. Giữ nút để xem chiêu sẽ trúng đâu, thả ra để ra chiêu, kéo ngón tay ra ngoài nút để hủy.':
-    'Tap an ability button: it aims at the nearest enemy by itself. Hold the button to see where it will land, let go to cast, slide your finger off the button to call it off.',
+  'Bấm nút chiêu: chiêu tự nhắm kẻ địch gần nhất. Giữ nút rồi kéo ngón tay để tự nhắm hướng và điểm rơi, thả ra để ra chiêu; kéo vào ô Hủy để thôi.':
+    'Tap an ability button: it aims at the nearest enemy by itself. Hold it and drag your finger to aim the way and the spot yourself, let go to cast; drag onto Cancel to call it off.',
   'Đánh lính lên cấp': 'Fight minions to level up',
   'Đi cùng lính ra giữa đường và bấm vào kẻ địch để đánh. Hạ lính ở đòn cuối sẽ được vàng. Lên cấp 2 để tiếp tục.':
     'Follow your minions to the middle of the lane and click enemies to attack. Landing the last hit on a minion gives gold. Reach level 2 to continue.',
