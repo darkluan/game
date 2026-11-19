@@ -246,7 +246,9 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
-  'Lăn chuột để xem dọc đường · giữ Shift để xem ngang': 'Scroll to look along the lane · hold Shift to look across it',
+  'Lăn chuột, dùng phím mũi tên hoặc bấm bản đồ nhỏ để xem trận':
+    'Scroll, use the arrow keys or click the minimap to watch the fight',
+  'Chạm bản đồ nhỏ để xem trận': 'Tap the minimap to watch the fight',
   'Vào phòng {code} đấu 3v3 với tôi! Bấm link là chơi, không cần tải.':
     'Join room {code} for a 3v3 with me! Tap the link and play, nothing to install.',
   'Mời bạn bè': 'Invite friends',

@@ -14,7 +14,6 @@ import { ItemIcon } from '../icons/ItemIcon';
 import { ItemBag, ShopPanel } from '../Shop';
 import {
   AbilityInfo,
-  DeathNotice,
   EndScreen,
   EventFeed,
   type LayoutProps,
@@ -277,7 +276,7 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
       <PingButtons game={game} className="top-[4.75rem] left-16" />
 
       <TeamBar hud={hud} compact />
-      <EventFeed hud={hud} className="top-12 text-[11px]" />
+      <EventFeed hud={hud} deathHint={tr('Chạm bản đồ nhỏ để xem trận')} className="top-12 text-[11px]" />
 
       <div className="absolute top-1 right-1 flex items-center gap-1.5">
         <span className="rounded-md hud-panel px-2.5 py-1.5 text-xs font-semibold text-gold tabular-nums">
@@ -426,8 +425,6 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
           <RoundSpell key={s.id} spell={s} game={game} />
         ))}
       </div>
-
-      <DeathNotice hud={hud} />
       <EndScreen hud={hud} actions={actions} />
     </div>
   );

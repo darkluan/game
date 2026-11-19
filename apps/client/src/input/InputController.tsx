@@ -8,24 +8,42 @@ import { pingAtOffset } from '@/lib/pingWheel';
 
 /** How far one unit of the wheel's turning slides the view, in units of ground: about three for a notch. */
 const WHEEL_STEP = 0.03;
+/** How fast an arrow key slides it, in units of ground a second. */
+const ARROW_SPEED = 34;
+
+/** A point for the view to look at, kept inside the map. */
+function onMap(game: GameSession, x: number, z: number): { x: number; z: number } {
+  const { halfWidth, halfDepth } = game.map;
+  return { x: Math.max(-halfWidth, Math.min(halfWidth, x)), z: Math.max(-halfDepth, Math.min(halfDepth, z)) };
+}
 
 /**
  * Mouse and keyboard. Click to move or attack; Q W E R cast at the cursor; Alt+key levels up;
  * D heals, F flashes toward the cursor and T recalls to the fountain;
  * C opens the team's phrases, where 1 to 8 send one, and Enter opens the same panel ready to type; Alt + press opens the signal wheel;
  * S stops; B opens the shop; holding Tab shows the scoreboard.
- * While the hero is dead the mouse wheel slides the view along the lane, to watch the fight go on.
+ * While the hero is dead the mouse wheel and the arrow keys slide the view over the map, to watch
+ * the fight go on.
  * With `touch`, moving is the joystick's job, so a tap on the ground only picks an enemy to attack.
  */
 export function InputController({ game, touch }: { game: GameSession; touch: boolean }) {
   const canvas = useThree((s) => s.gl.domElement);
-  /** The view has been slid away from the fallen hero with the wheel: it goes back when the hero is up again. */
-  const watching = useRef(false);
+  /** Whether the hero was dead a frame ago, and which arrow keys are down: for looking round while it is. */
+  const watch = useRef({ wasDead: false, keys: new Set<string>() });
 
-  useFrame(() => {
-    if (!watching.current || game.hero.dead) return;
-    watching.current = false;
-    useGameStore.getState().setPeek(null);
+  useFrame((_, delta) => {
+    const state = watch.current;
+    const dead = game.hero.dead === true;
+    const store = useGameStore.getState();
+    // Up again: whatever the view was moved to while dead, it goes back to the hero.
+    if (state.wasDead && !dead) store.setPeek(null);
+    state.wasDead = dead;
+    if (!dead || state.keys.size === 0) return;
+    const from = store.peek ?? game.renderPos(game.hero, { x: 0, z: 0 });
+    const step = ARROW_SPEED * Math.min(0.1, delta);
+    const dx = (state.keys.has('ArrowRight') ? 1 : 0) - (state.keys.has('ArrowLeft') ? 1 : 0);
+    const dz = (state.keys.has('ArrowDown') ? 1 : 0) - (state.keys.has('ArrowUp') ? 1 : 0);
+    store.setPeek(onMap(game, from.x + dx * step, from.z + dz * step));
   });
 
   useEffect(() => {
@@ -48,23 +66,21 @@ export function InputController({ game, touch }: { game: GameSession; touch: boo
       game.sendChat({ k: 'ping', type, x: pingWheel.at.x, z: pingWheel.at.z });
     };
     const onWheel = (e: WheelEvent) => {
-      // Only a dead hero's player has nothing better to do with the wheel than look around.
+      // Only a dead hero's player has nothing better to do with the wheel than look around. A list
+      // that scrolls (the shop, the chat) keeps the wheel for itself.
       if (touch || !game.hero.dead) return;
+      if (e.target instanceof Element && e.target.closest('.overflow-y-auto')) return;
       e.preventDefault();
       const store = useGameStore.getState();
       const from = store.peek ?? game.renderPos(game.hero, { x: 0, z: 0 });
       // The wheel runs the length of the lane; tilted, or with Shift held, it goes across it.
       const across = e.shiftKey ? e.deltaY : e.deltaX;
       const along = e.shiftKey ? 0 : e.deltaY;
-      const { halfWidth, halfDepth } = game.map;
-      watching.current = true;
-      store.setPeek({
-        x: Math.max(-halfWidth, Math.min(halfWidth, from.x + along * WHEEL_STEP)),
-        z: Math.max(-halfDepth, Math.min(halfDepth, from.z + across * WHEEL_STEP)),
-      });
+      store.setPeek(onMap(game, from.x + along * WHEEL_STEP, from.z + across * WHEEL_STEP));
     };
     const onContextMenu = (e: Event) => e.preventDefault();
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code.startsWith('Arrow')) watch.current.keys.add(e.code);
       if (e.code === 'Tab') {
         e.preventDefault();
         useGameStore.getState().setScoreboard(true);
@@ -108,19 +124,21 @@ export function InputController({ game, touch }: { game: GameSession; touch: boo
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
+      watch.current.keys.delete(e.code);
       if (e.code === 'Tab') useGameStore.getState().setScoreboard(false);
     };
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('contextmenu', onContextMenu);
-    // Not passive: the page must not scroll or zoom under the game.
-    canvas.addEventListener('wheel', onWheel, { passive: false });
+    // On the window, not the game's canvas: the pointer is as likely to be over the HUD. Not passive:
+    // the page must not scroll or zoom under the game.
+    window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     return () => {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('contextmenu', onContextMenu);
-      canvas.removeEventListener('wheel', onWheel);
+      window.removeEventListener('wheel', onWheel);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);

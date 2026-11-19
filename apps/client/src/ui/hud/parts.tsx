@@ -324,13 +324,29 @@ export function AbilityInfo({
 
 const TONE_TEXT = { good: 'text-hp', bad: 'text-danger', neutral: 'text-gold', chat: 'text-ally' } as const;
 
-/** Relic status, team buffs and the latest announcements, stacked under the match clock. */
-export function EventFeed({ hud, className }: { hud: HudState; className: string }) {
+/**
+ * What is stacked under the match clock: the word that the player's hero is down and when it rises,
+ * then the relic's status, team buffs and the latest announcements. `deathHint` says what the player
+ * can do while waiting.
+ */
+export function EventFeed({ hud, className, deathHint }: { hud: HudState; className: string; deathHint?: string }) {
   const relic = hud.relic;
   return (
     <div
       className={`absolute left-1/2 flex w-[30rem] max-w-[60vw] -translate-x-1/2 flex-col items-center gap-1 text-center ${className}`}
     >
+      {hud.dead && hud.winner === null && (
+        // Thin and see-through, and up here out of the way: the fight goes on under it, and the player is watching it.
+        <div className="rounded-md border border-danger/50 bg-background/45 px-4 py-1 backdrop-blur-[2px]">
+          <p className="font-semibold text-danger">
+            {tr('Bạn đã bị hạ gục')}
+            <span className="ml-2 font-normal text-foreground tabular-nums">
+              {tr('Hồi sinh sau {seconds} giây', { seconds: hud.respawnSeconds })}
+            </span>
+          </p>
+          {deathHint && <p className="text-[11px] text-muted-foreground">{deathHint}</p>}
+        </div>
+      )}
       {relic && (
         <p className="rounded-md hud-panel px-3 py-1 text-gold">
           {tr('Di vật {relic} đang sáng ở rừng dưới', { relic: RELIC_NAMES[relic.type] })}
@@ -425,20 +441,6 @@ export function QuickBuy({ hud, game, className }: { hud: HudState; game: GameSe
       {tr('Mua {name}', { name: item.name })}
       <span className="tabular-nums">{item.price}</span>
     </button>
-  );
-}
-
-/** `hint`: something the player can do while waiting, said under the countdown. */
-export function DeathNotice({ hud, hint }: { hud: HudState; hint?: string }) {
-  if (!hud.dead || hud.winner !== null) return null;
-  return (
-    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 rounded-md hud-panel px-6 py-3 text-center">
-      <div className="text-lg font-semibold text-danger">{tr('Bạn đã bị hạ gục')}</div>
-      <div className="text-sm text-muted-foreground">
-        {tr('Hồi sinh sau {seconds} giây', { seconds: hud.respawnSeconds })}
-      </div>
-      {hint && <div className="mt-1 text-xs text-primary">{hint}</div>}
-    </div>
   );
 }
 

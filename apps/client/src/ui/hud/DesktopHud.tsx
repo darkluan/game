@@ -13,7 +13,6 @@ import { ItemBag, ShopPanel } from '../Shop';
 import {
   AbilityInfo,
   Bar,
-  DeathNotice,
   QuickBuy,
   RecallNotice,
   EndScreen,
@@ -164,7 +163,11 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
   return (
     <div className="pointer-events-none absolute inset-0 text-foreground">
       <TeamBar hud={hud} />
-      <EventFeed hud={hud} className="top-16 text-sm" />
+      <EventFeed
+        hud={hud}
+        deathHint={tr('Lăn chuột, dùng phím mũi tên hoặc bấm bản đồ nhỏ để xem trận')}
+        className="top-16 text-sm"
+      />
 
       <div className="absolute top-2 right-2 flex items-center gap-2">
         <button type="button" onClick={toggleMuted} aria-pressed={!muted} className={corner}>
@@ -315,7 +318,6 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
 
       <QuickBuy hud={hud} game={game} className="absolute bottom-48 left-1/2 -translate-x-1/2" />
       <RecallNotice hud={hud} />
-      <DeathNotice hud={hud} hint={tr('Lăn chuột để xem dọc đường · giữ Shift để xem ngang')} />
       <EndScreen hud={hud} actions={actions} />
     </div>
   );

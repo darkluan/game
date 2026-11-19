@@ -136,6 +136,9 @@ export function Minimap({ game }: { game: GameSession }) {
         const target = e.currentTarget;
         target.setPointerCapture(e.pointerId);
         const at = minimapPoint(target, e.clientX, e.clientY, game.map);
+        // A dead hero cannot be sent anywhere: the press looks at the spot at once, and the view stays
+        // there after the finger lifts, until the hero is up again.
+        if (game.hero.dead) setPeek(at);
         const timer = window.setTimeout(() => setPeek(press.current?.at ?? at), HOLD_TO_LOOK_MS);
         press.current = { at, alt: e.altKey, timer };
       }}
@@ -149,6 +152,7 @@ export function Minimap({ game }: { game: GameSession }) {
         press.current = null;
         if (!held) return;
         window.clearTimeout(held.timer);
+        if (game.hero.dead) return;
         if (useGameStore.getState().peek) setPeek(null);
         else if (game.chatEnabled && held.alt) game.sendChat({ k: 'ping', type: 'gather', x: held.at.x, z: held.at.z });
         else game.send({ t: 'move', x: held.at.x, z: held.at.z });
@@ -156,7 +160,7 @@ export function Minimap({ game }: { game: GameSession }) {
       onPointerCancel={() => {
         window.clearTimeout(press.current?.timer);
         press.current = null;
-        setPeek(null);
+        if (!game.hero.dead) setPeek(null);
       }}
     />
   );
