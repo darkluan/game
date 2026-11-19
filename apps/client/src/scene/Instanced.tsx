@@ -6,17 +6,15 @@ import type { GameSession } from '@/lib/session';
 import { COLORS, teamColor } from './palette';
 
 const MAX_MINIONS = 160;
-const MAX_PROJECTILES = 160;
 const MAX_BARS = 220;
 
 /**
- * Projectiles always, and with `simpleMinions` (low graphics) the minions too as plain shapes:
- * one draw call per shape however many there are.
+ * With `simpleMinions` (low graphics), the minions as plain shapes: one draw call per shape however
+ * many there are. What flies between units is drawn in Shots.
  */
 export function Swarm({ game, simpleMinions }: { game: GameSession; simpleMinions: boolean }) {
   const melee = useRef<InstancedMesh>(null);
   const ranged = useRef<InstancedMesh>(null);
-  const shots = useRef<InstancedMesh>(null);
   const scratch = useMemo(() => ({ dummy: new Object3D(), color: new Color(), pos: { x: 0, z: 0 } as Vec2 }), []);
 
   useFrame(() => {
@@ -46,24 +44,6 @@ export function Swarm({ game, simpleMinions }: { game: GameSession; simpleMinion
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
-
-    const mesh = shots.current;
-    if (!mesh) return;
-    let n = 0;
-    dummy.rotation.set(0, 0, 0);
-    dummy.scale.setScalar(1);
-    for (const s of game.projectiles()) {
-      if (s.dead || n >= MAX_PROJECTILES) continue;
-      const p = game.renderPos(s, pos);
-      dummy.position.set(p.x, 1.2, p.z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(n, dummy.matrix);
-      mesh.setColorAt(n, color.set(teamColor(s.team, game.hero.team)));
-      n++;
-    }
-    mesh.count = n;
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   });
 
   return (
@@ -75,10 +55,6 @@ export function Swarm({ game, simpleMinions }: { game: GameSession; simpleMinion
       <instancedMesh ref={ranged} args={[undefined, undefined, MAX_MINIONS]} frustumCulled={false}>
         <coneGeometry args={[0.45, 1.2, 8]} />
         <meshStandardMaterial />
-      </instancedMesh>
-      <instancedMesh ref={shots} args={[undefined, undefined, MAX_PROJECTILES]} frustumCulled={false}>
-        <sphereGeometry args={[0.22, 8, 8]} />
-        <meshBasicMaterial />
       </instancedMesh>
     </>
   );

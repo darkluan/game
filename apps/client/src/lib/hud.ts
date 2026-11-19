@@ -77,7 +77,8 @@ const CONDITION_LABELS: [StatusType, string][] = [
   ['haste', tr('Tăng tốc')],
 ];
 
-const PAIR_TEXT: Record<Race, string> = {
+/** What a team earns from two heroes of one race. */
+export const PAIR_TEXT: Record<Race, string> = {
   human: tr('Hai Người: mua đồ rẻ hơn 20%'),
   dragon: tr('Hai Rồng: tiến hóa sớm hơn 1 cấp'),
   god: tr('Hai Thần: mỗi tín đồ mạnh gấp rưỡi'),

@@ -145,6 +145,7 @@ export class OnlineGame extends BaseSession implements GameSession {
   }
 
   send(cmd: Command): void {
+    this.noteCommand(cmd);
     this.connection.send('cmd', cmd);
     if (cmd.t === 'move') this.predictMove(cmd.x, cmd.z);
     // Anything else (an attack, a cast, a stop) is the server's to play out.

@@ -1,7 +1,8 @@
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
+import { type Ref, useEffect, useMemo, useRef } from 'react';
 import type { Group, Mesh, MeshBasicMaterial } from 'three';
 import { HERO, type Vec2 } from '@game/core';
+import { type SynergyMark, synergyMarks } from '@/lib/heroSynergy';
 import type { GameSession, RosterHero } from '@/lib/session';
 import { useHeroActors } from './heroActors';
 import { HERO_MODELS } from './heroModels';
@@ -12,7 +13,57 @@ const TURN_RATE = 14; // radians of catch-up per second per radian of error
 /** How long the death animation stays on screen before the body disappears. */
 const CORPSE_SECONDS = 1.6;
 
-function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
+const THIRDS = [0, 1, 2].map((i) => (i * Math.PI * 2) / 3);
+
+/**
+ * The race synergy a hero benefits from, drawn on the hero so both teams can read the line-ups at a
+ * glance. A pair: a pulsing ring and three orbiting lights in the race's colour. Three different
+ * races: pale arcs racing round the feet, for the extra move speed.
+ */
+function SynergyAura({ mark, ref }: { mark: SynergyMark; ref: Ref<Group> }) {
+  const ring = useRef<Mesh>(null);
+  const spin = useRef<Group>(null);
+  const pair = mark.kind === 'pair';
+  const color = pair ? COLORS[mark.race] : COLORS.neutral;
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (spin.current) spin.current.rotation.y = pair ? t * 1.8 : -t * 5;
+    if (ring.current) {
+      const pulse = Math.sin(t * 3);
+      ring.current.scale.setScalar(1 + pulse * 0.05);
+      (ring.current.material as MeshBasicMaterial).opacity = 0.6 + pulse * 0.3;
+    }
+  });
+
+  return (
+    <group ref={ref} visible={false}>
+      {pair && (
+        <mesh ref={ring} rotation={FLAT} position={[0, 0.06, 0]}>
+          <ringGeometry args={[1.15, 1.32, 40]} />
+          <meshBasicMaterial color={color} transparent depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
+      <group ref={spin}>
+        {THIRDS.map((angle) =>
+          pair ? (
+            <mesh key={angle} position={[Math.cos(angle) * 1.25, 1.1, Math.sin(angle) * 1.25]}>
+              <sphereGeometry args={[0.11, 10, 8]} />
+              <meshBasicMaterial color={color} toneMapped={false} />
+            </mesh>
+          ) : (
+            <mesh key={angle} rotation={FLAT} position={[0, 0.06, 0]}>
+              <ringGeometry args={[1.15, 1.3, 12, 1, angle, 0.9]} />
+              <meshBasicMaterial color={color} transparent opacity={0.8} depthWrite={false} />
+            </mesh>
+          ),
+        )}
+      </group>
+    </group>
+  );
+}
+
+function HeroModel({ game, entry, mark }: { game: GameSession; entry: RosterHero; mark?: SynergyMark }) {
   const base = HERO_MODELS[entry.defId] ?? HERO_MODELS.kael;
   // A dragon has a different model for each evolution; everyone else has just the one.
   const looks = useMemo(() => [base, ...(base.stages ?? [])], [base]);
@@ -21,6 +72,7 @@ function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
   const ring = useRef<Mesh>(null);
   const aura = useRef<Mesh>(null);
   const stun = useRef<Mesh>(null);
+  const synergy = useRef<Group>(null);
   const local = useRef({ pos: { x: 0, z: 0 } as Vec2, diedAt: -1 });
   const isPlayer = entry.id === game.hero.id;
   const ringColor = isPlayer ? COLORS.self : teamColor(entry.team, game.hero.team);
@@ -72,6 +124,10 @@ function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
       material.opacity = stone ? 0.7 : 0.25;
       aura.current.scale.setScalar(hero.radius / HERO.radius);
     }
+    if (synergy.current) {
+      synergy.current.visible = !dead;
+      synergy.current.scale.setScalar(hero.radius / HERO.radius);
+    }
     if (stun.current) {
       stun.current.visible = !dead && (game.hasStatus(hero, 'stun') || game.hasStatus(hero, 'silence'));
       stun.current.position.y = 2.9 * (hero.radius / HERO.radius);
@@ -86,6 +142,7 @@ function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
         <meshBasicMaterial color={ringColor} />
       </mesh>
       <group ref={body} />
+      {mark && <SynergyAura mark={mark} ref={synergy} />}
       <mesh ref={aura} position={[0, 1.1, 0]} visible={false}>
         <sphereGeometry args={[1.4, 20, 16]} />
         <meshBasicMaterial transparent opacity={0.25} depthWrite={false} />
@@ -100,5 +157,8 @@ function HeroModel({ game, entry }: { game: GameSession; entry: RosterHero }) {
 
 export function Heroes({ game }: { game: GameSession }) {
   // One model per hero in the match, shown only while the player can see that hero.
-  return game.roster().map((entry) => <HeroModel key={entry.id} game={game} entry={entry} />);
+  const marks = useMemo(() => synergyMarks(game.roster()), [game]);
+  return game.roster().map((entry) => (
+    <HeroModel key={entry.id} game={game} entry={entry} mark={marks.get(entry.id)} />
+  ));
 }

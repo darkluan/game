@@ -16,6 +16,7 @@ import { HeroNames } from './HeroNames';
 import { Summons, Zones } from './Ground';
 import { Minions, Monsters } from './Minions';
 import { Objectives } from './Objectives';
+import { AimPreview, Shots, TargetMark } from './Shots';
 import { COLORS } from './palette';
 import { Terrain } from './Terrain';
 
@@ -114,6 +115,9 @@ export default function GameScene({ game, graphics }: { game: GameSession; graph
       <Zones game={game} />
       <Summons game={game} />
       <Swarm game={game} simpleMinions={!high} />
+      <Shots game={game} />
+      <TargetMark game={game} />
+      <AimPreview game={game} />
       <HealthBars game={game} />
       <HeroNames game={game} />
       <Effects game={game} />

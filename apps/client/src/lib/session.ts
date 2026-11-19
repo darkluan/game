@@ -180,6 +180,22 @@ export interface Fx {
   duration: number;
 }
 
+/**
+ * A stroke of lightning from a tower's point to what it shot at. Unlike the other visuals this one
+ * leaves the ground: it has a height at each end.
+ */
+export interface Strike {
+  x: number;
+  y: number;
+  z: number;
+  x2: number;
+  y2: number;
+  z2: number;
+  color: FxColor;
+  /** Seconds on the session clock. */
+  at: number;
+}
+
 /** The latest attack or cast of a unit, so the scene can play the matching animation once. */
 export interface ActorAction {
   kind: 'attack' | AbilitySlot;
@@ -310,6 +326,10 @@ export interface GameSession {
   readonly chatLog: readonly ChatLine[];
   /** Marks teammates put on the map a moment ago. */
   readonly pings: readonly MapPing[];
+  /** The strokes of lightning from towers that are still in the air. */
+  readonly strikes: readonly Strike[];
+  /** What the player last told their hero to attack, while it is alive and in sight. */
+  focus(): ViewEntity | undefined;
   /** A teammate whose chat this player chose not to see. */
   isMuted(heroId: number): boolean;
   toggleMuted(heroId: number): void;

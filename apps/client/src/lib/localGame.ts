@@ -103,6 +103,7 @@ export class LocalGame extends BaseSession implements GameSession {
   }
 
   send(cmd: Command): void {
+    this.noteCommand(cmd);
     this.sim.command(LOCAL_PLAYER_ID, cmd);
   }
 

@@ -2,7 +2,9 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import { Vector3 } from 'three';
 import { HERO, HEROES, type Vec2 } from '@game/core';
+import { synergyMarks } from '@/lib/heroSynergy';
 import type { GameSession } from '@/lib/session';
+import { RACE_TEXT } from '@/ui/heroText';
 
 /** How far above the ground a hero's name floats: just over its health bar. */
 const NAME_HEIGHT = 3.7;
@@ -20,6 +22,7 @@ export function HeroNames({ game }: { game: GameSession }) {
     const layer = document.createElement('div');
     layer.className = 'pointer-events-none absolute inset-0 overflow-hidden';
     const made = new Map<number, HTMLDivElement>();
+    const marks = synergyMarks(game.roster());
     for (const entry of game.roster()) {
       const label = document.createElement('div');
       const tone =
@@ -27,6 +30,14 @@ export function HeroNames({ game }: { game: GameSession }) {
       label.className = `absolute top-0 left-0 text-[11px] font-bold whitespace-nowrap opacity-0 [text-shadow:0_1px_2px_#000,0_0_3px_#000] ${tone}`;
       // A person is known by their own name; a bot has none, so it goes by its hero's.
       label.textContent = entry.playerName || (HEROES[entry.defId]?.name ?? '');
+      // The hero's race synergy, ahead of the name: a diamond in the race's colour for a pair, arrows for the speed of three races.
+      const mark = marks.get(entry.id);
+      if (mark) {
+        const badge = document.createElement('span');
+        badge.className = `mr-1 ${mark.kind === 'pair' ? RACE_TEXT[mark.race] : 'text-foreground'}`;
+        badge.textContent = mark.kind === 'pair' ? '◆' : '»';
+        label.prepend(badge);
+      }
       layer.appendChild(label);
       made.set(entry.id, label);
     }

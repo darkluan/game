@@ -1,5 +1,6 @@
 import { tr } from '@/i18n';
 import {
+  type Command,
   type AbilityDef,
   type AbilitySlot,
   dist,
@@ -18,6 +19,7 @@ import { CHAT_SIGNAL, MATCH_CHAT_TEXT, PING_COLOR, PING_TEXT } from './chatText'
 import type {
   ActorAction,
   Announcement,
+  Strike,
   ChatLine,
   Fx,
   FxColor,
@@ -44,8 +46,15 @@ const HEAL_TEXT_MINIMUM = 20;
 const EARSHOT = 28;
 /** A hit on a hero weaker than this makes no sound of its own. */
 const IMPACT_MINIMUM = 12;
+/** How long a tower's lightning stays in the air. */
+export const STRIKE_SECONDS = 0.34;
+/** How high on a tower the lightning leaves from, and how high on its target it lands. */
+const STRIKE_FROM = 6.6;
+const STRIKE_TO = 1.1;
 /** Units that attack from farther than this shoot instead of striking. */
 const RANGED_BEYOND = 3;
+/** The colour of a wild creature's claws: they belong to neither side. */
+const WILD_COLOR = '#ff8a3c';
 
 /**
  * What the offline and online games share: the cursor, one-shot effects, sound cues, the latest
@@ -59,7 +68,9 @@ export abstract class BaseSession {
   /** Offline there is nobody to talk to; the online game turns this on. */
   readonly chatEnabled: boolean = false;
   pings: MapPing[] = [];
+  strikes: Strike[] = [];
   chatLog: ChatLine[] = [];
+  private focusId: number | null = null;
   private readonly mutedHeroes = new Set<number>();
   private readonly actions = new Map<number, ActorAction>();
   private announced: Announcement[] = [];
@@ -85,8 +96,26 @@ export abstract class BaseSession {
     this.fx.push({ ...fx, bornAt: this.clock + delay });
   }
 
+  /**
+   * Remembers what the player's last order was aimed at, for the mark under that target. Called
+   * with every command the player sends, by whichever kind of match this is.
+   */
+  protected noteCommand(cmd: Command): void {
+    if (cmd.t === 'attack') this.focusId = cmd.targetId;
+    else if (cmd.t === 'move' || cmd.t === 'stop' || cmd.t === 'recall') this.focusId = null;
+  }
+
+  focus(): ViewEntity | undefined {
+    if (this.focusId === null) return undefined;
+    const target = this.find(this.focusId);
+    // Gone for good: forget it. Merely out of sight: keep it, it may come back into view.
+    if (target?.dead) this.focusId = null;
+    return target && !target.dead ? target : undefined;
+  }
+
   protected expireFx(): void {
     this.fx = this.fx.filter((f) => this.clock - f.bornAt < f.duration);
+    this.strikes = this.strikes.filter((s) => this.clock - s.at < STRIKE_SECONDS);
     this.announced = this.announced.filter(
       (a) => this.clock - a.at < (a.tone === 'chat' ? CHAT_SECONDS : ANNOUNCEMENT_SECONDS),
     );
@@ -191,6 +220,42 @@ export abstract class BaseSession {
     return this.nearest((e) => dist(e.pos, this.hero.pos) - e.radius, range);
   }
 
+  /** What an attack looks like at the moment it is made: lightning from a tower, a cut from a blade or a claw, a flash at the muzzle of anything that shoots. */
+  private attackFx(source: ViewEntity, target: ViewEntity | undefined): void {
+    if (!target) return;
+    const color = source.kind === 'monster' ? WILD_COLOR : this.side(source.team);
+    if (source.kind === 'tower') {
+      this.strikes.push({
+        x: source.pos.x,
+        y: STRIKE_FROM,
+        z: source.pos.z,
+        x2: target.pos.x,
+        y2: STRIKE_TO,
+        z2: target.pos.z,
+        color: this.side(source.team),
+        at: this.clock,
+      });
+      this.addFx({ kind: 'burst', x: target.pos.x, z: target.pos.z, radius: 1.5, color, duration: 0.3 });
+      this.addFx({ kind: 'ring', x: target.pos.x, z: target.pos.z, radius: 1.8, color, duration: 0.35 });
+      return;
+    }
+    // The rank and file are too many to dress every blow of theirs.
+    if (source.kind !== 'hero' && source.kind !== 'monster') return;
+    const angle = Math.atan2(target.pos.x - source.pos.x, target.pos.z - source.pos.z);
+    if ((source.attacker?.range ?? 0) > RANGED_BEYOND)
+      this.addFx({ kind: 'burst', x: source.pos.x, z: source.pos.z, radius: 0.9, color, angle, duration: 0.18 });
+    else
+      this.addFx({
+        kind: 'slash',
+        x: target.pos.x,
+        z: target.pos.z,
+        radius: source.kind === 'monster' ? 1.3 : 1.5,
+        color,
+        angle,
+        duration: 0.22,
+      });
+  }
+
   private side(team: Faction): FxColor {
     return team === this.hero.team ? 'ally' : 'enemy';
   }
@@ -209,6 +274,7 @@ export abstract class BaseSession {
         const source = this.find(event.sourceId);
         if (!source) return;
         this.actions.set(source.id, { kind: 'attack', at: this.clock });
+        this.attackFx(source, this.find(event.targetId));
         if (source.kind === 'hero') this.cue(HERO_ATTACK_SOUND[source.hero?.defId ?? ''] ?? 'swing', source.pos);
         else if (source.kind === 'tower') this.cue('tower', source.pos);
         // The rank and file fight quietly under the heroes.
