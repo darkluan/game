@@ -246,6 +246,9 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  'Vào phòng {code} đấu 3v3 với tôi! Bấm link là chơi, không cần tải.':
+    'Join room {code} for a 3v3 with me! Tap the link and play, nothing to install.',
+  'Mời bạn bè': 'Invite friends',
   Hủy: 'Cancel',
   'Lịch sử chat': 'Chat history',
   'Phép hỗ trợ': 'Helper spells',

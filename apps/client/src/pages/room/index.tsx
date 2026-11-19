@@ -100,6 +100,9 @@ function TeamColumn({ team, players, myId }: { team: Team; players: LobbyPlayer[
 function ShareLink({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
   const link = `${window.location.origin}/r/${code}`;
+  // A phone has a sheet for sending a link to a chat; there the button opens it, with words to go
+  // with the link. Elsewhere it copies the link.
+  const canShare = typeof navigator.share === 'function';
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(link);
@@ -109,6 +112,19 @@ function ShareLink({ code }: { code: string }) {
       setCopied(false);
     }
   };
+  const invite = async () => {
+    if (!canShare) return copy();
+    try {
+      await navigator.share({
+        title: tr('Tứ Tộc'),
+        text: tr('Vào phòng {code} đấu 3v3 với tôi! Bấm link là chơi, không cần tải.', { code }),
+        url: link,
+      });
+    } catch {
+      // The sheet was closed without sending, or would not open: the link is copied instead.
+      await copy();
+    }
+  };
   return (
     <div className="flex items-center gap-3 xl:flex-col xl:items-start xl:gap-1 squat:flex-col squat:items-start squat:gap-0.5">
       <p className="text-xs font-bold tracking-[0.3em] text-primary uppercase">{tr('Phòng chờ')}</p>
@@ -116,10 +132,10 @@ function ShareLink({ code }: { code: string }) {
       <button
         type="button"
         title={link}
-        onClick={() => void copy()}
+        onClick={() => void invite()}
         className="btn btn-ghost ml-auto rounded-md px-3! py-1.5! text-xs whitespace-nowrap xl:ml-0 squat:ml-0 squat:px-2! squat:py-1!"
       >
-        {copied ? tr('Đã chép') : tr('Chép link mời')}
+        {copied ? tr('Đã chép') : canShare ? tr('Mời bạn bè') : tr('Chép link mời')}
       </button>
     </div>
   );

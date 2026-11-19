@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <!-- Assets are linked relatively; this makes them resolve from the site root on any route such as /r/CODE.
@@ -7,8 +7,33 @@
     <base href="/" />
     <!-- viewport-fit=cover lets the game use the whole screen of a phone with a notch. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Tutoc</title>
-    <meta name="description" content="A 3v3 one-lane MOBA that plays in your browser." />
+    <title>Tứ Tộc · MOBA 3v3 chơi ngay trên trình duyệt</title>
+    <meta
+      name="description"
+      content="16 tướng, 4 tộc, một đường quyết chiến. MOBA 3v3 chơi ngay trên trình duyệt: không cần tải, không cần đăng ký. Tạo phòng, gửi link, kéo bạn bè vào trận!"
+    />
+    <!-- What a chat or a social network shows when the link is pasted into it. These apps read the
+         head and nothing else, so the picture's address has to be whole. Links to a room get words
+         and a picture of their own: see functions/r/[code].js. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tứ Tộc" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:title" content="Tứ Tộc · MOBA 3v3 chơi ngay trên trình duyệt" />
+    <meta
+      property="og:description"
+      content="16 tướng, 4 tộc, một đường quyết chiến. Không cần tải, không cần đăng ký: tạo phòng, gửi link, kéo bạn bè vào trận!"
+    />
+    <meta property="og:url" content="https://tu-toc.pages.dev/" />
+    <meta property="og:image" content="https://tu-toc.pages.dev/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tứ Tộc · MOBA 3v3 chơi ngay trên trình duyệt" />
+    <meta
+      name="twitter:description"
+      content="16 tướng, 4 tộc, một đường quyết chiến. Không cần tải, không cần đăng ký: tạo phòng, gửi link, kéo bạn bè vào trận!"
+    />
+    <meta name="twitter:image" content="https://tu-toc.pages.dev/og.jpg" />
     <meta name="theme-color" content="#0b1016" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <!-- Lets the game be installed as an app: its own icon, no address bar. -->
@@ -17,7 +42,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Tutoc" />
+    <meta name="apple-mobile-web-app-title" content="Tứ Tộc" />
     <!-- Filled in by the host at deploy time, e.g. {"serverUrl":"https://game.example.com"} -->
     <script id="__runtime_config__" type="application/json">
       {}
