@@ -202,7 +202,7 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
         {tr('Q W E R: chiêu theo con trỏ · Alt + phím: nâng chiêu')}
         <br />
         {tr(
-          'D: hồi máu · F: tốc biến · T: biến về · S: dừng · B: cửa hàng · giữ Tab: bảng điểm · Enter: chat · Alt + bấm: tín hiệu',
+          'D: hồi máu · F: tốc biến · T: biến về · A: vừa đi vừa đánh · S: dừng · B: cửa hàng · giữ Tab: bảng điểm · Enter: chat · Alt + bấm: tín hiệu',
         )}
       </p>
 

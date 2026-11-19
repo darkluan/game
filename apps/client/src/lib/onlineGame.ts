@@ -43,7 +43,7 @@ const MOVING_EPSILON = 0.01;
  * on it. While it does, the shown position may run this far (in seconds of walking) ahead of the
  * last position the server reported before it is pulled back.
  */
-const PREDICTION_LEAD_SECONDS = 0.7;
+const PREDICTION_LEAD_SECONDS = 1;
 /** After arriving, the shown hero waits this long for the server's hero to catch up before giving way to it. */
 const PREDICTION_HOLD_MS = 900;
 /** How quickly the shown hero closes on the server's position once it stops predicting: the share of the gap closed per second. */

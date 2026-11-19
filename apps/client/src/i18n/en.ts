@@ -227,8 +227,8 @@ export const EN: Record<string, string> = {
   Thoát: 'Exit',
   'Chuột: di chuyển, bấm vào địch để đánh.': 'Mouse: move, click an enemy to attack.',
   'Q W E R: chiêu theo con trỏ · Alt + phím: nâng chiêu': 'Q W E R: cast toward the cursor · Alt + key: level up',
-  'D: hồi máu · F: tốc biến · T: biến về · S: dừng · B: cửa hàng · giữ Tab: bảng điểm · Enter: chat · Alt + bấm: tín hiệu':
-    'D: heal · F: flash · T: recall · S: stop · B: shop · hold Tab: scoreboard · Enter: chat · Alt + press: signal',
+  'D: hồi máu · F: tốc biến · T: biến về · A: vừa đi vừa đánh · S: dừng · B: cửa hàng · giữ Tab: bảng điểm · Enter: chat · Alt + bấm: tín hiệu':
+    'D: heal · F: flash · T: recall · A: attack-move · S: stop · B: shop · hold Tab: scoreboard · Enter: chat · Alt + press: signal',
   'Cấp {level}': 'Level {level}',
   '+{points} điểm': '+{points} points',
   'Kinh nghiệm': 'Experience',

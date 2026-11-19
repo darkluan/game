@@ -1,7 +1,7 @@
 import { tr } from '@/i18n';
 import { useCallback, useRef, useState } from 'react';
 import { type AbilitySlot, ITEMS, type Vec2 } from '@game/core';
-import { attackNearest, castSlot, castSpell, moveInDirection } from '@/input/commands';
+import { attackNearest, castSlot, castSpell, haltHere, moveInDirection } from '@/input/commands';
 import type { AbilityHud, GameSession, HudState, SpellHud } from '@/lib/session';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import { useGameStore } from '@/store/gameStore';
@@ -248,7 +248,7 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
   const installed = launchedAsApp;
   const offerFullscreen = fullscreen.supported && !fullscreen.active && !installed;
   const walk = useCallback((dir: Vec2) => moveInDirection(game, dir), [game]);
-  const halt = useCallback(() => game.send({ t: 'stop' }), [game]);
+  const halt = useCallback(() => haltHere(game), [game]);
   const chip = 'pointer-events-auto touch-none rounded-md hud-panel px-2.5 py-1.5 text-xs';
   const option = 'rounded-md border border-border px-3 py-2';
 

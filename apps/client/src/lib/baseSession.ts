@@ -102,7 +102,7 @@ export abstract class BaseSession {
    */
   protected noteCommand(cmd: Command): void {
     if (cmd.t === 'attack') this.focusId = cmd.targetId;
-    else if (cmd.t === 'move' || cmd.t === 'stop' || cmd.t === 'recall') this.focusId = null;
+    else if (cmd.t === 'move' || cmd.t === 'attackMove' || cmd.t === 'stop' || cmd.t === 'recall') this.focusId = null;
   }
 
   focus(): ViewEntity | undefined {

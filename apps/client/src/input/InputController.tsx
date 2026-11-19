@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { ABILITY_SLOTS, type AbilitySlot, MATCH_CHAT_IDS } from '@game/core';
 import type { GameSession } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
-import { castSlot, castSpell, clickGround } from './commands';
+import { attackMove, castSlot, castSpell, clickGround } from './commands';
 import { pingAtOffset } from '@/lib/pingWheel';
 
 /**
@@ -71,6 +71,8 @@ export function InputController({ game, touch }: { game: GameSession; touch: boo
         castSpell(game, 'flash', game.cursor);
       } else if (key === 'T') {
         castSpell(game, 'recall', null);
+      } else if (key === 'A') {
+        attackMove(game, game.cursor);
       } else if (key === 'S') {
         game.send({ t: 'stop' });
       } else if (key === 'B') {

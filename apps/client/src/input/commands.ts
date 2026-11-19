@@ -63,13 +63,41 @@ export function castSpell(game: GameSession, spell: SpellId | 'recall', aim: Vec
 /** How far ahead of the hero a joystick push aims; long enough that the hero never arrives between updates. */
 const STICK_REACH = 5;
 
-/** Touch joystick: walk in a direction (a unit vector on the ground). */
+/**
+ * Touch joystick: walk in a direction (a unit vector on the ground).
+ *
+ * The point to walk to is measured from where the hero is drawn, not from where the server last
+ * said it was. Online the drawn hero runs ahead of the server's by the delay of the connection; on a
+ * slow one that is most of the stick's reach, and a point measured from the server's hero would lie
+ * just in front of the drawn one, or behind it: the hero would stop every few steps, or turn back.
+ */
+const stickFrom: Vec2 = { x: 0, z: 0 };
 export function moveInDirection(game: GameSession, dir: Vec2): void {
-  const { pos } = game.hero;
+  const pos = game.renderPos(game.hero, stickFrom);
   game.send({ t: 'move', x: pos.x + dir.x * STICK_REACH, z: pos.z + dir.z * STICK_REACH });
 }
 
-/** Touch attack button: go for the nearest enemy hero if one is close, otherwise the nearest enemy of any kind. */
+/**
+ * Letting go of the joystick: stop where the hero is drawn. Online that is ahead of where the
+ * server has it, so a plain order to stop would halt the server's hero short and the drawn one
+ * would slide back to it; an order to walk to the drawn spot brings the server's hero up to it
+ * instead, and nothing is seen to move.
+ */
+export function haltHere(game: GameSession): void {
+  const pos = game.renderPos(game.hero, stickFrom);
+  game.send({ t: 'move', x: pos.x, z: pos.z });
+}
+
+/** The A key: walk to a point, fighting whatever comes within reach on the way. */
+export function attackMove(game: GameSession, at: Vec2): void {
+  game.send({ t: 'attackMove', x: at.x, z: at.z });
+  game.addFx({ kind: 'ring', x: at.x, z: at.z, radius: 0.9, color: 'enemy', inward: true, duration: 0.35 });
+}
+
+/**
+ * Touch attack button: an enemy hero within reach comes first, the weakest of them if there are
+ * several, as a player would choose; with no hero near, the nearest enemy of any kind.
+ */
 export function attackNearest(game: GameSession, range: number): void {
   const heroPos = game.hero.pos;
   const near = (kind: 'hero' | 'any') =>
@@ -78,7 +106,10 @@ export function attackNearest(game: GameSession, range: number): void {
       .filter((e) => e.team !== game.hero.team && !e.dead && (kind === 'any' || e.kind === 'hero'))
       .map((e) => ({ e, d: Math.hypot(e.pos.x - heroPos.x, e.pos.z - heroPos.z) }))
       .filter(({ d }) => d <= range)
-      .sort((a, b) => a.d - b.d)[0]?.e;
+      .sort(
+        (a, b) =>
+          (kind === 'hero' ? a.e.health.hp / a.e.health.maxHp - b.e.health.hp / b.e.health.maxHp : 0) || a.d - b.d,
+      )[0]?.e;
   // pickEnemy applies the "can this be attacked" rules (e.g. towers protected by the one in front).
   const target = [near('hero'), near('any')].flatMap((e) => (e ? (game.pickEnemy(e.pos, 0.5) ?? []) : []))[0];
   if (target) game.send({ t: 'attack', targetId: target.id });
