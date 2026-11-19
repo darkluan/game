@@ -217,7 +217,8 @@ export interface Entity {
   hero?: HeroState;
   /** 'beast' is the Ancient Beast marching with the wave of the team that slew it. */
   minion?: { type: 'melee' | 'ranged' | 'beast'; laneZ: number };
-  tower?: { tier: 1 | 2 };
+  /** `focusId`/`focusSince`: the hero it is shooting at and the tick it turned on them, for the damage that builds with every shot. */
+  tower?: { tier: 1 | 2; focusId?: number; focusSince?: number };
   shrine?: true;
   projectile?: { sourceId: number; targetId: number; damage: number; speed: number };
   /** 'beast' is the Ancient Beast waiting in its cave (camp -1). */

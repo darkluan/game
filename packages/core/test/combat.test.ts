@@ -196,4 +196,36 @@ describe('towers', () => {
     run(sim, 2);
     expect(tower.attacker.targetId).toBe(a.id);
   });
+
+  it('hits a hero harder with every shot in a row, and a minion never', () => {
+    const sim = makeSim();
+    const a = hero(sim, 'a');
+    const tower = sim.q.towers.entities.find((t) => t.team === 1 && t.tower.tier === 1)!;
+    place(a, tower.pos.x - 5, 0);
+    run(sim, 2);
+    expect(tower.attacker.targetId).toBe(a.id);
+    expect(tower.attacker.damage).toBe(TOWER.attack);
+    run(sim, TOWER.intervalTicks * 2);
+    expect(tower.attacker.damage).toBeCloseTo(TOWER.attack * (1 + 2 * TOWER.focusStep));
+    // It stops building at the cap.
+    for (let i = 0; i < TOWER.intervalTicks * 10; i++) {
+      a.health.hp = a.health.maxHp;
+      run(sim, 1);
+    }
+    expect(tower.attacker.damage).toBeCloseTo(TOWER.attack * (1 + TOWER.focusShots * TOWER.focusStep));
+    // Out of range, the count is lost: the next hero, or the same one coming back, starts again.
+    place(a, tower.pos.x - 30, 0);
+    run(sim, 3);
+    expect(tower.attacker.damage).toBe(TOWER.attack);
+    run(sim, MINION.firstWaveTick + 1);
+    const minion = sim.q.minions.entities.find((m) => m.team === 0)!;
+    place(minion, tower.pos.x - 4, 0);
+    for (let i = 0; i < TOWER.intervalTicks * 4; i++) {
+      minion.health.hp = minion.health.maxHp;
+      place(minion, tower.pos.x - 4, 0);
+      run(sim, 1);
+    }
+    expect(sim.get(tower.attacker.targetId ?? -1)?.kind).toBe('minion');
+    expect(tower.attacker.damage).toBe(TOWER.attack);
+  });
 });

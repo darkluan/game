@@ -23,7 +23,14 @@ export const MINION = {
 export const TOWER = {
   hp: 2900,
   armor: 40,
-  attack: 95,
+  attack: 105,
+  /**
+   * Each shot in a row at the same hero hits this much harder than the first, up to `focusShots`
+   * steps: standing under a tower is dear, and dearer the longer it lasts. A stray shot costs no
+   * more than before. Minions are always shot at the plain rate.
+   */
+  focusStep: 0.4,
+  focusShots: 4,
   range: 9,
   intervalTicks: 20,
   projectileSpeed: 22,
