@@ -158,7 +158,7 @@ function HeroModel({ game, entry, mark }: { game: GameSession; entry: RosterHero
 export function Heroes({ game }: { game: GameSession }) {
   // One model per hero in the match, shown only while the player can see that hero.
   const marks = useMemo(() => synergyMarks(game.roster()), [game]);
-  return game.roster().map((entry) => (
-    <HeroModel key={entry.id} game={game} entry={entry} mark={marks.get(entry.id)} />
-  ));
+  return game
+    .roster()
+    .map((entry) => <HeroModel key={entry.id} game={game} entry={entry} mark={marks.get(entry.id)} />);
 }
