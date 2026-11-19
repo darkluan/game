@@ -64,6 +64,26 @@ describe('bots with every hero', () => {
     }
   });
 
+  it('hold a blast around themselves until an enemy stands inside it', () => {
+    const blasts = ['orun_quake', 'titan_meltdown', 'baru_stomp', 'zerak_roar'];
+    const sim = new Sim({ seed: 7, players: lineup(['orun', 'titan9', 'baru', 'zerak', 'kael', 'lyra']) });
+    let seen = 0;
+    for (let i = 0; i < 20 * 60 * 6 && sim.winner === null; i++) {
+      // Where everyone stood before the step: a blast may kill the only enemy it reached.
+      const before = sim.world.entities.filter((e) => e.health && !e.dead).map((e) => ({ team: e.team, ...e.pos }));
+      sim.step();
+      for (const e of sim.events) {
+        if (e.t !== 'cast' || !blasts.includes(e.abilityId)) continue;
+        seen++;
+        const team = sim.get(e.casterId)?.team;
+        // The widest of them reaches 4.5; the rest is the room a target's own size and one step take up.
+        const near = before.some((b) => b.team !== team && Math.hypot(b.x - e.x, b.z - e.z) <= 7);
+        expect(near, `${e.abilityId} at tick ${sim.tick}`).toBe(true);
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+
   it('replay identically from the same seed with mixed heroes', () => {
     const play = (seed: number) => {
       const sim = new Sim({ seed, players: lineup(HERO_IDS) });

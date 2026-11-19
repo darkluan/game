@@ -71,10 +71,15 @@ class BotBrain {
     if (castBlocker(this.sim, this.h, slot) !== null) return false;
     const cost = ability.cost[this.hero.abilityLevels[slot] - 1];
     if (this.def.resource === 'heat' && cost > 0 && this.hero.heat + cost > BOT.heatLimit) return false;
-    if (ability.targeting === 'self') return this.issue({ t: 'cast', slot });
-    if (!aim) return false;
-    const point = 'pos' in aim ? aim.pos : aim;
-    const reach = dist(this.h.pos, point) - ('pos' in aim ? aim.radius : 0);
+    const point = aim && ('pos' in aim ? aim.pos : aim);
+    const reach = point ? dist(this.h.pos, point) - (aim && 'pos' in aim ? aim.radius : 0) : 0;
+    if (ability.targeting === 'self') {
+      // A blast around the caster is wasted unless the one it is meant for stands inside it.
+      const radius = ability.params.radius?.[this.hero.abilityLevels[slot] - 1];
+      if (point && radius !== undefined && reach > radius) return false;
+      return this.issue({ t: 'cast', slot });
+    }
+    if (!aim || !point) return false;
     if (reach > ability.range) return false;
     if (ability.targeting === 'unit') return 'pos' in aim && this.issue({ t: 'cast', slot, targetId: aim.id });
     return this.issue({ t: 'cast', slot, x: point.x, z: point.z });
@@ -156,7 +161,7 @@ class BotBrain {
     const rich = this.def.resource !== 'mana' || this.hero.mana > this.hero.maxMana * 0.6;
     if (rich && minions.length >= WAVE_CLEAR_COUNT) {
       for (const [slot, ability] of this.abilities('damage')) {
-        if (slot !== 'R' && ability.targeting !== 'unit') this.cast(slot, minions[0]);
+        if (slot !== 'R' && ability.targeting !== 'unit') this.cast(slot, minion ?? minions[0]);
       }
     }
     for (const [slot, ability] of this.abilities('siege')) {
