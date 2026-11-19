@@ -311,7 +311,7 @@ export const ABILITY_FX: Record<string, (c: CastFxContext) => void> = {
     for (let i = 0; i < 2; i++) put(c, 'ring', c.caster, 12, C.tech, 0.9, { delay: i * 0.2 });
   },
 
-  // Mira: starlight.
+  // Astor (id mira): starlight.
   mira_bolt: (c) => {
     draw(c, 'line', c.caster, c.at, 1.3, C.star, 0.4);
     draw(c, 'line', c.caster, c.at, 0.4, C.white, 0.5);

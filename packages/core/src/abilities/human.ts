@@ -4,7 +4,7 @@ import { spawnZone } from '../systems/summons.js';
 import { mostWounded } from './god.js';
 
 const MAX_TRAPS = 3;
-/** Mira's starfall hits twice a second. */
+/** Astor's starfall hits twice a second. */
 const STARFALL_PULSE_TICKS = seconds(0.5);
 
 export const humanEffects: Record<string, AbilityEffect> = {
@@ -121,7 +121,7 @@ export const humanEffects: Record<string, AbilityEffect> = {
     }
   },
 
-  // ---- Mira ----
+  // ---- Astor (id mira) ----
 
   /** A piercing bolt of starlight. */
   mira_bolt({ caster, point, param, damage, enemiesOnLine }) {

@@ -619,7 +619,7 @@ const mekka: HeroDef = {
 
 const mira: HeroDef = {
   id: 'mira',
-  name: 'Mira',
+  name: 'Astor',
   title: 'Học giả tinh tú',
   race: 'human',
   role: 'mage',
