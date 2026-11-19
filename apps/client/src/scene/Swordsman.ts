@@ -1,4 +1,6 @@
 import {
+  AdditiveBlending,
+  BackSide,
   CanvasTexture,
   RepeatWrapping,
   SRGBColorSpace,
@@ -12,8 +14,11 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   type MeshStandardMaterialParameters,
+  ShaderMaterial,
   Shape,
   SphereGeometry,
+  Sprite,
+  SpriteMaterial,
   TorusGeometry,
 } from 'three';
 import type { BufferGeometry } from 'three';
@@ -58,9 +63,11 @@ export type HumanKind = 'blade' | 'archer' | 'mage' | 'healer';
  * a sun turning behind her head and wings of light; the god of shadow is hooded, a dark moon behind
  * him, trailing wisps; the god of the mountain is a broad old giant crowned and horned in stone, a
  * great hammer in his fist and boulders circling him; the god of wind floats ringed by turning
- * hoops of air, feathers in her hair and long scarves flying.
+ * hoops of air, feathers in her hair and long scarves flying; the god of death is robed and hooded in
+ * black, a skull for a face with grave-light in its eyes, ragged wings, a scythe taller than itself,
+ * and the souls it has taken circling it.
  */
-export type DivineKind = 'sun' | 'moon' | 'mountain' | 'wind';
+export type DivineKind = 'sun' | 'moon' | 'mountain' | 'wind' | 'death';
 
 /**
  * A young blade-master, or an archer, in the style of a wuxia cartoon, built in code with no model file: a big
@@ -82,7 +89,7 @@ const LEG_STRETCH = 1.75;
 const BODY_STRETCH = 1.28;
 const BODY_SLIM = 0.86;
 const ARM_STRETCH = 1.3;
-const HEAD_SIZE = 0.6;
+const HEAD_SIZE = 0.54;
 const HIP_HEIGHT = 0.3 * LEG_STRETCH - 0.03;
 
 let brocadeMaps: { colour: Texture; thread: Texture } | null = null;
@@ -102,19 +109,20 @@ function brocade(): { colour: Texture; thread: Texture } {
   });
   const colour = colourCanvas.getContext('2d')!;
   const thread = threadCanvas.getContext('2d')!;
-  colour.fillStyle = '#b4b4b4';
+  // Close to white, so the cloth keeps the colour it is given instead of greying it.
+  colour.fillStyle = '#ececec';
   colour.fillRect(0, 0, size, size);
   thread.fillStyle = '#000';
   thread.fillRect(0, 0, size, size);
   // The weave: fine diagonal lines both ways.
   colour.lineWidth = 1;
   for (let i = -size; i < size * 2; i += 6) {
-    colour.strokeStyle = 'rgba(0,0,0,0.16)';
+    colour.strokeStyle = 'rgba(0,0,0,0.07)';
     colour.beginPath();
     colour.moveTo(i, 0);
     colour.lineTo(i + size, size);
     colour.stroke();
-    colour.strokeStyle = 'rgba(255,255,255,0.12)';
+    colour.strokeStyle = 'rgba(255,255,255,0.1)';
     colour.beginPath();
     colour.moveTo(i, size);
     colour.lineTo(i + size, 0);
@@ -140,32 +148,87 @@ function brocade(): { colour: Texture; thread: Texture } {
   };
   for (const ctx of [colour, thread]) {
     ctx.lineCap = 'round';
-    ctx.lineWidth = ctx === colour ? 3.2 : 2;
-    ctx.strokeStyle = ctx === colour ? '#f4f4f4' : '#fff';
+    ctx.lineWidth = ctx === colour ? 2.4 : 1.6;
+    ctx.strokeStyle = ctx === colour ? '#ffffff' : '#fff';
     // Motifs on a staggered grid; those near an edge are drawn again on the far side so the cloth tiles.
-    for (let row = 0; row < 4; row++)
-      for (let column = 0; column < 4; column++) {
-        const x = column * 64 + (row % 2 ? 32 : 0) + 16;
-        const y = row * 64 + 24;
-        for (const ox of [-size, 0, size]) cloud(ctx, x + ox, y, 13);
+    // Few and well apart: a cloth crowded with them reads as dirt from a little way off.
+    for (let row = 0; row < 2; row++)
+      for (let column = 0; column < 2; column++) {
+        const x = column * 128 + (row % 2 ? 64 : 0) + 32;
+        const y = row * 128 + 52;
+        for (const ox of [-size, 0, size]) cloud(ctx, x + ox, y, 17);
       }
     // A border line with dots along one edge, which falls on hems.
-    ctx.lineWidth = ctx === colour ? 4 : 3;
+    ctx.lineWidth = ctx === colour ? 5 : 4;
     ctx.beginPath();
-    ctx.moveTo(0, size - 8);
-    ctx.lineTo(size, size - 8);
+    ctx.moveTo(0, size - 9);
+    ctx.lineTo(size, size - 9);
     ctx.stroke();
+    // A second, finer line and a row of studs over it.
+    ctx.lineWidth = ctx === colour ? 2 : 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, size - 20);
+    ctx.lineTo(size, size - 20);
+    ctx.stroke();
+    for (let x = 8; x < size; x += 16) {
+      ctx.beginPath();
+      ctx.arc(x, size - 30, 2.2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
   const [colourMap, threadMap] = [colourCanvas, threadCanvas].map((canvas) => {
     const texture = new CanvasTexture(canvas);
     texture.wrapS = texture.wrapT = RepeatWrapping;
-    texture.anisotropy = 4;
+    texture.anisotropy = 8;
     texture.colorSpace = SRGBColorSpace;
     texture.repeat.set(2, 1.5);
     return texture;
   });
   brocadeMaps = { colour: colourMap, thread: threadMap };
   return brocadeMaps;
+}
+
+/**
+ * The dark line round the figure: every solid part is drawn a second time, a little swollen and
+ * inside out, in near-black. Only its rim shows past the part itself, which gives the crisp edge of
+ * a drawing and keeps a pale god readable against pale sand. The swelling is done in view space,
+ * so the line is as thick on a part built small and scaled up as on one built at its true size.
+ */
+const OUTLINE = new ShaderMaterial({
+  side: BackSide,
+  uniforms: { thickness: { value: 0.022 } },
+  vertexShader: `
+    uniform float thickness;
+    void main() {
+      vec4 at = modelViewMatrix * vec4(position, 1.0);
+      at.xyz += normalize(normalMatrix * normal) * thickness;
+      gl_Position = projectionMatrix * at;
+    }`,
+  fragmentShader: `void main() { gl_FragColor = vec4(0.035, 0.04, 0.07, 1.0); }`,
+});
+/** Parts smaller than this across are left without a line: it would swallow them. */
+const OUTLINE_MIN_SIZE = 0.03;
+const OUTLINE_HEAD_MIN_SIZE = 0.1;
+
+let glowMap: Texture | null = null;
+
+/** A soft round light, bright at the heart and gone at the rim, to be drawn over what is behind it. */
+function glowTexture(): Texture {
+  if (glowMap) return glowMap;
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const fade = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  fade.addColorStop(0, 'rgba(255,255,255,1)');
+  fade.addColorStop(0.25, 'rgba(255,255,255,0.55)');
+  fade.addColorStop(0.6, 'rgba(255,255,255,0.14)');
+  fade.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, size, size);
+  glowMap = new CanvasTexture(canvas);
+  glowMap.colorSpace = SRGBColorSpace;
+  return glowMap;
 }
 
 /** How long each action lasts, in seconds; the same table an animated model's rig carries. */
@@ -561,10 +624,14 @@ export class Swordsman {
   >;
   private readonly white = new MeshBasicMaterial({ color: '#ffffff' });
   private readonly castShadow: boolean;
+  private readonly colours: SwordsmanColours;
   private readonly kind: HumanKind;
   private readonly divine?: DivineKind;
   /** Parts that turn steadily about one of their axes: halos, hoops of wind, circling boulders. */
   private readonly spinners: { group: Group; axis: 'x' | 'y' | 'z'; speed: number }[] = [];
+
+  /** Wings, each on the hinge it sweeps about. */
+  private readonly wings: { hinge: Group; side: number; beat: number; phase: number }[] = [];
 
   private time = Math.random() * 10;
   private walk = 0;
@@ -575,6 +642,7 @@ export class Swordsman {
 
   constructor(colours: SwordsmanColours, height: number, castShadow: boolean) {
     this.castShadow = castShadow;
+    this.colours = colours;
     this.kind = colours.kind ?? (colours.archer ? 'archer' : 'blade');
     this.divine = colours.divine;
     const make = (color: string, extra: MeshStandardMaterialParameters = {}) =>
@@ -586,7 +654,7 @@ export class Swordsman {
         map: brocade().colour,
         emissiveMap: brocade().thread,
         emissive: colours.trim,
-        emissiveIntensity: 0.9,
+        emissiveIntensity: 0.35,
         roughness: 0.65,
       }),
       // Armour of small overlapping plates, light showing between some of them: the dragons' own scales, in metal.
@@ -610,6 +678,7 @@ export class Swordsman {
     this.swordArm = this.buildArm(1);
     this.freeArm = this.buildArm(-1);
     if (this.kind === 'archer') this.buildBowAndQuiver();
+    else if (this.divine === 'death') this.buildScythe();
     else if (this.kind === 'mage') this.buildStaffAndBook();
     else if (this.kind === 'healer') this.buildCrossbowAndLight();
     else if (this.divine === 'mountain') this.buildHammer();
@@ -631,6 +700,7 @@ export class Swordsman {
     }
     for (const flap of this.tabard) flap.scale.y = LEG_STRETCH;
     this.head.scale.setScalar(HEAD_SIZE);
+    this.outline();
     this.applyPose(REST_OF[this.kind]);
   }
 
@@ -648,6 +718,55 @@ export class Swordsman {
       const turned = child.rotation.x !== 0 || child.rotation.z !== 0;
       child.scale.set(child.scale.x * thin, child.scale.y * (turned ? thin : tall), child.scale.z * thin);
     }
+  }
+
+  /** Draws the dark line round every solid part of the body; see OUTLINE. Cloth that flies and rings of light go without. */
+  private outline(): void {
+    const { skin, hair, cloth, armour, dark, trim } = this.materials;
+    const solid = new Set<unknown>([skin, hair, cloth, armour, dark, trim]);
+    const flying = new Set<unknown>(this.streamers.map((streamer) => streamer.pieces[0]));
+    const turning = new Set<unknown>(this.spinners.map((spinner) => spinner.group));
+    const found: Mesh[] = [];
+    // On the face a line round every lock of hair and every brow would blot it out: there only the big shapes get one.
+    let least = OUTLINE_MIN_SIZE;
+    const visit = (node: Group | Mesh): void => {
+      if (flying.has(node) || turning.has(node)) return;
+      if (node === this.head) least = OUTLINE_HEAD_MIN_SIZE;
+      if (node instanceof Mesh) {
+        if (!solid.has(node.material) || node.geometry instanceof TorusGeometry) return;
+        node.geometry.computeBoundingSphere();
+        const reach = node.geometry.boundingSphere?.radius ?? 0;
+        const sizes = [node.scale.x, node.scale.y, node.scale.z].sort((a, b) => a - b);
+        // Judged by its middle measure: a flat plate is still worth a line, a thin rod is not.
+        if (reach * sizes[1] >= least) found.push(node);
+        return;
+      }
+      for (const child of node.children) if (child instanceof Group || child instanceof Mesh) visit(child);
+      if (node === this.head) least = OUTLINE_MIN_SIZE;
+    };
+    visit(this.model);
+    for (const part of found) part.add(new Mesh(part.geometry, OUTLINE));
+  }
+
+  /**
+   * A soft light hung on `parent`, drawn over whatever is behind it. `size` is how far across, in the
+   * parent's own measure. Kept faint: the lobby blooms bright things, and a strong one whites the god out.
+   */
+  private glow(parent: Group, color: string, size: number, position: [number, number, number], opacity = 0.7): Sprite {
+    const light = new Sprite(
+      new SpriteMaterial({
+        map: glowTexture(),
+        color,
+        transparent: true,
+        opacity,
+        blending: AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
+    light.position.set(...position);
+    light.scale.setScalar(size);
+    parent.add(light);
+    return light;
   }
 
   private mesh(
@@ -1259,11 +1378,14 @@ export class Swordsman {
   /** The healer's hood: a deep, lined cowl standing clear of her hair, its edge rolled in metal, a long point behind and a leaf of light at the brow. */
   private buildHood(): void {
     const { cloth, trim, gem, hair, dark } = this.materials;
-    this.buildFringe();
-    for (const side of [-1, 1])
-      this.streamers.push(
-        this.buildStreamer(this.head, [side * 0.15, 0.12, 0.06], 6, 0.3, 0.05, hair, 0.4, 0.4, side * 0.1),
-      );
+    // A skull has no hair to show under its hood.
+    if (this.divine !== 'death') {
+      this.buildFringe();
+      for (const side of [-1, 1])
+        this.streamers.push(
+          this.buildStreamer(this.head, [side * 0.15, 0.12, 0.06], 6, 0.3, 0.05, hair, 0.4, 0.4, side * 0.1),
+        );
+    }
     // A deep cowl: a full shell standing well clear of the hair, open down the front so the face sits
     // back inside it, lined in shadow, its edge rolled in metal.
     const gap = 0.72;
@@ -1282,6 +1404,47 @@ export class Swordsman {
     this.ball(gem, this.head, [0, 0.425, 0.06], [0.022, 0.034, 0.012], [0.9, 0, 0]);
     for (const side of [-1, 1])
       this.ball(trim, this.head, [side * 0.032, 0.42, 0.055], [0.024, 0.011, 0.009], [0.9, 0, side * 0.6]);
+  }
+
+  /** A scythe taller than its bearer in the right hand: a long crooked blade, bright along its edge, and a light over the left. */
+  private buildScythe(): void {
+    const { trim, ribbon, gem, dark } = this.materials;
+    this.sword.position.set(0, -0.135, 0);
+    this.swordArm.lower.add(this.sword);
+    // Built pointing up from the fist, like the staff it takes the place of.
+    this.mesh(new CylinderGeometry(0.012, 0.016, 1.02, 8), dark, this.sword, [0, 0.2, 0]);
+    for (const y of [-0.24, -0.06, 0.3, 0.62])
+      this.mesh(new TorusGeometry(0.0165, 0.005, 6, 12), trim, this.sword, [0, y, 0], [UP, 0, 0]);
+    this.mesh(new ConeGeometry(0.016, 0.07, 6), trim, this.sword, [0, -0.345, 0], [Math.PI, 0, 0]);
+    const top = 0.7;
+    // The blade: a crescent drawn between two arcs that meet at its point, its root at the top of the shaft.
+    const outline = new Shape();
+    const [from, to, steps] = [UP, UP + 2.0, 18];
+    for (let i = 0; i <= steps; i++) {
+      const a = from + ((to - from) * i) / steps;
+      const [x, y] = [Math.cos(a) * 0.4, Math.sin(a) * 0.4 - 0.4];
+      if (i === 0) outline.moveTo(x, y);
+      else outline.lineTo(x, y);
+    }
+    for (let i = steps - 1; i >= 0; i--) {
+      const a = from + ((to - from) * i) / steps;
+      // The inner arc is a smaller circle set off centre, so the blade is broad at the root and nothing at the tip.
+      const width = 0.13 * (1 - i / steps) ** 0.8;
+      outline.lineTo(Math.cos(a) * (0.4 - width), Math.sin(a) * (0.4 - width) - 0.4);
+    }
+    const steel = new ExtrudeGeometry(outline, { depth: 0.012, bevelEnabled: false });
+    steel.translate(0, 0, -0.006);
+    // Pale bone-metal, not polished steel: with no sky to mirror, a mirror blade would show as black.
+    this.mesh(steel, trim, this.sword, [0, top + 0.02, 0]);
+    // Grave-light along the cutting edge, a socket of bone where blade meets shaft, a spike behind it.
+    this.mesh(new TorusGeometry(0.272, 0.007, 4, 26, 1.75), gem, this.sword, [0, top - 0.38, 0], [0, 0, UP + 0.08]);
+    this.ball(trim, this.sword, [0, top + 0.01, 0], [0.034, 0.04, 0.03]);
+    this.ball(gem, this.sword, [0, top + 0.01, 0.024], [0.014, 0.014, 0.01]);
+    this.mesh(new ConeGeometry(0.02, 0.14, 5), trim, this.sword, [0.06, top + 0.03, 0], [0, 0, -UP - 0.3]);
+    this.mesh(new ConeGeometry(0.014, 0.09, 5), trim, this.sword, [0, top + 0.09, 0]);
+    for (const spread of [-0.4, 0.4])
+      this.streamers.push(this.buildStreamer(this.sword, [0, top - 0.1, 0], 5, 0.26, 0.022, ribbon, 0.9, 0.6, spread));
+    this.buildHandLight();
   }
 
   /** A staff taller than she is in the right hand, and a spell book floating open over the left. */
@@ -1464,7 +1627,8 @@ export class Swordsman {
   /** A god's head: no hat or headband, but a crown of their own, and something turning behind it. */
   private buildDivineHead(divine: DivineKind): void {
     const { hair, trim, gem, ribbon, armour, cloth } = this.materials;
-    if (divine !== 'moon') this.buildFringe();
+    const colours = this.colours;
+    if (divine !== 'moon' && divine !== 'death') this.buildFringe();
     const halo = new Group();
     halo.position.set(0, 0.2, -0.2);
     this.head.add(halo);
@@ -1501,6 +1665,28 @@ export class Swordsman {
         );
       }
       this.spinners.push({ group: halo, axis: 'z', speed: 0.35 });
+      // The light of the sun itself behind her head, a second ring of fine rays turning the other way, and earrings.
+      this.glow(this.head, colours.gem, 1.5, [0, 0.2, -0.24], 0.27);
+      const rays = new Group();
+      rays.position.set(0, 0.2, -0.215);
+      this.head.add(rays);
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2;
+        this.mesh(
+          new ConeGeometry(0.008, 0.09, 3),
+          trim,
+          rays,
+          [Math.cos(a) * 0.6, Math.sin(a) * 0.6, 0],
+          [0, 0, a - UP],
+          [1, 1, 0.3],
+        );
+      }
+      this.mesh(new TorusGeometry(0.555, 0.005, 5, 48), trim, rays);
+      this.spinners.push({ group: rays, axis: 'z', speed: -0.2 });
+      for (const side of [-1, 1]) {
+        this.mesh(new TorusGeometry(0.022, 0.005, 5, 12), trim, this.head, [side * 0.185, 0.1, 0]);
+        this.mesh(new ConeGeometry(0.012, 0.05, 4), gem, this.head, [side * 0.185, 0.05, 0], [Math.PI, 0, 0]);
+      }
     } else if (divine === 'moon') {
       // Pale hair under a deep hood, and a dark crescent moon standing behind it.
       this.buildHood();
@@ -1528,6 +1714,14 @@ export class Swordsman {
       // Three stars keep it company.
       for (let i = 0; i < 3; i++)
         this.ball(gem, halo, [-0.1 + i * 0.1, 0.12 + (i % 2) * 0.09, 0.01], [0.014, 0.014, 0.008]);
+      // A cold light inside the crescent, horns of dark metal through the hood, and a mask over the lower face.
+      this.glow(this.head, colours.gem, 1.25, [0, 0.22, -0.24], 0.22);
+      for (const side of [-1, 1])
+        this.curved(this.head, [side * 0.14, 0.31, -0.03], [0.25, 0, -side * 0.75], 0.3, 0.036, -1.1, armour);
+      this.ball(armour, this.head, [0, 0.095, 0.115], [0.105, 0.06, 0.07]);
+      this.mesh(new ConeGeometry(0.02, 0.05, 4), trim, this.head, [0, 0.07, 0.185], [Math.PI, 0, 0], [1, 1, 0.4]);
+      for (const side of [-1, 1])
+        this.ball(trim, this.head, [side * 0.07, 0.11, 0.165], [0.03, 0.006, 0.006], [0, 0, side * 0.5]);
     } else if (divine === 'mountain') {
       // White hair and a long beard, a crown of standing stones, and two great curling horns.
       for (const side of [-1, 0, 1]) {
@@ -1561,9 +1755,40 @@ export class Swordsman {
         );
       }
       this.ball(gem, this.head, [0, 0.3, 0.17], [0.022, 0.026, 0.012]);
-      for (const side of [-1, 1])
+      for (const side of [-1, 1]) {
         this.curved(this.head, [side * 0.16, 0.27, -0.02], [0.1, 0, -side * 1.15], 0.36, 0.05, -1.5, trim);
+        // Each horn banded in metal near its root, and heavy brows of stone over the eyes.
+        this.mesh(
+          new TorusGeometry(0.05, 0.012, 6, 14),
+          armour,
+          this.head,
+          [side * 0.2, 0.285, -0.02],
+          [0, UP, 0.35 * side],
+        );
+        this.ball(armour, this.head, [side * 0.07, 0.225, 0.145], [0.055, 0.02, 0.02], [0, 0, side * 0.3]);
+      }
+      // Fire in the stone: a light burning at his brow.
+      this.glow(this.head, colours.gem, 0.5, [0, 0.3, 0.19], 0.29);
       halo.visible = false;
+    } else if (divine === 'death') {
+      // A deep black hood, and under it a skull: hollow sockets with a point of grave-light in each,
+      // a hole for a nose, sunken cheeks and a row of bare teeth.
+      this.buildHood();
+      const { dark, skin } = this.materials;
+      for (const side of [-1, 1]) {
+        this.ball(dark, this.head, [side * 0.066, 0.156, 0.142], [0.046, 0.05, 0.022]);
+        this.ball(gem, this.head, [side * 0.066, 0.152, 0.158], [0.013, 0.013, 0.008]);
+        this.glow(this.head, colours.gem, 0.16, [side * 0.066, 0.152, 0.175], 0.5);
+        this.ball(dark, this.head, [side * 0.105, 0.09, 0.118], [0.022, 0.04, 0.02], [0, 0, side * 0.35]);
+        this.ball(skin, this.head, [side * 0.07, 0.215, 0.14], [0.05, 0.016, 0.016], [0, 0, side * 0.35]);
+      }
+      this.mesh(new ConeGeometry(0.014, 0.03, 3), dark, this.head, [0, 0.112, 0.166], [0.2, 0, 0], [1, 1, 0.5]);
+      this.ball(dark, this.head, [0, 0.074, 0.15], [0.05, 0.016, 0.01]);
+      for (let i = 0; i < 6; i++)
+        this.ball(this.white, this.head, [(i - 2.5) * 0.016, 0.076, 0.158], [0.0065, 0.012, 0.005]);
+      // No halo for this one: a cold light inside the hood instead.
+      halo.visible = false;
+      this.glow(this.head, colours.gem, 0.9, [0, 0.2, -0.2], 0.2);
     } else {
       // Hair that never settles, feathers swept back from the brow, and a ring of air round her head.
       for (let i = 0; i < 5; i++)
@@ -1585,33 +1810,53 @@ export class Swordsman {
       this.mesh(new TorusGeometry(0.3, 0.008, 6, 36, Math.PI * 1.6), ribbon, halo);
       this.mesh(new TorusGeometry(0.24, 0.005, 6, 30, Math.PI * 1.4), cloth, halo, [0, 0, 0.01], [0, 0, 2]);
       this.spinners.push({ group: halo, axis: 'z', speed: -1.4 });
+      // A pale light behind her head, and a wing of feathers swept back over each ear.
+      this.glow(this.head, colours.gem, 1.2, [0, 0.2, -0.24], 0.2);
+      for (const side of [-1, 1])
+        for (let i = 0; i < 4; i++)
+          this.mesh(
+            new ConeGeometry(0.03, 0.3 - i * 0.045, 4),
+            i % 2 ? trim : ribbon,
+            this.head,
+            [side * 0.18, 0.2 - i * 0.035, -0.06 - i * 0.012],
+            [-1.25 - i * 0.12, 0, -side * (0.55 + i * 0.1)],
+            [1, 1, 0.22],
+          );
     }
   }
 
   /** What marks the body of a god: wings of light, trailing shadow, circling stone, hoops of wind. */
   private buildDivine(divine: DivineKind): void {
     const { ribbon, gem, armour, trim, cloth } = this.materials;
+    const colours = this.colours;
     if (divine === 'sun') {
-      // Wings: long feathers of light fanned from between the shoulders, the longest highest.
-      for (const side of [-1, 1])
-        for (let i = 0; i < 5; i++)
-          this.streamers.push(
-            this.buildStreamer(
-              this.chest,
-              [side * 0.04, 0.2, -0.09],
-              7,
-              0.62 - i * 0.07,
-              0.07 - i * 0.006,
-              i % 2 ? cloth : ribbon,
-              0.35,
-              0.25,
-              side * (2.35 - i * 0.33),
-              false,
-            ),
-          );
+      this.buildWings(ribbon, cloth, gem, 1, 0.16);
       // A sun-disc on the breast.
       this.mesh(new TorusGeometry(0.05, 0.008, 6, 20), trim, this.chest, [0, 0.13, 0.1]);
       this.ball(gem, this.chest, [0, 0.13, 0.102], [0.034, 0.034, 0.012]);
+      // Rays round the disc, a mantle of gold blades over each shoulder, and a light in her breast.
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        this.mesh(
+          new ConeGeometry(0.008, 0.04, 3),
+          trim,
+          this.chest,
+          [Math.cos(a) * 0.075, 0.13 + Math.sin(a) * 0.075, 0.098],
+          [0, 0, a - UP],
+          [1, 1, 0.4],
+        );
+      }
+      for (const side of [-1, 1])
+        for (let i = 0; i < 4; i++)
+          this.mesh(
+            new ConeGeometry(0.04, 0.2 - i * 0.03, 4),
+            i % 2 ? gem : armour,
+            this.chest,
+            [side * (0.15 + i * 0.03), 0.24 - i * 0.012, (i - 1.5) * 0.045],
+            [(i - 1.5) * 0.3, 0, -side * (1.0 + i * 0.16)],
+            [1, 1, 0.35],
+          );
+      this.glow(this.chest, colours.gem, 0.42, [0, 0.13, 0.13], 0.25);
     } else if (divine === 'moon') {
       // Shadow comes off him in wisps, from the shoulders and the hem of the cloak.
       for (const side of [-1, 1])
@@ -1636,6 +1881,34 @@ export class Swordsman {
         [0, 0.13, 0.104],
         [0, 0, Math.PI * 0.62],
       );
+      // Shoulder guards like folded bat wings, spiked, and three blades of moonlight circling him.
+      for (const side of [-1, 1]) {
+        this.ball(armour, this.chest, [side * 0.175, 0.225, 0], [0.075, 0.05, 0.08], [0, 0, side * 0.4]);
+        for (let i = 0; i < 3; i++)
+          this.mesh(
+            new ConeGeometry(0.028, 0.2 - i * 0.04, 4),
+            i === 0 ? trim : armour,
+            this.chest,
+            [side * (0.2 + i * 0.025), 0.27 - i * 0.02, -0.02 - i * 0.045],
+            [-0.5 - i * 0.3, 0, -side * (0.7 + i * 0.25)],
+            [1, 1, 0.3],
+          );
+      }
+      // Raven wings, dark as the hood, edged in moonlight.
+      this.buildWings(armour, cloth, ribbon, 1, 0.12);
+      const blades = new Group();
+      blades.position.y = 0.1;
+      this.chest.add(blades);
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI * 2;
+        const blade = new Group();
+        blade.position.set(Math.sin(a) * 0.42, (i - 1) * 0.07, Math.cos(a) * 0.42);
+        blade.rotation.set(0, a + UP, 0.5);
+        this.mesh(new TorusGeometry(0.06, 0.012, 4, 14, Math.PI * 1.1), gem, blade, [0, 0, 0], [0, 0, 0], [1, 1, 0.35]);
+        blades.add(blade);
+      }
+      this.spinners.push({ group: blades, axis: 'y', speed: 1.6 });
+      this.glow(this.chest, colours.gem, 0.34, [0, 0.13, 0.13], 0.22);
     } else if (divine === 'mountain') {
       // Shoulders heaped with rock, and boulders circling him at the waist.
       for (const side of [-1, 1]) {
@@ -1663,6 +1936,85 @@ export class Swordsman {
         orbit.add(rock);
       }
       this.spinners.push({ group: orbit, axis: 'y', speed: 0.7 });
+      // The fire under the rock: a core burning in his chest and seams of it down each arm guard.
+      this.ball(gem, this.chest, [0, 0.13, 0.112], [0.03, 0.04, 0.012]);
+      for (const [x, tilt] of [
+        [-0.045, 0.5],
+        [0.045, -0.5],
+        [0, 0],
+      ] as const)
+        this.ball(gem, this.chest, [x, 0.075, 0.1], [0.006, 0.035, 0.006], [0, 0, tilt]);
+      this.glow(this.chest, colours.gem, 0.5, [0, 0.13, 0.14], 0.29);
+      // Wings of standing stone: slabs for feathers, fire in the seams. They are heavy and barely stir.
+      this.buildWings(armour, armour, gem, 0.85, 0.05, 0.5);
+      // A belt of stone slabs.
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        this.mesh(
+          new CylinderGeometry(0.03, 0.036, 0.05, 5),
+          armour,
+          this.chest,
+          [Math.sin(a) * 0.118, 0.005, Math.cos(a) * 0.094],
+          [0, a, 0],
+        );
+      }
+    } else if (divine === 'death') {
+      // Ragged black wings, the robe coming apart into smoke at the shoulders and the hem, a ribcage
+      // of bone over the breast, and the souls it has taken circling it.
+      this.buildWings(armour, cloth, ribbon, 1.05, 0.14);
+      for (const side of [-1, 1]) {
+        for (let i = 0; i < 3; i++)
+          this.streamers.push(
+            this.buildStreamer(
+              this.chest,
+              [side * (0.11 + i * 0.02), 0.21 - i * 0.04, -0.05],
+              6,
+              0.4,
+              0.035,
+              i === 1 ? ribbon : cloth,
+              1.2,
+              1.1,
+              side * (0.45 + i * 0.3),
+            ),
+          );
+        for (let i = 0; i < 3; i++)
+          this.mesh(
+            new TorusGeometry(0.06 - i * 0.006, 0.007, 5, 12, Math.PI * 0.8),
+            trim,
+            this.chest,
+            [side * 0.012, 0.165 - i * 0.032, 0.085],
+            [0.25, side > 0 ? -0.35 : Math.PI + 0.35, 0],
+          );
+      }
+      this.mesh(new CylinderGeometry(0.007, 0.007, 0.12, 5), trim, this.chest, [0, 0.135, 0.108]);
+      for (let i = 0; i < 6; i++)
+        this.streamers.push(
+          this.buildStreamer(
+            this.hips,
+            [Math.sin(i * 1.05) * 0.2, -0.36, Math.cos(i * 1.05) * 0.2],
+            4,
+            0.2,
+            0.05,
+            i % 2 ? ribbon : cloth,
+            1.1,
+            0.7,
+            Math.sin(i * 1.05) * 0.5,
+          ),
+        );
+      const souls = new Group();
+      souls.position.y = 0.12;
+      this.chest.add(souls);
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2;
+        const soul = new Group();
+        soul.position.set(Math.sin(a) * 0.4, (i % 2) * 0.14 - 0.05, Math.cos(a) * 0.4);
+        this.ball(gem, soul, [0, 0, 0], [0.022, 0.026, 0.022]);
+        this.mesh(new ConeGeometry(0.018, 0.07, 6), ribbon, soul, [0, -0.045, 0], [Math.PI, 0, 0]);
+        this.glow(soul, colours.gem, 0.2, [0, 0, 0], 0.4);
+        souls.add(soul);
+      }
+      this.spinners.push({ group: souls, axis: 'y', speed: 1.1 });
+      this.glow(this.chest, colours.gem, 0.3, [0, 0.13, 0.13], 0.2);
     } else {
       // Two hoops of air turn about her, tilted against each other, and long scarves fly from her shoulders.
       for (const [tilt, speed, radius] of [
@@ -1704,6 +2056,86 @@ export class Swordsman {
               side * (0.35 + i * 0.4),
             ),
           );
+      // Wings of long pale feathers, never still, and a light at her breast.
+      this.buildWings(ribbon, trim, gem, 0.95, 0.3);
+      this.glow(this.chest, colours.gem, 0.36, [0, 0.2, 0.12], 0.22);
+    }
+  }
+
+  /**
+   * A pair of wings from between the shoulders: a bone that rises and runs out to the tip, long
+   * flight feathers fanned from it, and a row of shorter ones lying over their roots. `size`
+   * scales the pair, `beat` is how far they sweep back and forth, `thick` how solid a feather is
+   * (thin for a bird's, thick for one of stone).
+   */
+  private buildWings(
+    feather: MeshStandardMaterial,
+    second: MeshStandardMaterial,
+    covert: MeshStandardMaterial,
+    size: number,
+    beat: number,
+    thick = 0.16,
+  ): void {
+    const { trim } = this.materials;
+    for (const side of [-1, 1]) {
+      const hinge = new Group();
+      hinge.position.set(side * 0.045, 0.2, -0.1);
+      this.chest.add(hinge);
+      // Built for the right side and mirrored for the left.
+      const wing = new Group();
+      wing.scale.set(side * size, size, size);
+      hinge.add(wing);
+      // The bone: up and out to the wrist, then out and a little down to the tip.
+      const wrist: [number, number] = [0.26, 0.24];
+      const tip: [number, number] = [0.58, 0.2];
+      const rod = (from: [number, number], to: [number, number], radius: number) => {
+        const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+        this.mesh(
+          new CylinderGeometry(radius * 0.7, radius, length, 6),
+          trim,
+          wing,
+          [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2, 0],
+          [0, 0, Math.atan2(to[1] - from[1], to[0] - from[0]) - UP],
+        );
+      };
+      rod([0, 0], wrist, 0.016);
+      rod(wrist, tip, 0.012);
+      this.ball(covert, wing, [wrist[0], wrist[1], 0], [0.022, 0.022, 0.016]);
+      const plume = (
+        at: [number, number],
+        angle: number,
+        length: number,
+        width: number,
+        material: MeshStandardMaterial,
+        z: number,
+      ) => {
+        // A feather is a long flat blade with its root at `at`, pointing along `angle`.
+        const blade = new ConeGeometry(width, length, 4);
+        blade.translate(0, length / 2, 0);
+        this.mesh(blade, material, wing, [at[0], at[1], z], [0, 0, angle - UP], [1, 1, thick]);
+      };
+      // Flight feathers: seven along the outer bone, swinging from straight out to straight down.
+      for (let i = 0; i < 7; i++) {
+        const along = i / 6;
+        const at: [number, number] = [tip[0] + (wrist[0] - tip[0]) * along, tip[1] + (wrist[1] - tip[1]) * along];
+        plume(at, -0.25 - along * 1.05, 0.4 - along * 0.1, 0.05, i % 2 ? second : feather, -0.004 - i * 0.002);
+      }
+      // Then six along the inner bone, hanging down, shorter toward the body.
+      for (let i = 0; i < 6; i++) {
+        const along = (i + 1) / 6.5;
+        const at: [number, number] = [wrist[0] * (1 - along), wrist[1] * (1 - along)];
+        plume(at, -1.35 - along * 0.3, 0.3 - along * 0.14, 0.05, i % 2 ? feather : second, -0.018 - i * 0.002);
+      }
+      // Coverts: a short row over the roots of the flight feathers.
+      for (let i = 0; i < 9; i++) {
+        const along = i / 8;
+        const at: [number, number] =
+          along < 0.5
+            ? [tip[0] + (wrist[0] - tip[0]) * along * 2, tip[1] + (wrist[1] - tip[1]) * along * 2]
+            : [wrist[0] * (2 - along * 2), wrist[1] * (2 - along * 2)];
+        plume(at, -0.5 - along * 1.1, 0.13, 0.034, covert, 0.008);
+      }
+      this.wings.push({ hinge, side, beat, phase: side * 0.3 });
     }
   }
 
@@ -1871,6 +2303,12 @@ export class Swordsman {
     const hover = this.divine === 'sun' || this.divine === 'wind' ? 0.07 + Math.sin(t * 1.6) * 0.02 : 0;
     this.hips.position.y = HIP_HEIGHT + (breath + Math.abs(Math.sin(step)) * 0.03 * walk + pose.lift + hover) * alive;
     for (const spinner of this.spinners) spinner.group.rotation[spinner.axis] = t * spinner.speed;
+    // Wings are held swept a little back and beat slowly; faster and wider on the move.
+    for (const wing of this.wings) {
+      const beat = Math.sin(t * (2.2 + walk * 3) + wing.phase) * wing.beat * (1 + walk * 0.8);
+      wing.hinge.rotation.y = wing.side * (0.5 + beat);
+      wing.hinge.rotation.z = wing.side * beat * 0.35;
+    }
     this.hips.rotation.x = lean;
     this.hips.rotation.y = pose.twist * 0.4 * (1 - walk) + Math.sin(step) * 0.1 * walk;
     this.chest.rotation.y = pose.twist * 0.6 * (1 - walk * 0.5) - Math.sin(step) * 0.15 * walk;

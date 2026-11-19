@@ -55,8 +55,21 @@ export default function CreditsPage() {
       <section className="glass-panel flex w-full flex-col gap-2 rounded-xl p-4 text-left text-sm">
         <h2 className="font-semibold">{tr('Hình 3D')}</h2>
         <p className="text-muted-foreground">
+          {tr('Lính trên đường: bộ KayKit Skeletons của')}{' '}
+          <a href="https://kaylousberg.itch.io/kaykit-skeletons" target="_blank" rel="noreferrer" className={link}>
+            Kay Lousberg
+          </a>
+          {tr('. Bốn tướng tộc Người: bộ RPG Characters của')}{' '}
+          <a
+            href="https://opengameart.org/content/lowpoly-rpg-characters"
+            target="_blank"
+            rel="noreferrer"
+            className={link}
+          >
+            Quaternius
+          </a>
           {tr(
-            'Tướng, lính, quái rừng, trụ, đền và toàn bộ cảnh vật đều được dựng bằng code cho riêng game này, không dùng model có sẵn.',
+            '. Cả hai phát hành theo CC0. Mười hai tướng còn lại, quái rừng, trụ, đền và toàn bộ cảnh vật được dựng bằng code cho riêng game này.',
           )}
         </p>
       </section>

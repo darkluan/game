@@ -22,6 +22,8 @@ const C = {
   stun: '#ffe066',
   mark: '#ff4d6d',
   wind: '#cfe8ff',
+  soul: '#6dffb3',
+  bone: '#e4fff0',
   fire: '#ff7a1a',
   flame: '#ffd166',
   earth: '#c49a6c',
@@ -457,33 +459,33 @@ export const ABILITY_FX: Record<string, (c: CastFxContext) => void> = {
     put(c, 'ring', c.at, 4, c.side, 0.7, { delay: 0.2 });
   },
 
-  // Aeris: pale wind.
+  // Thana, the god of death (id aeris): the green of grave-light, and bone.
   aeris_gale: (c) => {
     const direction = angle(c.caster, c.at);
-    draw(c, 'line', c.caster, c.at, 1.4, C.wind, 0.35);
+    draw(c, 'line', c.caster, c.at, 1.4, C.soul, 0.35);
     for (let i = 1; i <= 3; i++)
-      put(c, 'slash', along(c.caster, c.at, i / 3.3), 1.5, C.white, 0.3, { angle: direction, delay: i * 0.05 });
+      put(c, 'slash', along(c.caster, c.at, i / 3.3), 1.5, C.bone, 0.3, { angle: direction, delay: i * 0.05 });
   },
   aeris_cyclone: (c) => {
-    put(c, 'pillar', c.at, 1.3, C.wind, 0.7);
+    put(c, 'pillar', c.at, 1.3, C.soul, 0.7);
     for (let i = 0; i < 4; i++)
-      put(c, 'slash', c.at, 1.4 + i * 0.4, C.white, 0.45, { angle: (i / 4) * TURN, delay: i * 0.06 });
+      put(c, 'slash', c.at, 1.4 + i * 0.4, C.bone, 0.45, { angle: (i / 4) * TURN, delay: i * 0.06 });
     put(c, 'ring', c.at, 2.6, c.side, 0.5);
   },
   aeris_drift: (c) => {
-    put(c, 'ring', c.caster, 2.2, C.wind, 0.4, { inward: true });
+    put(c, 'ring', c.caster, 2.2, C.soul, 0.4, { inward: true });
     put(c, 'ring', c.caster, 1.5, C.guard, 0.6, { delay: 0.25 });
-    put(c, 'slash', c.caster, 1.6, C.white, 0.4, { angle: Math.random() * TURN, delay: 0.1 });
+    put(c, 'slash', c.caster, 1.6, C.bone, 0.4, { angle: Math.random() * TURN, delay: 0.1 });
   },
   aeris_tempest: (c) => {
     put(c, 'ring', c.at, 4.5, c.side, 1.2);
-    put(c, 'disc', c.at, 4.5, C.wind, 0.6);
+    put(c, 'disc', c.at, 4.5, C.soul, 0.6);
     for (let i = 0; i < 6; i++) {
       const delay = i * 0.55;
       const spot = scatter(c.at, 3.5);
-      put(c, 'pillar', spot, 0.4, C.white, 0.25, { delay });
+      put(c, 'pillar', spot, 0.4, C.bone, 0.25, { delay });
       draw(c, 'bolt', spot, scatter(spot, 2.2), 1, C.spark, 0.35, delay);
-      put(c, 'slash', c.at, 3.4, C.wind, 0.5, { angle: i * 1.1, delay });
+      put(c, 'slash', c.at, 3.4, C.soul, 0.5, { angle: i * 1.1, delay });
     }
   },
 

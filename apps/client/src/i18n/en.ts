@@ -244,6 +244,7 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  'Lịch sử chat': 'Chat history',
   'Phép hỗ trợ': 'Helper spells',
   'D hồi máu cho bạn, F lướt nhanh một đoạn về phía con trỏ để đuổi hoặc chạy. T đưa bạn về căn cứ sau 5 giây đứng yên; bị đánh là hỏng.':
     'D heals you; F dashes a short way toward the pointer, to chase or to escape. T takes you back to base after 5 seconds standing still; taking a hit breaks it.',
@@ -256,8 +257,10 @@ export const EN: Record<string, string> = {
     'Tap the minimap to send your hero there. Hold a finger on it to look at that place; let go to return to your hero.',
   'Người mới bắt đầu ở đây': 'New? Start here',
   'Hình 3D': '3D art',
-  'Tướng, lính, quái rừng, trụ, đền và toàn bộ cảnh vật đều được dựng bằng code cho riêng game này, không dùng model có sẵn.':
-    'Heroes, minions, wild creatures, towers, shrines and all the scenery are built in code for this game; no ready-made models are used.',
+  'Lính trên đường: bộ KayKit Skeletons của': 'Lane soldiers: the KayKit Skeletons pack by',
+  '. Bốn tướng tộc Người: bộ RPG Characters của': '. The four Human heroes: the RPG Characters pack by',
+  '. Cả hai phát hành theo CC0. Mười hai tướng còn lại, quái rừng, trụ, đền và toàn bộ cảnh vật được dựng bằng code cho riêng game này.':
+    '. Both are released under CC0. The other twelve heroes, wild creatures, towers, shrines and all the scenery are built in code for this game.',
   'Kỹ năng': 'Abilities',
   'Quyền riêng tư': 'Privacy',
   'Về trang chính': 'Back to the home screen',
@@ -301,8 +304,6 @@ export const EN: Record<string, string> = {
   'Tôi đang về hồ': 'Heading back to base',
   'Lấy di vật': 'Take the relic',
   'Cảm ơn': 'Thanks',
-  'Làm tốt lắm': 'Well played',
-  'Xin lỗi': 'Sorry',
   'Xin chào': 'Hello',
   'Mọi người sẵn sàng chưa?': 'Is everyone ready?',
   'Chờ chút nhé': 'Give me a moment',
@@ -516,7 +517,7 @@ export const EN: Record<string, string> = {
   'Độc long': 'The Venom Dragon',
   'Mỗi lần tiến hóa, nọc của Nyx độc hơn và đòn đánh mạnh hơn.':
     "With each evolution Nyx's venom grows deadlier and its attacks stronger.",
-  'Thần Gió': 'God of Wind',
+  'Thần Chết': 'God of Death',
   'Pháo đài di động': 'The Walking Fortress',
   'Mũi tên tê liệt': 'Numbing Bolt',
   'Bắn một mũi tên xuyên theo đường thẳng, gây sát thương và làm chậm.':
@@ -541,16 +542,17 @@ export const EN: Record<string, string> = {
   'Dịch hạch': 'Plague',
   'Phủ dịch lên một vùng: sát thương lớn, làm chậm và đánh dấu mọi kẻ địch bên trong.':
     'Covers an area in plague: heavy damage, and every enemy inside is slowed and marked.',
-  'Lưỡi gió': 'Wind Blade',
-  'Phóng một lưỡi gió xuyên theo đường thẳng.': 'Sends a piercing blade of wind down a line.',
-  'Lốc xoáy': 'Cyclone',
-  'Dựng lốc xoáy ở một điểm: gây sát thương và hất kẻ địch ra xa tâm lốc.':
-    'Raises a cyclone at a point: damages enemies and throws them away from its centre.',
-  'Cưỡi gió': 'Wind Rider',
-  'Chạy nhanh hơn và được một lớp khiên gió trong 3 giây.': 'Moves faster behind a shield of wind for 3 seconds.',
-  'Bão tố': 'Tempest',
-  'Gọi bão xuống một vùng rộng trong 4 giây: sát thương liên tục, kẻ địch dính bão bị chậm.':
-    'Calls a storm onto a wide area for 4 seconds: constant damage, and enemies it catches are slowed.',
+  'Lưỡi hái': 'Reap',
+  'Vung một nhát lưỡi hái xuyên theo đường thẳng.': 'Sweeps the scythe in a piercing cut down a line.',
+  'Vong hồn trỗi dậy': 'Rising Dead',
+  'Gọi vong hồn trỗi dậy ở một điểm: gây sát thương và hất kẻ địch ra xa.':
+    'Calls the dead up at a point: damages enemies and throws them away from it.',
+  'Hóa bóng ma': 'Wraith Form',
+  'Hóa bóng ma: chạy nhanh hơn và được một lớp khiên linh hồn trong 3 giây.':
+    'Turns wraith: moves faster behind a shield of souls for 3 seconds.',
+  'Vùng đất chết': 'Deadland',
+  'Phủ tử khí xuống một vùng rộng trong 4 giây: sát thương liên tục, kẻ địch trong vùng bị chậm.':
+    'Lays the breath of the grave over a wide area for 4 seconds: constant damage, and enemies inside are slowed.',
   'Cú đấm thủy lực': 'Hydraulic Punch',
   'Đấm một kẻ địch: gây sát thương và làm choáng.': 'Punches one enemy: damage and a stun.',
   'Trường chắn': 'Barrier Field',

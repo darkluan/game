@@ -1,4 +1,11 @@
 # Read by Cloudflare Pages.
+#
+# Cloudflare compresses a file in transit only when its content type is on its list, and the 3D model
+# type is not. WebAssembly is, so the model files are labelled as WebAssembly: they then travel at
+# less than half their size. The game reads them as raw bytes, so the label changes nothing else.
+/models/*.glb
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=86400
 /sounds/*
   Cache-Control: public, max-age=86400
 /portraits/*

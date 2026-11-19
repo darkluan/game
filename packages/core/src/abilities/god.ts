@@ -118,14 +118,14 @@ export const godEffects: Record<string, AbilityEffect> = {
     }
   },
 
-  // ---- Aeris ----
+  // ---- Thana (id aeris) ----
 
-  /** A piercing blade of wind. */
+  /** A piercing sweep of the scythe. */
   aeris_gale({ caster, point, param, damage, enemiesOnLine }) {
     for (const e of enemiesOnLine(caster.pos, point, param('width'))) damage(e, param('damage'));
   },
 
-  /** A whirlwind at a point: damage, and everything in it is thrown outward. */
+  /** The dead rise at a point: damage, and everything there is thrown outward. */
   aeris_cyclone({ sim, caster, point, param, damage }) {
     for (const e of sim.enemiesWithin(caster.team, point, param('radius'))) {
       damage(e, param('damage'));
@@ -133,7 +133,7 @@ export const godEffects: Record<string, AbilityEffect> = {
     }
   },
 
-  /** Ride the wind: faster, behind a thin shield. */
+  /** Turn wraith: faster, behind a thin shield. */
   aeris_drift({ sim, caster, param }) {
     sim.addStatus(caster, 'haste', param('buffTicks'), param('haste'));
     sim.addStatus(caster, 'shield', param('buffTicks'), param('shield'));

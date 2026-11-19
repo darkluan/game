@@ -1075,8 +1075,8 @@ const nyx: HeroDef = {
 
 const aeris: HeroDef = {
   id: 'aeris',
-  name: 'Aeris',
-  title: 'Thần Gió',
+  name: 'Thana',
+  title: 'Thần Chết',
   race: 'god',
   role: 'mage',
   base: {
@@ -1098,8 +1098,8 @@ const aeris: HeroDef = {
   abilities: {
     Q: ability(
       'aeris_gale',
-      'Lưỡi gió',
-      'Phóng một lưỡi gió xuyên theo đường thẳng.',
+      'Lưỡi hái',
+      'Vung một nhát lưỡi hái xuyên theo đường thẳng.',
       'direction',
       9,
       'damage',
@@ -1109,8 +1109,8 @@ const aeris: HeroDef = {
     ),
     W: ability(
       'aeris_cyclone',
-      'Lốc xoáy',
-      'Dựng lốc xoáy ở một điểm: gây sát thương và hất kẻ địch ra xa tâm lốc.',
+      'Vong hồn trỗi dậy',
+      'Gọi vong hồn trỗi dậy ở một điểm: gây sát thương và hất kẻ địch ra xa.',
       'point',
       7.5,
       'damage',
@@ -1120,8 +1120,8 @@ const aeris: HeroDef = {
     ),
     E: ability(
       'aeris_drift',
-      'Cưỡi gió',
-      'Chạy nhanh hơn và được một lớp khiên gió trong 3 giây.',
+      'Hóa bóng ma',
+      'Hóa bóng ma: chạy nhanh hơn và được một lớp khiên linh hồn trong 3 giây.',
       'self',
       0,
       'escape',
@@ -1131,8 +1131,8 @@ const aeris: HeroDef = {
     ),
     R: ability(
       'aeris_tempest',
-      'Bão tố',
-      'Gọi bão xuống một vùng rộng trong 4 giây: sát thương liên tục, kẻ địch dính bão bị chậm.',
+      'Vùng đất chết',
+      'Phủ tử khí xuống một vùng rộng trong 4 giây: sát thương liên tục, kẻ địch trong vùng bị chậm.',
       'point',
       9,
       'damage',

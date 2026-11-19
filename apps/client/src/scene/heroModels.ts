@@ -1,6 +1,8 @@
 import { HYDRA_ACTIONS, type HydraColours } from './Hydra';
 import { LONG_DRAGON_ACTIONS, type LongDragonColours } from './LongDragon';
 import { MECH_ACTIONS, type MechColours } from './Mech';
+import type { HumanDress } from './humanDress';
+import { MODELS } from './models';
 import { SWORDSMAN_ACTIONS, type SwordsmanColours } from './Swordsman';
 
 /** How long each of a hero's actions plays, by its name. The other fields are left from the days of model files. */
@@ -29,6 +31,8 @@ export interface HeroLook {
   brightness?: number;
   /** Multiplies the size on the hero-picking screens only, for a hero that fills too much of the stage there. */
   showcaseScale?: number;
+  /** What is drawn in code onto a Human's model: a line round it, eyes, a lit weapon and its own ornaments. */
+  dress?: HumanDress;
   /** Set for a hero drawn as a winged or many-headed dragon built in code; `model` is then empty. */
   hydra?: HydraColours;
   /** Set for a hero drawn as the wandering swordsman built in code; `model` is then empty. */
@@ -49,46 +53,47 @@ export interface HeroModel extends HeroLook {
  * the machines are mechs.
  */
 export const HERO_MODELS: Record<string, HeroModel> = {
-  // A young blade-master in the style of a wuxia cartoon, built in code: big head, spiked hair in a
-  // topknot, plated shoulders, flying ribbons and a sabre as tall as he is. In the Humans' blue and silver.
+  // The four Humans are the CC0 "RPG Characters" by Quaternius: the warrior with his sword for Kael.
   kael: {
-    model: '',
+    model: MODELS.humanWarrior,
+    dress: 'warrior',
     hide: [],
     scale: 1,
-    height: 2.1,
+    height: 2.3,
     showcaseScale: 0.9,
-    swordsman: {
-      cloth: '#27408f',
-      armour: '#3b4d74',
-      trim: '#e8b84a',
-      ribbon: '#3fd0ff',
-      skin: '#f0c39c',
-      hair: '#1a1b26',
-      blade: '#e6edf5',
-      gem: '#4aa3ff',
+    rig: {
+      idle: 'Idle_Weapon',
+      run: 'Run_Weapon',
+      death: 'Death',
+      actions: {
+        attack: { clip: 'Sword_Attack', seconds: 0.5 },
+        Q: { clip: 'Roll', seconds: 0.55 },
+        W: { clip: 'Punch', seconds: 0.7 },
+        E: { clip: 'Sword_AttackFast', seconds: 0.55 },
+        R: { clip: 'Sword_Attack', seconds: 0.8 },
+      },
     },
-    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
-  // An archer in the same wuxia-cartoon style as Kael: hair in two buns with long tails, a short flared
-  // skirt, a tall bow and a quiver. In forest green with coral ribbons.
+  // The ranger with her bow.
   lyra: {
-    model: '',
+    model: MODELS.humanRanger,
+    dress: 'ranger',
     hide: [],
     scale: 1,
-    height: 2,
+    height: 2.25,
     showcaseScale: 0.9,
-    swordsman: {
-      archer: true,
-      cloth: '#2c8a5c',
-      armour: '#3f5f4a',
-      trim: '#e8c35a',
-      ribbon: '#ff7d5c',
-      skin: '#f4cdaa',
-      hair: '#b44a2c',
-      blade: '#e6edf5',
-      gem: '#5fe0a0',
+    rig: {
+      idle: 'Idle_Weapon',
+      run: 'Run_Holding',
+      death: 'Death',
+      actions: {
+        attack: { clip: 'Bow_Attack_Shoot', seconds: 0.5 },
+        Q: { clip: 'Bow_Attack_Shoot', seconds: 0.55 },
+        W: { clip: 'Bow_Attack_Draw', seconds: 0.7 },
+        E: { clip: 'Roll', seconds: 0.55 },
+        R: { clip: 'Bow_Attack_Draw', seconds: 0.8 },
+      },
     },
-    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
   // Fire: a dragon of the eastern kind, built in code: a long crimson body swimming through the air, a
   // mane and whiskers of flame, antlers, and a burning pearl. It has one body and simply grows as it evolves.
@@ -133,9 +138,9 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     swordsman: {
       kind: 'mage',
       divine: 'sun',
-      cloth: '#e6d6b4',
-      armour: '#c9a24a',
-      trim: '#ffd76a',
+      cloth: '#f1dfb6',
+      armour: '#d99a2b',
+      trim: '#ffd35a',
       ribbon: '#ffe9a0',
       skin: '#f6d6bc',
       hair: '#f2c868',
@@ -154,9 +159,9 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     swordsman: {
       kind: 'blade',
       divine: 'moon',
-      cloth: '#2a1c4a',
-      armour: '#1d1933',
-      trim: '#8a7ab8',
+      cloth: '#3a2378',
+      armour: '#221a45',
+      trim: '#c9b8ff',
       ribbon: '#b98cff',
       skin: '#d9c9e8',
       hair: '#e8e0ff',
@@ -185,26 +190,26 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     mech: { kind: 'engineer', hull: '#c98a2b', plate: '#f2d9a0', glow: '#7dffb0' },
     rig: { idle: '', run: '', death: '', actions: MECH_ACTIONS },
   },
-  // A star mage in a long indigo robe and a tall bent hat, a crescent staff in one hand and a book
-  // floating over the other. Built in code.
+  // The wizard with his staff.
   mira: {
-    model: '',
+    model: MODELS.humanWizard,
+    dress: 'wizard',
     hide: [],
     scale: 1,
-    height: 2,
+    height: 2.3,
     showcaseScale: 0.9,
-    swordsman: {
-      kind: 'mage',
-      cloth: '#3b2f8f',
-      armour: '#2f3566',
-      trim: '#cfd8f0',
-      ribbon: '#8fd0ff',
-      skin: '#f4d3bb',
-      hair: '#d9d2ff',
-      blade: '#e6edf5',
-      gem: '#7fb0ff',
+    rig: {
+      idle: 'Idle_Weapon',
+      run: 'Run_Weapon',
+      death: 'Death',
+      actions: {
+        attack: { clip: 'Staff_Attack', seconds: 0.5 },
+        Q: { clip: 'Spell1', seconds: 0.55 },
+        W: { clip: 'Spell2', seconds: 0.7 },
+        E: { clip: 'Spell1', seconds: 0.55 },
+        R: { clip: 'Spell2', seconds: 0.8 },
+      },
     },
-    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
   // Storm: a black winged dragon with fire showing between its scales, fins and a mane of flame, and
   // burning shards circling it. Built in code; it has one body and simply grows as it evolves.
@@ -236,9 +241,9 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     swordsman: {
       kind: 'blade',
       divine: 'mountain',
-      cloth: '#8a6a44',
-      armour: '#b9b3a6',
-      trim: '#d8b170',
+      cloth: '#a8672c',
+      armour: '#8f8a80',
+      trim: '#e2b45c',
       ribbon: '#e0b070',
       skin: '#c99a72',
       hair: '#ece6da',
@@ -257,26 +262,26 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     mech: { kind: 'striker', hull: '#2b2f3a', plate: '#8b93a7', glow: '#ff3b5c' },
     rig: { idle: '', run: '', death: '', actions: MECH_ACTIONS },
   },
-  // A field medic in a deep green hooded cloak, a satchel at her hip, a hand crossbow and a mending
-  // light she carries over her other hand. Built in code.
+  // The cleric with her staff.
   elna: {
-    model: '',
+    model: MODELS.humanCleric,
+    dress: 'cleric',
     hide: [],
     scale: 1,
-    height: 1.95,
+    height: 2.25,
     showcaseScale: 0.9,
-    swordsman: {
-      kind: 'healer',
-      cloth: '#2c7048',
-      armour: '#5b4630',
-      trim: '#dcc47a',
-      ribbon: '#9af0a6',
-      skin: '#f2cfae',
-      hair: '#7a4a2a',
-      blade: '#e6edf5',
-      gem: '#7dffa0',
+    rig: {
+      idle: 'Idle_Weapon',
+      run: 'Run_Weapon',
+      death: 'Death',
+      actions: {
+        attack: { clip: 'Staff_Attack', seconds: 0.5 },
+        Q: { clip: 'Spell1', seconds: 0.55 },
+        W: { clip: 'Spell2', seconds: 0.7 },
+        E: { clip: 'Spell1', seconds: 0.55 },
+        R: { clip: 'Spell2', seconds: 0.8 },
+      },
     },
-    rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
   // Venom: a three-headed dragon in black-green scales with violet wings and fins, venom glowing between
   // the scales and dripping from all three mouths. Built in code; it has one body and simply grows as it evolves.
@@ -297,25 +302,26 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     },
     rig: { idle: '', run: '', death: '', actions: HYDRA_ACTIONS },
   },
-  // The wind god is a small robed spirit, in sky white and gold.
-  // The god of wind: pale teal, floating, ringed by turning hoops of air, feathers in her hair and long scarves flying. Built in code.
+  // The god of death: robed and hooded in black, a skull for a face with grave-light in its eyes, ragged
+  // wings, a scythe taller than itself and the souls it has taken circling it. Built in code. She is
+  // called Thana; the id is left from when she was Aeris, the god of wind, so saved picks and builds still find her.
   aeris: {
     model: '',
     hide: [],
     scale: 1,
-    height: 2.05,
+    height: 2.15,
     showcaseScale: 0.9,
     swordsman: {
       kind: 'mage',
-      divine: 'wind',
-      cloth: '#cfeae4',
-      armour: '#7fb7b0',
-      trim: '#e8fbff',
-      ribbon: '#b8f3ff',
-      skin: '#f2d9c6',
-      hair: '#a9e6dc',
-      blade: '#e8fbff',
-      gem: '#7fe7ff',
+      divine: 'death',
+      cloth: '#2a2d3a',
+      armour: '#3f4454',
+      trim: '#cfd6d2',
+      ribbon: '#5dffa8',
+      skin: '#e6e3d4',
+      hair: '#c9cfd2',
+      blade: '#dfe9e6',
+      gem: '#4dff9c',
     },
     rig: { idle: '', run: '', death: '', actions: SWORDSMAN_ACTIONS },
   },
