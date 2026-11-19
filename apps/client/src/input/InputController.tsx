@@ -1,20 +1,32 @@
-import { useThree } from '@react-three/fiber';
-import { useEffect } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useRef } from 'react';
 import { ABILITY_SLOTS, type AbilitySlot, MATCH_CHAT_IDS } from '@game/core';
 import type { GameSession } from '@/lib/session';
 import { useGameStore } from '@/store/gameStore';
 import { attackMove, castSlot, castSpell, clickGround } from './commands';
 import { pingAtOffset } from '@/lib/pingWheel';
 
+/** How far one unit of the wheel's turning slides the view, in units of ground: about three for a notch. */
+const WHEEL_STEP = 0.03;
+
 /**
  * Mouse and keyboard. Click to move or attack; Q W E R cast at the cursor; Alt+key levels up;
  * D heals, F flashes toward the cursor and T recalls to the fountain;
  * C opens the team's phrases, where 1 to 8 send one, and Enter opens the same panel ready to type; Alt + press opens the signal wheel;
  * S stops; B opens the shop; holding Tab shows the scoreboard.
+ * While the hero is dead the mouse wheel slides the view along the lane, to watch the fight go on.
  * With `touch`, moving is the joystick's job, so a tap on the ground only picks an enemy to attack.
  */
 export function InputController({ game, touch }: { game: GameSession; touch: boolean }) {
   const canvas = useThree((s) => s.gl.domElement);
+  /** The view has been slid away from the fallen hero with the wheel: it goes back when the hero is up again. */
+  const watching = useRef(false);
+
+  useFrame(() => {
+    if (!watching.current || game.hero.dead) return;
+    watching.current = false;
+    useGameStore.getState().setPeek(null);
+  });
 
   useEffect(() => {
     const onPointerDown = (e: PointerEvent) => {
@@ -34,6 +46,22 @@ export function InputController({ game, touch }: { game: GameSession; touch: boo
       setPingWheel(null);
       const type = pingAtOffset(e.clientX - pingWheel.x, e.clientY - pingWheel.y);
       game.sendChat({ k: 'ping', type, x: pingWheel.at.x, z: pingWheel.at.z });
+    };
+    const onWheel = (e: WheelEvent) => {
+      // Only a dead hero's player has nothing better to do with the wheel than look around.
+      if (touch || !game.hero.dead) return;
+      e.preventDefault();
+      const store = useGameStore.getState();
+      const from = store.peek ?? game.renderPos(game.hero, { x: 0, z: 0 });
+      // The wheel runs the length of the lane; tilted, or with Shift held, it goes across it.
+      const across = e.shiftKey ? e.deltaY : e.deltaX;
+      const along = e.shiftKey ? 0 : e.deltaY;
+      const { halfWidth, halfDepth } = game.map;
+      watching.current = true;
+      store.setPeek({
+        x: Math.max(-halfWidth, Math.min(halfWidth, from.x + along * WHEEL_STEP)),
+        z: Math.max(-halfDepth, Math.min(halfDepth, from.z + across * WHEEL_STEP)),
+      });
     };
     const onContextMenu = (e: Event) => e.preventDefault();
     const onKeyDown = (e: KeyboardEvent) => {
@@ -84,12 +112,15 @@ export function InputController({ game, touch }: { game: GameSession; touch: boo
     };
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('contextmenu', onContextMenu);
+    // Not passive: the page must not scroll or zoom under the game.
+    canvas.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     return () => {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('contextmenu', onContextMenu);
+      canvas.removeEventListener('wheel', onWheel);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);

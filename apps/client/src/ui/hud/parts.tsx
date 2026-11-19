@@ -428,7 +428,8 @@ export function QuickBuy({ hud, game, className }: { hud: HudState; game: GameSe
   );
 }
 
-export function DeathNotice({ hud }: { hud: HudState }) {
+/** `hint`: something the player can do while waiting, said under the countdown. */
+export function DeathNotice({ hud, hint }: { hud: HudState; hint?: string }) {
   if (!hud.dead || hud.winner !== null) return null;
   return (
     <div className="absolute top-1/3 left-1/2 -translate-x-1/2 rounded-md hud-panel px-6 py-3 text-center">
@@ -436,6 +437,7 @@ export function DeathNotice({ hud }: { hud: HudState }) {
       <div className="text-sm text-muted-foreground">
         {tr('Hồi sinh sau {seconds} giây', { seconds: hud.respawnSeconds })}
       </div>
+      {hint && <div className="mt-1 text-xs text-primary">{hint}</div>}
     </div>
   );
 }

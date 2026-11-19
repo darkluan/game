@@ -315,7 +315,7 @@ export function DesktopHud({ game, hud, actions }: LayoutProps) {
 
       <QuickBuy hud={hud} game={game} className="absolute bottom-48 left-1/2 -translate-x-1/2" />
       <RecallNotice hud={hud} />
-      <DeathNotice hud={hud} />
+      <DeathNotice hud={hud} hint={tr('Lăn chuột để xem dọc đường · giữ Shift để xem ngang')} />
       <EndScreen hud={hud} actions={actions} />
     </div>
   );
