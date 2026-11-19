@@ -6,9 +6,9 @@
 // those, as the page goes out, into an invitation to that room.
 
 const TEXT = {
-  title: (code) => `⚔️ Vào phòng ${code} đấu 3v3 cùng tôi! · Tứ Tộc`,
+  title: (code) => `⚔️ Join room ${code} for a 3v3 with me! · Tutoc`,
   description:
-    'Bấm link là vào trận: MOBA 3v3 chơi ngay trên trình duyệt, không cần tải, không cần đăng ký. Chọn tướng và chiến thôi!',
+    "Tap the link and you're in: a 3v3 MOBA that runs in your browser, nothing to install, no sign-up. Pick a hero and fight!",
 };
 
 export async function onRequestGet(context) {
