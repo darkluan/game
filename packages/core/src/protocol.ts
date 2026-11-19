@@ -380,16 +380,7 @@ export function cleanNickname(raw: unknown): string {
 // ---- chat ----
 
 /** Ready-made phrases a player can send to their team during a match. Sent as ids so each receiver reads them in their own language. */
-export const MATCH_CHAT_IDS = [
-  'attack',
-  'retreat',
-  'help',
-  'recalling',
-  'relic',
-  'thanks',
-  'wellPlayed',
-  'sorry',
-] as const;
+export const MATCH_CHAT_IDS = ['attack', 'retreat', 'help', 'recalling', 'relic', 'thanks'] as const;
 /** Ready-made phrases for the pick room, where everyone reads them. */
 export const LOBBY_CHAT_IDS = ['hello', 'readyUp', 'wait', 'swapHero', 'letsGo', 'thanks'] as const;
 export type MatchChatId = (typeof MATCH_CHAT_IDS)[number];

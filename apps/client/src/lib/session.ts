@@ -133,6 +133,12 @@ export interface HudState {
   winner: Team | null;
 }
 
+/** One line of team chat as it was shown: who, and what they said. */
+export interface ChatLine {
+  id: number;
+  text: string;
+}
+
 export interface Announcement {
   id: number;
   text: string;
@@ -300,6 +306,8 @@ export interface GameSession {
   readonly chatEnabled: boolean;
   /** Says a ready-made phrase to the team, or marks a point on the map for it. */
   sendChat(message: MatchChatSend): void;
+  /** What the team has said and marked in this match, oldest first: the lines that have left the screen can be read again here. */
+  readonly chatLog: readonly ChatLine[];
   /** Marks teammates put on the map a moment ago. */
   readonly pings: readonly MapPing[];
   /** A teammate whose chat this player chose not to see. */

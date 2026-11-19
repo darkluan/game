@@ -8,8 +8,28 @@ import { useState } from 'react';
 import { useTouchLayout } from '@/hooks/useTouchLayout';
 import { ChatInput } from '../ChatInput';
 
+/** What the team has said so far, newest at the bottom and in view. Empty until someone speaks. */
+function ChatHistory({ game }: { game: GameSession }) {
+  // The log lives in the session, outside React: the HUD state changes every tick, which redraws this.
+  useGameStore((s) => s.hud);
+  if (game.chatLog.length === 0) return null;
+  return (
+    <ul
+      aria-label={tr('Lịch sử chat')}
+      ref={(list) => list?.scrollTo(0, list.scrollHeight)}
+      className="flex max-h-24 shrink-0 flex-col gap-0.5 overflow-y-auto rounded-md bg-background/60 px-2 py-1 leading-snug select-text"
+    >
+      {game.chatLog.map((line) => (
+        <li key={line.id} className="break-words">
+          {line.text}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
- * Team chat: a button that opens a box to type in, the ready-made phrases and who to stop hearing
+ * Team chat: a button that opens what was said so far, a box to type in, the ready-made phrases and who to stop hearing
  * from. Shown only in a match with other people in it.
  * `className` places the button; `panelClassName` places the panel it opens, relative to the button.
  */
@@ -46,7 +66,11 @@ export function QuickChat({
         {tr('Chat')}
       </button>
       {open && (
-        <div className={`absolute z-20 flex w-64 flex-col gap-2 rounded-lg hud-sheet p-2 text-xs ${panelClassName}`}>
+        // On a phone the panel is taller than the room under its button: it scrolls rather than run off the screen.
+        <div
+          className={`absolute z-20 flex max-h-[calc(100dvh-7.75rem)] w-64 flex-col gap-2 overflow-y-auto rounded-lg hud-sheet p-2 text-xs ${panelClassName}`}
+        >
+          <ChatHistory game={game} />
           <ChatInput
             // Opened with Enter: ready to type. Opened with C or a click: the number keys pick a phrase.
             key={String(typing)}

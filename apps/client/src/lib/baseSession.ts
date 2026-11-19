@@ -18,6 +18,7 @@ import { CHAT_SIGNAL, MATCH_CHAT_TEXT, PING_COLOR, PING_TEXT } from './chatText'
 import type {
   ActorAction,
   Announcement,
+  ChatLine,
   Fx,
   FxColor,
   MapPing,
@@ -29,6 +30,10 @@ import type {
 
 /** How long an announcement stays on screen. */
 const ANNOUNCEMENT_SECONDS = 5;
+/** A teammate's words stay longer: they are read in the middle of a fight, not while waiting for them. */
+const CHAT_SECONDS = 9;
+/** How many lines of chat are kept to read back. */
+const CHAT_LOG_LINES = 40;
 /** How long a teammate's mark stays on the map. */
 const PING_SECONDS = 4;
 const MAX_ANNOUNCEMENTS = 4;
@@ -54,6 +59,7 @@ export abstract class BaseSession {
   /** Offline there is nobody to talk to; the online game turns this on. */
   readonly chatEnabled: boolean = false;
   pings: MapPing[] = [];
+  chatLog: ChatLine[] = [];
   private readonly mutedHeroes = new Set<number>();
   private readonly actions = new Map<number, ActorAction>();
   private announced: Announcement[] = [];
@@ -81,7 +87,9 @@ export abstract class BaseSession {
 
   protected expireFx(): void {
     this.fx = this.fx.filter((f) => this.clock - f.bornAt < f.duration);
-    this.announced = this.announced.filter((a) => this.clock - a.at < ANNOUNCEMENT_SECONDS);
+    this.announced = this.announced.filter(
+      (a) => this.clock - a.at < (a.tone === 'chat' ? CHAT_SECONDS : ANNOUNCEMENT_SECONDS),
+    );
   }
 
   /** Announcements still on screen, oldest first. */
@@ -140,6 +148,7 @@ export abstract class BaseSession {
   private announce(text: string, tone: Announcement['tone']): void {
     const next = { id: this.nextAnnouncementId++, text, tone, at: this.clock };
     this.announced = [...this.announced, next].slice(-MAX_ANNOUNCEMENTS);
+    if (tone === 'chat') this.chatLog = [...this.chatLog, { id: next.id, text }].slice(-CHAT_LOG_LINES);
   }
 
   /** 'good' when something favours the player's team, 'bad' when it favours the enemy. */

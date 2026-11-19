@@ -10,8 +10,6 @@ export const MATCH_CHAT_TEXT: Record<MatchChatId, string> = {
   recalling: tr('Tôi đang về hồ'),
   relic: tr('Lấy di vật'),
   thanks: tr('Cảm ơn'),
-  wellPlayed: tr('Làm tốt lắm'),
-  sorry: tr('Xin lỗi'),
 };
 
 /** What each map signal says, how it is coloured and which icon stands for it. */

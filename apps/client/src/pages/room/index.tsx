@@ -127,10 +127,12 @@ function ShareLink({ code }: { code: string }) {
 
 /**
  * Chat in the pick room: what was said lately floats above the dock, and Enter (or the button) opens
- * a box to type in. Enter sends; Enter with nothing typed closes the box again.
+ * a box to type in, with everything said so far above it. Enter sends; Enter with nothing typed closes
+ * the box again.
  */
 function RoomChat({ players }: { players: LobbyPlayer[] }) {
   const chat = useRoomStore((s) => s.chat);
+  const chatLog = useRoomStore((s) => s.chatLog);
   const sendChat = useRoomStore((s) => s.sendChat);
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -143,20 +145,42 @@ function RoomChat({ players }: { players: LobbyPlayer[] }) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
+  const said = (line: (typeof chatLog)[number]) => (
+    <>
+      <span className="font-bold text-primary">
+        {players.find((p) => p.playerId === line.playerId)?.nickname ?? '…'}:
+      </span>{' '}
+      {'id' in line ? LOBBY_CHAT_TEXT[line.id] : line.text}
+    </>
+  );
   return (
     <div className="absolute bottom-full left-0 mb-2 flex flex-col items-start gap-1.5 text-xs">
-      <ul aria-live="polite" className="pointer-events-none flex flex-col items-start gap-1">
-        {chat.map((line) => (
-          <li key={line.key} className="glass-panel max-w-xs rounded-md px-2.5 py-1 break-words">
-            <span className="font-bold text-primary">
-              {players.find((p) => p.playerId === line.playerId)?.nickname ?? '…'}:
-            </span>{' '}
-            {'id' in line ? LOBBY_CHAT_TEXT[line.id] : line.text}
-          </li>
-        ))}
-      </ul>
+      {/* With the box open the whole conversation is in it: the floating lines would only say it twice. */}
+      {!open && (
+        <ul aria-live="polite" className="pointer-events-none flex flex-col items-start gap-1">
+          {chat.map((line) => (
+            <li key={line.key} className="glass-panel max-w-xs rounded-md px-2.5 py-1 break-words">
+              {said(line)}
+            </li>
+          ))}
+        </ul>
+      )}
       {open ? (
-        <div className="glass-panel w-64 rounded-lg p-2">
+        // On a phone the panels are thinned to show the hero through them; words typed over a team list need a solid back.
+        <div className="glass-panel flex w-72 flex-col gap-2 rounded-lg p-2 squat:bg-background/90">
+          {chatLog.length > 0 && (
+            <ul
+              aria-label={tr('Lịch sử chat')}
+              ref={(list) => list?.scrollTo(0, list.scrollHeight)}
+              className="flex max-h-32 flex-col gap-0.5 overflow-y-auto rounded-md bg-background/60 px-2 py-1 leading-snug select-text squat:max-h-20"
+            >
+              {chatLog.map((line) => (
+                <li key={line.key} className="break-words">
+                  {said(line)}
+                </li>
+              ))}
+            </ul>
+          )}
           {/* Stays open after a line is sent: a conversation is several of them. */}
           <ChatInput autoFocus onCancel={() => setOpen(false)} onSend={(text) => sendChat({ text })} />
         </div>
