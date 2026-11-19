@@ -20,8 +20,12 @@ import { COLORS } from './palette';
 import { Terrain } from './Terrain';
 
 const CAMERA_OFFSET = new Vector3(0, 34, 24);
-/** A phone's screen is small: its camera stands this much nearer, so heroes and soldiers are drawn about a third larger. */
-const TOUCH_CAMERA_NEARNESS = 0.75;
+/**
+ * A phone's screen is small: its camera stands this much nearer, so heroes and soldiers are drawn a
+ * quarter larger. No nearer than this: the longest reach in the game is 12, and from here the ground
+ * shows 18 up the screen, 25 to either side and 11 down it, part of which the controls cover.
+ */
+const TOUCH_CAMERA_NEARNESS = 0.8;
 const SUN_OFFSET = new Vector3(18, 40, 12);
 const SHAKE = 0.35;
 /** Below this average frame rate, high graphics switches itself to low. */
