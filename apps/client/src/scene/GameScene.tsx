@@ -20,6 +20,8 @@ import { COLORS } from './palette';
 import { Terrain } from './Terrain';
 
 const CAMERA_OFFSET = new Vector3(0, 34, 24);
+/** A phone's screen is small: its camera stands this much nearer, so heroes and soldiers are drawn about a third larger. */
+const TOUCH_CAMERA_NEARNESS = 0.75;
 const SUN_OFFSET = new Vector3(18, 40, 12);
 const SHAKE = 0.35;
 /** Below this average frame rate, high graphics switches itself to low. */
@@ -34,6 +36,7 @@ function GameLoop({ game, shadows, touch }: { game: GameSession; shadows: boolea
   // Only high graphics has anything to give up when frames are slow.
   const slow = useMemo(() => (shadows ? new SlowFrameDetector(MIN_FPS_FOR_HIGH) : null), [shadows]);
   const sun = useRef<DirectionalLight>(null);
+  const offset = useMemo(() => CAMERA_OFFSET.clone().multiplyScalar(touch ? TOUCH_CAMERA_NEARNESS : 1), [touch]);
   const scratch = useMemo(
     () => ({ ground: new Plane(new Vector3(0, 1, 0), 0), hit: new Vector3(), pos: { x: 0, z: 0 } as Vec2 }),
     [],
@@ -45,7 +48,7 @@ function GameLoop({ game, shadows, touch }: { game: GameSession; shadows: boolea
     if (slow?.frame(delta)) lowerGraphics();
     // The camera follows the hero, unless the player is holding the minimap on some other place.
     const p = useGameStore.getState().peek ?? game.renderPos(game.hero, scratch.pos);
-    camera.position.set(p.x + CAMERA_OFFSET.x, CAMERA_OFFSET.y, p.z + CAMERA_OFFSET.z);
+    camera.position.set(p.x + offset.x, offset.y, p.z + offset.z);
     camera.lookAt(p.x, 0, p.z);
     camera.updateMatrixWorld();
     // Aim the mouse with the steady camera, then shake only what is drawn.
