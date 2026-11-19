@@ -24,6 +24,7 @@ import {
   StatsGrid,
   TeamBar,
 } from './parts';
+import { SPELL_TONE } from './spellTone';
 import { Joystick } from './Joystick';
 import { PingButtons } from './Pings';
 import { QuickChat } from './QuickChat';
@@ -58,7 +59,7 @@ function RoundSpell({ spell, game }: { spell: SpellHud; game: GameSession }) {
       onPointerDown={() => castSpell(game, spell.id, null)}
       style={{ right: spot.right, bottom: spot.bottom, width: SPELL_SIZE, height: SPELL_SIZE }}
       className={`pointer-events-auto absolute touch-none overflow-hidden rounded-full border-2 bg-panel text-sm font-bold ${
-        spell.usable ? 'border-gold' : 'border-border text-muted-foreground'
+        spell.usable ? SPELL_TONE[spell.id].border : 'border-border text-muted-foreground'
       }`}
     >
       {spell.cooldownLeft > 0 && (
@@ -69,7 +70,7 @@ function RoundSpell({ spell, game }: { spell: SpellHud; game: GameSession }) {
       )}
       <GameIcon
         id={spell.id}
-        className={`absolute inset-2.5 ${spell.usable ? 'text-gold' : 'text-muted-foreground/60'}`}
+        className={`absolute inset-2.5 ${spell.usable ? SPELL_TONE[spell.id].icon : 'text-muted-foreground/60'}`}
       />
       {spell.cooldownLeft > 0 && (
         <span className="relative [text-shadow:0_0_4px_#000]">{Math.ceil(spell.cooldownLeft)}</span>

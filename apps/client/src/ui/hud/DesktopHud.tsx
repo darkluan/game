@@ -24,6 +24,7 @@ import {
   StatsGrid,
   TeamBar,
 } from './parts';
+import { SPELL_TONE } from './spellTone';
 
 /** The player's portrait is underlined in the colour of its race. */
 const RACE_FRAME = {
@@ -108,7 +109,7 @@ function SpellButton({ spell, game }: { spell: SpellHud; game: GameSession }) {
         disabled={!spell.usable}
         onClick={() => castSpell(game, spell.id, null)}
         className={`peer/cast relative size-11 overflow-hidden rounded-full border-2 bg-background font-bold ${
-          spell.usable ? 'border-gold' : 'border-border text-muted-foreground'
+          spell.usable ? SPELL_TONE[spell.id].border : 'border-border text-muted-foreground'
         }`}
       >
         {spell.cooldownLeft > 0 && (
@@ -119,7 +120,7 @@ function SpellButton({ spell, game }: { spell: SpellHud; game: GameSession }) {
         )}
         <GameIcon
           id={spell.id}
-          className={`absolute inset-2 ${spell.usable ? 'text-gold' : 'text-muted-foreground/60'}`}
+          className={`absolute inset-2 ${spell.usable ? SPELL_TONE[spell.id].icon : 'text-muted-foreground/60'}`}
         />
         {spell.cooldownLeft > 0 && (
           <span className="relative text-sm text-foreground [text-shadow:0_0_4px_#000]">
