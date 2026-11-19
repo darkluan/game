@@ -54,9 +54,21 @@ export function heroOrderSystem(sim: Sim): void {
     let target: Entity | null = null;
     if (order.t === 'attack') {
       target = sim.get(order.targetId) ?? null;
-      if (!target || !sim.isTargetable(target) || !sim.canSee(h, target)) {
-        h.hero.order = { t: 'idle' };
+      if (target && sim.isAlive(target) && sim.isTargetable(target) && sim.canSee(h, target)) {
+        order.seen = { x: target.pos.x, z: target.pos.z };
+      } else {
+        // Dead, or gone for good: the order is done. Only out of sight (into a thicket, round a
+        // wall): go to where it was last seen, as a player would, and take up the fight again from
+        // there if it shows itself.
+        const lost = target && sim.isAlive(target) && order.seen;
         target = null;
+        if (lost && !rooted) {
+          h.mover.path = pathFor(sim, h, lost);
+          h.hero.order = h.mover.path.length > 0 ? { t: 'move' } : { t: 'idle' };
+          a.targetId = null;
+          continue;
+        }
+        h.hero.order = { t: 'idle' };
       }
     }
     if (!target && !sim.hasStatus(h, 'stealth')) {
@@ -69,7 +81,19 @@ export function heroOrderSystem(sim: Sim): void {
           ? current
           : (sim.nearestEnemy(h, leash) ?? sim.nearestEnemy(h, leash, (e) => e.monster?.aggroId === h.id, true));
     }
+    const fought = a.targetId !== null;
     a.targetId = target?.id ?? null;
+    const marching = h.hero.order.t === 'attackMove' ? h.hero.order : null;
+    if (marching && !target) {
+      // Nothing to fight: carry on to where the march was ordered, and stand there once arrived.
+      if (rooted) continue;
+      // The way it was going led to the enemy it has just finished with, not to where it was sent.
+      if (fought) h.mover.path = [];
+      if (h.mover.path.length === 0) h.mover.path = pathFor(sim, h, marching);
+      followPath(sim, h);
+      if (h.mover.path.length === 0) h.hero.order = { t: 'idle' };
+      continue;
+    }
     if (!target || sim.inRange(h, target, a.range) || rooted) {
       h.mover.path = [];
       continue;

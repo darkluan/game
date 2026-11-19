@@ -139,7 +139,7 @@ describe('abilities', () => {
     sim.command('b', { t: 'move', x: 30, z: 0 });
     run(sim, 5);
     expect(b.pos.x).toBe(x);
-    expect(a.hero.order).toEqual({ t: 'attack', targetId: b.id });
+    expect(a.hero.order).toMatchObject({ t: 'attack', targetId: b.id });
   });
 
   it('E is rejected out of range', () => {
@@ -158,6 +158,49 @@ describe('abilities', () => {
     sim.step();
     expect(a.pos.x).toBeCloseTo(6);
     expect(sim.hasStatus(b, 'stun')).toBe(true);
+  });
+});
+
+describe('orders', () => {
+  it('marches to a point, stopping to fight what it meets on the way', () => {
+    const sim = makeSim();
+    const a = hero(sim, 'a');
+    run(sim, MINION.firstWaveTick + 1);
+    const minion = sim.q.minions.entities.find((m) => m.team === 1)!;
+    place(a, -10, 0);
+    place(minion, -4, 0);
+    sim.command('a', { t: 'attackMove', x: 6, z: 0 });
+    run(sim, 30);
+    // It has turned on the minion in its path and stopped short of where it was sent.
+    expect(a.attacker.targetId).toBe(minion.id);
+    expect(a.pos.x).toBeLessThan(0);
+    sim.dealDamage(minion, 1e6, a);
+    // With the way clear it goes on, and stands at the end of the march.
+    for (let i = 0; i < 200; i++) {
+      for (const m of sim.q.minions) if (m.team === 1 && !m.dead) place(m, 50, 15);
+      run(sim, 1);
+    }
+    expect(a.pos.x).toBeCloseTo(6, 0);
+    expect(a.hero.order.t).toBe('idle');
+  });
+
+  it('goes to where a target was last seen when it slips out of sight', () => {
+    const sim = makeSim();
+    const a = hero(sim, 'a');
+    const b = hero(sim, 'b');
+    place(a, -8, 0);
+    place(b, 2, 0);
+    sim.command('a', { t: 'attack', targetId: b.id });
+    run(sim, 3);
+    expect(a.hero.order.t).toBe('attack');
+    // The target vanishes and is taken far away; the hunter must not know where to.
+    sim.addStatus(b, 'stealth', 400);
+    place(b, 40, 15);
+    run(sim, 2);
+    expect(a.hero.order.t).toBe('move');
+    run(sim, 80);
+    expect(Math.abs(a.pos.x - 2)).toBeLessThan(1.5);
+    expect(a.hero.order.t).toBe('idle');
   });
 });
 

@@ -19,6 +19,8 @@ export type SpellId = (typeof SPELL_IDS)[number];
 export type Command =
   | { t: 'move'; x: number; z: number }
   | { t: 'attack'; targetId: number }
+  /** Walk to a point, stopping to fight whatever comes within reach on the way. */
+  | { t: 'attackMove'; x: number; z: number }
   | { t: 'cast'; slot: AbilitySlot; x?: number; z?: number; targetId?: number }
   | { t: 'stop' }
   | { t: 'spell'; spell: SpellId; x?: number; z?: number }
@@ -144,7 +146,12 @@ export interface Status {
   sourceId?: number;
 }
 
-export type HeroOrder = { t: 'idle' } | { t: 'move' } | { t: 'attack'; targetId: number };
+export type HeroOrder =
+  | { t: 'idle' }
+  | { t: 'move' }
+  /** `seen`: where the target last was while in sight, to go and look for it there if it slips out of sight. */
+  | { t: 'attack'; targetId: number; seen?: Vec2 }
+  | { t: 'attackMove'; x: number; z: number };
 
 export interface HeroState {
   defId: string;

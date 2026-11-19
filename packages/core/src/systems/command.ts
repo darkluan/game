@@ -31,6 +31,14 @@ export function applyCommand(sim: Sim, hero: HeroEntity, cmd: Command): boolean 
       hero.hero.order = { t: 'attack', targetId: target.id };
       return true;
     }
+    case 'attackMove': {
+      if (hero.dead || !finite(cmd.x) || !finite(cmd.z)) return false;
+      sim.cancelRecall(hero);
+      const to = sim.nav.nearestWalkable({ x: cmd.x, z: cmd.z });
+      hero.mover.path = [];
+      hero.hero.order = { t: 'attackMove', x: to.x, z: to.z };
+      return true;
+    }
     case 'cast': {
       if (!ABILITY_SLOTS.includes(cmd.slot)) return false;
       if (cmd.x !== undefined && !finite(cmd.x)) return false;
