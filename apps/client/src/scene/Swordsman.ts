@@ -660,11 +660,13 @@ export class Swordsman {
       // Armour of small overlapping plates, light showing between some of them: the dragons' own scales, in metal.
       armour: make(colours.armour, { ...skinned(colours.gem, 1.6, 1), roughness: 0.35, metalness: 0.65 }),
       trim: make(colours.trim, { roughness: 0.3, metalness: 0.8 }),
-      ribbon: make(colours.ribbon, { side: DoubleSide, emissive: colours.ribbon, emissiveIntensity: 0.9 }),
+      // Lit from within, but not strongly: the lobby blooms bright things, and wings and halos made of
+      // these two burned out to white there.
+      ribbon: make(colours.ribbon, { side: DoubleSide, emissive: colours.ribbon, emissiveIntensity: 0.45 }),
       skin: make(colours.skin, { roughness: 0.6 }),
       hair: make(colours.hair, { roughness: 0.45 }),
       blade: make(colours.blade, { roughness: 0.2, metalness: 0.9 }),
-      gem: make(colours.gem, { roughness: 0.2, emissive: colours.gem, emissiveIntensity: 1.6 }),
+      gem: make(colours.gem, { roughness: 0.2, emissive: colours.gem, emissiveIntensity: 0.9 }),
       dark: make('#14161c'),
     };
 

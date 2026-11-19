@@ -5,7 +5,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { Rng } from '@game/core';
+import { HEROES, Rng } from '@game/core';
 import type { Graphics } from '@/store/settingsStore';
 import { HeroShowcase } from './HeroShowcase';
 import { buildProps, propMaterial, shrineGeometry } from './egypt';
@@ -182,16 +182,22 @@ function Forest() {
   );
 }
 
+/** How bright the lamps on a god are, against those on any other hero. */
+const GOD_LAMPS = 0.3;
+
 /** The hero being picked, life-size on the path in front of the emblem. */
 function Hero({ heroId, size }: { heroId: string; size: number }) {
+  // The gods are dressed in pale cloth and carry lights of their own: under the lamps that suit the
+  // others they burn out to white, so theirs are turned well down.
+  const lamps = HEROES[heroId]?.race === 'god' ? GOD_LAMPS : 1;
   return (
     <group position={[0, 0, HERO_Z]}>
       <group scale={HERO_SCALE * size}>
         <HeroShowcase key={heroId} heroId={heroId} />
       </group>
       {/* A soft key light from the camera side and a race-coloured rim from behind. */}
-      <pointLight position={[-3, 7, 9]} color={COLORS.neutral} intensity={230} distance={30} />
-      <pointLight position={[3, 5, -4]} color={heroColor(heroId)} intensity={220} distance={24} />
+      <pointLight position={[-3, 7, 9]} color={COLORS.neutral} intensity={230 * lamps} distance={30} />
+      <pointLight position={[3, 5, -4]} color={heroColor(heroId)} intensity={220 * lamps} distance={24} />
     </group>
   );
 }
