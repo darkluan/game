@@ -259,8 +259,18 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
   // An installed app already fills the screen and is already sideways.
   const installed = launchedAsApp;
   const offerFullscreen = fullscreen.supported && !fullscreen.active && !installed;
-  const walk = useCallback((dir: Vec2) => moveInDirection(game, dir), [game]);
-  const halt = useCallback(() => haltHere(game), [game]);
+  // The stick walks the hero; with the hero dead it slides the view over the map instead.
+  const walk = useCallback(
+    (dir: Vec2) => {
+      if (game.hero.dead) useGameStore.getState().setPanDir(dir);
+      else moveInDirection(game, dir);
+    },
+    [game],
+  );
+  const halt = useCallback(() => {
+    useGameStore.getState().setPanDir(null);
+    if (!game.hero.dead) haltHere(game);
+  }, [game]);
   const chip = 'pointer-events-auto touch-none rounded-md hud-panel px-2.5 py-1.5 text-xs';
   const option = 'rounded-md border border-border px-3 py-2';
 
@@ -276,7 +286,11 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
       <PingButtons game={game} className="top-[4.75rem] left-16" />
 
       <TeamBar hud={hud} compact />
-      <EventFeed hud={hud} deathHint={tr('Chạm bản đồ nhỏ để xem trận')} className="top-12 text-[11px]" />
+      <EventFeed
+        hud={hud}
+        deathHint={tr('Đẩy cần điều khiển hoặc chạm bản đồ nhỏ để xem trận')}
+        className="top-12 text-[11px]"
+      />
 
       <div className="absolute top-1 right-1 flex items-center gap-1.5">
         <span className="rounded-md hud-panel px-2.5 py-1.5 text-xs font-semibold text-gold tabular-nums">

@@ -30,6 +30,9 @@ interface GameStore {
   /** A point of the map the player is holding the minimap on: the camera looks there instead of at the hero. */
   peek: Vec2 | null;
   setPeek: (at: Vec2 | null) => void;
+  /** The way the joystick is pushed while the hero is dead: it slides the view then, having no hero to walk. */
+  panDir: Vec2 | null;
+  setPanDir: (dir: Vec2 | null) => void;
   /** The ability the player is holding (a finger on its button) or pointing at: the scene draws where it would land. */
   aimSlot: AbilitySlot | 'flash' | null;
   setAimSlot: (slot: AbilitySlot | null) => void;
@@ -76,6 +79,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setPingWheel: (pingWheel) => set({ pingWheel }),
   peek: null,
   setPeek: (peek) => set({ peek }),
+  panDir: null,
+  setPanDir: (panDir) => set({ panDir }),
   aimSlot: null,
   setAimSlot: (aimSlot) => set({ aimSlot, aimOffset: null, aimCancel: false }),
   aimOffset: null,

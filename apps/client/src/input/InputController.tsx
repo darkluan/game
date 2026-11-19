@@ -23,7 +23,7 @@ function onMap(game: GameSession, x: number, z: number): { x: number; z: number 
  * C opens the team's phrases, where 1 to 8 send one, and Enter opens the same panel ready to type; Alt + press opens the signal wheel;
  * S stops; B opens the shop; holding Tab shows the scoreboard.
  * While the hero is dead the mouse wheel and the arrow keys slide the view over the map, to watch
- * the fight go on.
+ * the fight go on; on a phone the joystick does.
  * With `touch`, moving is the joystick's job, so a tap on the ground only picks an enemy to attack.
  */
 export function InputController({ game, touch }: { game: GameSession; touch: boolean }) {
@@ -36,14 +36,19 @@ export function InputController({ game, touch }: { game: GameSession; touch: boo
     const dead = game.hero.dead === true;
     const store = useGameStore.getState();
     // Up again: whatever the view was moved to while dead, it goes back to the hero.
-    if (state.wasDead && !dead) store.setPeek(null);
+    if (state.wasDead && !dead) {
+      store.setPeek(null);
+      store.setPanDir(null);
+    }
     state.wasDead = dead;
-    if (!dead || state.keys.size === 0) return;
+    const stick = store.panDir;
+    if (!dead || (state.keys.size === 0 && !stick)) return;
     const from = store.peek ?? game.renderPos(game.hero, { x: 0, z: 0 });
     const step = ARROW_SPEED * Math.min(0.1, delta);
     const dx = (state.keys.has('ArrowRight') ? 1 : 0) - (state.keys.has('ArrowLeft') ? 1 : 0);
     const dz = (state.keys.has('ArrowDown') ? 1 : 0) - (state.keys.has('ArrowUp') ? 1 : 0);
-    store.setPeek(onMap(game, from.x + dx * step, from.z + dz * step));
+    // The arrow keys on a desktop, the joystick on a phone.
+    store.setPeek(onMap(game, from.x + (dx + (stick?.x ?? 0)) * step, from.z + (dz + (stick?.z ?? 0)) * step));
   });
 
   useEffect(() => {
