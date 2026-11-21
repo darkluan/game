@@ -85,6 +85,8 @@ export const HERO_BUILDS: Record<string, string[]> = {
   vesper: ['swift_boots', 'great_blade', 'blood_axe', 'hourglass'],
   orun: ['swift_boots', 'giant_heart', 'guardian_plate', 'regen_core'],
   aeris: ['spell_book', 'swift_boots', 'ancient_staff', 'hourglass'],
+  // A gun and nothing else: faster shots, then harder ones.
+  brann: ['swift_bow', 'swift_boots', 'storm_blade', 'great_blade'],
 
   // Machines: Heat, not mana.
   // He fights planted in cannon mode: no boots, everything into the gun.

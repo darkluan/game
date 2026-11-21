@@ -1293,6 +1293,76 @@ const kubo6: HeroDef = {
   },
 };
 
+const brann: HeroDef = {
+  id: 'brann',
+  name: 'Brann',
+  title: 'Thần Lò Rèn',
+  race: 'god',
+  role: 'marksman',
+  base: {
+    hp: 540,
+    hpPerLevel: 70,
+    hpRegen: 2,
+    mana: 280,
+    manaPerLevel: 32,
+    manaRegen: 3.5,
+    attack: 55,
+    attackPerLevel: 3.8,
+    armor: 18,
+    moveSpeed: 6.4,
+    attackRange: 6.5,
+    attackInterval: seconds(1),
+    projectileSpeed: 20,
+  },
+  resource: 'mana',
+  abilities: {
+    Q: ability(
+      'brann_slug',
+      'Đạn nung',
+      'Bắn một viên đạn nung đỏ xuyên theo đường thẳng.',
+      'direction',
+      9,
+      'damage',
+      s3(6, 5.5, 5),
+      [40, 45, 50],
+      { damage: [88, 132, 176], width: same(1.2) },
+    ),
+    W: ability(
+      'brann_slag',
+      'Xỉ lò',
+      'Đổ xỉ nóng chảy xuống một điểm: mặt đất cháy trong 3 giây và làm chậm kẻ địch dính phải.',
+      'point',
+      7.5,
+      'damage',
+      s3(12, 11, 10),
+      [60, 70, 80],
+      { burn: [50, 78, 106], radius: same(2.4), lifeTicks: same(60), slow: same(0.25), slowTicks: same(30) },
+    ),
+    E: ability(
+      'brann_kick',
+      'Giật lùi',
+      'Bắn một phát xuống chân: kẻ địch đứng gần bị sát thương, còn Brann bật đi theo hướng đã chọn.',
+      'direction',
+      5,
+      'escape',
+      s3(14, 13, 12),
+      same(45),
+      { damage: [50, 75, 100], radius: same(2.2), distance: same(5) },
+    ),
+    R: ability(
+      'brann_bore',
+      'Đại pháo lò rèn',
+      'Nạp và bắn một phát pháo rất xa theo đường thẳng, xuyên mọi kẻ địch. Càng xa nòng pháo càng đau, tối đa gấp rưỡi.',
+      'direction',
+      20,
+      'damage',
+      s3(70, 60, 50),
+      same(100),
+      { damage: [180, 270, 360], width: same(2), farMult: same(1.5) },
+    ),
+  },
+};
+
 /** Two heroes per race first (the launch roster), then the third and the fourth of each race, then those added since. */
 export const HEROES: Record<string, HeroDef> = {
   kael,
@@ -1312,6 +1382,7 @@ export const HEROES: Record<string, HeroDef> = {
   aeris,
   titan9,
   kubo6,
+  brann,
 };
 export const HERO_IDS: readonly string[] = Object.keys(HEROES);
 /** The four heroes of the MVP, one per race. */

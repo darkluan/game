@@ -1,5 +1,5 @@
 import { seconds } from '../data/balance.js';
-import { angleTo } from '../math.js';
+import { angleTo, dist } from '../math.js';
 import type { UnitEntity } from '../sim/Sim.js';
 import type { AbilityEffect } from '../systems/ability.js';
 import { spawnZone } from '../systems/summons.js';
@@ -150,5 +150,39 @@ export const godEffects: Record<string, AbilityEffect> = {
       everyTicks: seconds(0.5),
       value: (param('burn') * power) / 2,
     });
+  },
+
+  // ---- Brann ----
+
+  /** A red-hot slug that goes through everything on its line. */
+  brann_slug({ caster, point, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) damage(e, param('damage'));
+  },
+
+  /** Molten slag poured on a point: the ground burns, and whoever it lands on is slowed. */
+  brann_slag({ sim, caster, point, param, power }) {
+    for (const e of sim.enemiesWithin(caster.team, point, param('radius')))
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+    spawnZone(sim, caster, point, {
+      effect: 'burn',
+      radius: param('radius'),
+      lifeTicks: param('lifeTicks'),
+      everyTicks: seconds(0.5),
+      value: (param('burn') * power) / 2,
+    });
+  },
+
+  /** A shot into the ground at his own feet: it burns those close by and throws him the way he chose. */
+  brann_kick({ sim, caster, param, damage, dash }) {
+    for (const e of sim.enemiesWithin(caster.team, caster.pos, param('radius'))) damage(e, param('damage'));
+    dash(param('distance'));
+  },
+
+  /** The great gun: one shot down a very long line, harder the farther from the muzzle it lands. */
+  brann_bore({ caster, point, def, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
+      const far = Math.min(1, dist(caster.pos, e.pos) / def.range);
+      damage(e, param('damage') * (1 + (param('farMult') - 1) * far));
+    }
   },
 };
