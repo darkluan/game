@@ -105,27 +105,36 @@ function AimCancel() {
 const CARD_AFTER_MS = 180;
 
 /**
- * What an ability does, shown beside the buttons while a finger holds it, as phone games of this
- * kind do. It goes with the drawing on the ground and is gone when the finger lifts.
+ * What an ability does, shown while a finger holds its button, as phone games of this kind do: its
+ * name, what it does, how long it cools and what it costs. The full table of numbers is in the menu.
  */
 function AbilityCard({
   hud,
   hidden,
 }: {
   hud: HudState;
-  /** Another panel has the same place on the screen. */ hidden: boolean;
+  /** Another panel is open. */
+  hidden: boolean;
 }) {
   const held = useGameStore((s) => s.aimSlot);
+  // Once the finger is dragged the player is aiming, not reading: the card gets out of the way.
+  const aiming = useGameStore((s) => s.aimOffset !== null);
   const [shown, setShown] = useState<typeof held>(null);
   useEffect(() => {
     const timer = window.setTimeout(() => setShown(held), held ? CARD_AFTER_MS : 0);
     return () => window.clearTimeout(timer);
   }, [held]);
   const ability = hud.abilities.find((a) => a.slot === shown && a.slot === held);
-  if (hidden || !ability) return null;
+  if (hidden || aiming || !ability) return null;
   return (
-    <div className="pointer-events-none absolute right-[16.5rem] bottom-24 z-20 flex max-h-[calc(100dvh-7rem)] w-64 flex-col gap-1 overflow-hidden rounded-lg hud-sheet p-2 text-xs">
-      <AbilityInfo ability={ability} />
+    // In the corner over the buttons, clear of the middle of the screen where the cast is drawn on the
+    // ground; small, and thin enough to see through.
+    <div className="pointer-events-none absolute top-14 right-2 z-20 flex w-52 flex-col gap-1 rounded-lg border border-border bg-background/75 p-2 text-xs">
+      <AbilityInfo ability={ability} numbers={false} />
+      <p className="text-[11px] text-muted-foreground tabular-nums">
+        {tr('Hồi chiêu {seconds} giây', { seconds: ability.cooldowns[Math.max(0, ability.level - 1)] })}
+        {ability.cost > 0 && ` · ${tr('Tiêu hao {cost}', { cost: ability.cost })}`}
+      </p>
     </div>
   );
 }

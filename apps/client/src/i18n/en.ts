@@ -246,6 +246,7 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  'Tiêu hao {cost}': 'Cost {cost}',
   'Ở cuối tầm bắn': 'At the end of its reach',
   'Sức tia khi chép được chiêu': 'Beam strength when an ability is copied',
   'Lăn chuột, dùng phím mũi tên hoặc bấm bản đồ nhỏ để xem trận':
