@@ -540,8 +540,6 @@ export const EN: Record<string, string> = {
   Lăn: 'Roll',
   'Lăn nhanh một đoạn và được một lớp khiên trong 2,5 giây.': 'Rolls a short way and gains a shield for 2.5 seconds.',
   'Giải mã': 'Solve',
-  'Đọc chiêu tướng địch vừa dùng và tung lại chính chiêu đó vào nó, theo cấp của Giải mã. Nếu nó chưa dùng chiêu nào, hoặc mục tiêu không phải tướng, bắn một tia gây sát thương.':
-    'Reads the ability an enemy hero cast last and casts that very ability back at them, at the level of Solve. If they have cast nothing yet, or the target is not a hero, fires a damaging beam instead.',
   'Bắn một tia gây sát thương, rồi đọc chiêu tướng địch vừa dùng và tung lại chính chiêu đó vào nó, theo cấp của Giải mã. Nếu không có chiêu nào để chép, tia mạnh gấp đôi.':
     'Fires a damaging beam, then reads the ability an enemy hero cast last and casts that very ability back at them, at the level of Solve. With nothing to copy, the beam hits twice as hard.',
   'Mũi tên tê liệt': 'Numbing Bolt',

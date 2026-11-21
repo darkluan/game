@@ -11,6 +11,11 @@ import { canShop } from './shop.js';
 const SKILL_PRIORITY = ['R', 'Q', 'E', 'W'] as const;
 /** How many enemy minions make an area ability worth spending on a wave. */
 const WAVE_CLEAR_COUNT = 3;
+/**
+ * What a bot with an ability that copies thinks worth copying: whatever hurts or builds. Not what
+ * closes with the enemy: the copier shoots from a distance, and a copied leap lands it in their midst.
+ */
+const WORTH_COPYING: ReadonlySet<AbilityDef['ai']> = new Set(['damage', 'summon']);
 
 function hpPct(e: UnitEntity): number {
   return e.health.hp / e.health.maxHp;
@@ -132,6 +137,12 @@ class BotBrain {
         const reach = h.attacker.range + (this.hero.siege ? 0 : (ability.params.range?.[0] ?? 0));
         if (!this.hero.siege && gap <= reach - 0.5 && gap > 3.5) this.cast(slot);
         else if (this.hero.siege && gap > reach + 1) this.cast(slot);
+      } else if (ability.effect === 'kubo_solve') {
+        // Worth it for what would be copied, or for the full beam when there is nothing to copy; not
+        // to copy a shield or a dash the enemy has just used.
+        const last = enemy.hero?.lastCast;
+        const copy = last && this.sim.heroDef(last.defId).abilities[last.slot].ai;
+        if (!copy || WORTH_COPYING.has(copy)) this.cast(slot, enemy);
       } else if (ability.ai === 'engage') {
         if (hpPct(h) > 0.5 || hpPct(enemy) < 0.3) this.cast(slot, enemy);
       } else {

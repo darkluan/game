@@ -175,11 +175,14 @@ export const machineEffects: Record<string, AbilityEffect> = {
   },
 
   /**
-   * Reads the last ability an enemy hero cast and casts it back at them. Against one that has cast
-   * nothing worth the copying, or anything that is not a hero, it is a plain beam instead.
+   * A beam, and then the last ability an enemy hero cast, cast back at them. The beam is at part
+   * strength when something is copied, so the ultimate is never wasted on a poor copy, and at full
+   * strength against one that has cast nothing worth the copying or is not a hero.
    */
   kubo_solve({ sim, caster, target, param, damage, power }) {
     if (!target) return;
-    if (!recast(sim, caster, target, caster.hero.abilityLevels.R, power)) damage(target, param('damage'));
+    const copied = recast(sim, caster, target, caster.hero.abilityLevels.R, power);
+    // The copy may have killed it already.
+    if (sim.isAlive(target)) damage(target, param('damage') * (copied ? param('echo') : 1));
   },
 };

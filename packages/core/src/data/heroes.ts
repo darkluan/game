@@ -1231,7 +1231,7 @@ const kubo6: HeroDef = {
     mana: 0,
     manaPerLevel: 0,
     manaRegen: 0,
-    attack: 50,
+    attack: 54,
     attackPerLevel: 3.2,
     armor: 20,
     moveSpeed: 6.5,
@@ -1255,7 +1255,7 @@ const kubo6: HeroDef = {
       'damage',
       s3(6, 5.5, 5),
       same(20),
-      { damage: [70, 108, 146], width: same(1.5), slow: same(0.3), slowTicks: same(30) },
+      { damage: [85, 128, 171], width: same(1.5), slow: same(0.3), slowTicks: same(30) },
     ),
     W: ability(
       'kubo_scramble',
@@ -1266,7 +1266,7 @@ const kubo6: HeroDef = {
       'damage',
       s3(13, 12, 11),
       same(25),
-      { damage: [45, 70, 95], silenceTicks: [24, 28, 32] },
+      { damage: [65, 100, 135], silenceTicks: [24, 28, 32] },
     ),
     E: ability(
       'kubo_roll',
@@ -1282,13 +1282,13 @@ const kubo6: HeroDef = {
     R: ability(
       'kubo_solve',
       'Giải mã',
-      'Đọc chiêu tướng địch vừa dùng và tung lại chính chiêu đó vào nó, theo cấp của Giải mã. Nếu nó chưa dùng chiêu nào, hoặc mục tiêu không phải tướng, bắn một tia gây sát thương.',
+      'Bắn một tia gây sát thương, rồi đọc chiêu tướng địch vừa dùng và tung lại chính chiêu đó vào nó, theo cấp của Giải mã. Nếu không có chiêu nào để chép, tia mạnh gấp đôi.',
       'unit',
       7,
       'damage',
-      s3(70, 60, 50),
+      s3(60, 52, 44),
       same(40),
-      { damage: [140, 210, 280] },
+      { damage: [210, 315, 420], echo: same(0.5) },
     ),
   },
 };
