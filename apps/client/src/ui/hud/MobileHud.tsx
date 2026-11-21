@@ -1,5 +1,5 @@
 import { tr } from '@/i18n';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { type AbilitySlot, ITEMS, type Vec2 } from '@game/core';
 import { attackNearest, castSlot, castSpell, haltHere, moveInDirection } from '@/input/commands';
 import type { AbilityHud, GameSession, HudState, SpellHud } from '@/lib/session';
@@ -101,6 +101,35 @@ function AimCancel() {
   );
 }
 
+/** A finger must rest on an ability this long before its card shows: a quick tap to cast should not flash it. */
+const CARD_AFTER_MS = 180;
+
+/**
+ * What an ability does, shown beside the buttons while a finger holds it, as phone games of this
+ * kind do. It goes with the drawing on the ground and is gone when the finger lifts.
+ */
+function AbilityCard({
+  hud,
+  hidden,
+}: {
+  hud: HudState;
+  /** Another panel has the same place on the screen. */ hidden: boolean;
+}) {
+  const held = useGameStore((s) => s.aimSlot);
+  const [shown, setShown] = useState<typeof held>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShown(held), held ? CARD_AFTER_MS : 0);
+    return () => window.clearTimeout(timer);
+  }, [held]);
+  const ability = hud.abilities.find((a) => a.slot === shown && a.slot === held);
+  if (hidden || !ability) return null;
+  return (
+    <div className="pointer-events-none absolute right-[16.5rem] bottom-24 z-20 flex max-h-[calc(100dvh-7rem)] w-64 flex-col gap-1 overflow-hidden rounded-lg hud-sheet p-2 text-xs">
+      <AbilityInfo ability={ability} />
+    </div>
+  );
+}
+
 /** Holding + this long shows the next level instead of buying it. */
 const HOLD_TO_PREVIEW_MS = 350;
 
@@ -115,7 +144,11 @@ function RoundAbility({
   onPreview: (slot: AbilitySlot) => void;
 }) {
   const spot = ABILITY_SPOTS[ability.slot];
-  const aim = useAimDrag(game, ability.slot, (at) => castSlot(game, ability.slot, at));
+  // An ability that cannot be cast yet (not learned, still cooling) can still be held, to read what
+  // it does; lifting the finger then casts nothing.
+  const aim = useAimDrag(game, ability.slot, (at) => {
+    if (ability.usable) castSlot(game, ability.slot, at);
+  });
   const hold = useRef<number | undefined>(undefined);
   const cooling = ability.level > 0 && ability.cooldownLeft > 0;
   return (
@@ -123,8 +156,8 @@ function RoundAbility({
       <button
         type="button"
         aria-label={ability.name}
-        disabled={!ability.usable}
-        // Hold to see where it would land, drag to aim it, lift to cast; see useAimDrag.
+        aria-disabled={!ability.usable}
+        // Hold to read it and see where it would land, drag to aim it, lift to cast; see useAimDrag.
         {...aim}
         className={`pointer-events-auto relative size-full touch-none overflow-hidden rounded-full border-2 bg-panel text-sm font-bold ${
           ability.usable
@@ -392,6 +425,7 @@ export function MobileHud({ game, hud, actions }: LayoutProps) {
       </div>
 
       {/* There is no hovering on a touch screen: holding + shows what the next level brings. */}
+      <AbilityCard hud={hud} hidden={preview !== undefined} />
       {preview && (
         <div className="pointer-events-auto absolute right-[16.5rem] bottom-24 z-20 flex max-h-[calc(100dvh-7rem)] w-64 flex-col gap-2 overflow-y-auto rounded-lg hud-sheet p-2 text-xs">
           <AbilityInfo ability={preview} next />

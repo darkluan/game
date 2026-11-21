@@ -246,6 +246,7 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  'Sức tia khi chép được chiêu': 'Beam strength when an ability is copied',
   'Lăn chuột, dùng phím mũi tên hoặc bấm bản đồ nhỏ để xem trận':
     'Scroll, use the arrow keys or click the minimap to watch the fight',
   'Đẩy cần điều khiển hoặc chạm bản đồ nhỏ để xem trận': 'Push the stick or tap the minimap to watch the fight',
@@ -462,8 +463,8 @@ export const EN: Record<string, string> = {
   'Dùng chiêu': 'Cast an ability',
   'Đưa chuột về hướng muốn đánh rồi bấm phím của chiêu (Q W E R). Chiêu nhắm vào một kẻ địch cần có địch trong tầm.':
     'Point the mouse where you want to hit and press the ability key (Q W E R). An ability aimed at one enemy needs an enemy in range.',
-  'Bấm nút chiêu: chiêu tự nhắm kẻ địch gần nhất. Giữ nút rồi kéo ngón tay để tự nhắm hướng và điểm rơi, thả ra để ra chiêu; kéo vào ô Hủy để thôi.':
-    'Tap an ability button: it aims at the nearest enemy by itself. Hold it and drag your finger to aim the way and the spot yourself, let go to cast; drag onto Cancel to call it off.',
+  'Bấm nút chiêu: chiêu tự nhắm kẻ địch gần nhất. Giữ nút để đọc chiêu làm gì; kéo ngón tay để tự nhắm, thả ra để ra chiêu, kéo vào ô Hủy để thôi.':
+    'Tap an ability button: it aims at the nearest enemy by itself. Hold it to read what it does; drag your finger to aim it yourself, let go to cast, drag onto Cancel to call it off.',
   'Đánh lính lên cấp': 'Fight minions to level up',
   'Đi cùng lính ra giữa đường và bấm vào kẻ địch để đánh. Hạ lính ở đòn cuối sẽ được vàng. Lên cấp 2 để tiếp tục.':
     'Follow your minions to the middle of the lane and click enemies to attack. Landing the last hit on a minion gives gold. Reach level 2 to continue.',
@@ -541,6 +542,8 @@ export const EN: Record<string, string> = {
   'Giải mã': 'Solve',
   'Đọc chiêu tướng địch vừa dùng và tung lại chính chiêu đó vào nó, theo cấp của Giải mã. Nếu nó chưa dùng chiêu nào, hoặc mục tiêu không phải tướng, bắn một tia gây sát thương.':
     'Reads the ability an enemy hero cast last and casts that very ability back at them, at the level of Solve. If they have cast nothing yet, or the target is not a hero, fires a damaging beam instead.',
+  'Bắn một tia gây sát thương, rồi đọc chiêu tướng địch vừa dùng và tung lại chính chiêu đó vào nó, theo cấp của Giải mã. Nếu không có chiêu nào để chép, tia mạnh gấp đôi.':
+    'Fires a damaging beam, then reads the ability an enemy hero cast last and casts that very ability back at them, at the level of Solve. With nothing to copy, the beam hits twice as hard.',
   'Mũi tên tê liệt': 'Numbing Bolt',
   'Bắn một mũi tên xuyên theo đường thẳng, gây sát thương và làm chậm.':
     'Fires a piercing bolt in a line that damages and slows.',
