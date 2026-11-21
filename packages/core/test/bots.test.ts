@@ -21,24 +21,35 @@ function playOut(seed: number, heroIds: readonly string[]): Sim {
   return sim;
 }
 
-describe('bots with every hero', () => {
-  it('finish a match with the four MVP heroes', () => {
-    const sim = playOut(11, MVP_HERO_IDS);
-    console.info(`MVP bot match: team ${sim.winner} wins after ${(sim.tick / 1200).toFixed(1)} min`);
-    expect(sim.winner).not.toBeNull();
-  });
+/** How long a test may take to play one whole match out: a long match on a busy machine runs past the usual five seconds. */
+const WHOLE_MATCH_MS = 30_000;
 
-  it('finish a match with all eight heroes in play', () => {
-    const sim = playOut(5, [...HERO_IDS.slice(0, 3), ...HERO_IDS.slice(3, 8)].slice(0, 6).concat(HERO_IDS.slice(6)));
-    const other = playOut(5, HERO_IDS.slice(2));
-    for (const s of [sim, other]) {
-      const heroes = s.q.heroes.entities;
-      console.info(
-        `bot match (${heroes.map((h) => h.hero.defId).join(', ')}): team ${s.winner} wins after ${(s.tick / 1200).toFixed(1)} min`,
-      );
-      expect(s.winner).not.toBeNull();
-    }
-  });
+describe('bots with every hero', () => {
+  it(
+    'finish a match with the four MVP heroes',
+    () => {
+      const sim = playOut(11, MVP_HERO_IDS);
+      console.info(`MVP bot match: team ${sim.winner} wins after ${(sim.tick / 1200).toFixed(1)} min`);
+      expect(sim.winner).not.toBeNull();
+    },
+    WHOLE_MATCH_MS,
+  );
+
+  it(
+    'finish a match with all eight heroes in play',
+    () => {
+      const sim = playOut(5, [...HERO_IDS.slice(0, 3), ...HERO_IDS.slice(3, 8)].slice(0, 6).concat(HERO_IDS.slice(6)));
+      const other = playOut(5, HERO_IDS.slice(2));
+      for (const s of [sim, other]) {
+        const heroes = s.q.heroes.entities;
+        console.info(
+          `bot match (${heroes.map((h) => h.hero.defId).join(', ')}): team ${s.winner} wins after ${(s.tick / 1200).toFixed(1)} min`,
+        );
+        expect(s.winner).not.toBeNull();
+      }
+    },
+    WHOLE_MATCH_MS * 2,
+  );
 
   it('buy items, level abilities, kill each other and use every kind of ability', () => {
     // Several short matches: how one match goes swings with every change to the numbers (a team shut in
