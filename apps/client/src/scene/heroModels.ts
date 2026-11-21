@@ -1,3 +1,4 @@
+import { CUBE_ACTIONS, type CubeColours } from './Cube';
 import { HYDRA_ACTIONS, type HydraColours } from './Hydra';
 import { LONG_DRAGON_ACTIONS, type LongDragonColours } from './LongDragon';
 import { MECH_ACTIONS, type MechColours } from './Mech';
@@ -39,6 +40,8 @@ export interface HeroLook {
   swordsman?: SwordsmanColours;
   /** Set for a hero drawn as the long eastern dragon built in code; `model` is then empty. */
   longDragon?: LongDragonColours;
+  /** Set for a hero drawn as the thinking puzzle cube built in code; `model` is then empty. */
+  cube?: CubeColours;
   /** Set for a hero drawn as a war machine built in code; `model` is then empty. */
   mech?: MechColours;
 }
@@ -334,5 +337,16 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     showcaseScale: 0.9,
     mech: { kind: 'fortress', hull: '#4a5548', plate: '#aab79a', glow: '#ffb347' },
     rig: { idle: '', run: '', death: '', actions: MECH_ACTIONS },
+  },
+  // A puzzle cube that thinks: three layers of coloured tiles turning on each other, an eye in its
+  // front, hanging in the air with loose pieces circling it. Built in code.
+  kubo6: {
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.5,
+    showcaseScale: 0.9,
+    cube: { body: '#161a24', glow: '#7df9ff' },
+    rig: { idle: '', run: '', death: '', actions: CUBE_ACTIONS },
   },
 };

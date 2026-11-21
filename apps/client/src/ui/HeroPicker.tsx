@@ -8,6 +8,7 @@ import { HeroPortrait } from './HeroPortrait';
 import { HeroTurnArea } from './HeroTurnArea';
 import { RACE_TEXT, ROLE_NAMES } from './heroText';
 import { SynergyNote } from './SynergyNote';
+import { MOST_IN_A_RACE } from '@/lib/heroCount';
 
 // three.js is most of the bundle; the picker works before it arrives.
 const HeroStage = lazy(() => import('@/scene/HeroStage'));
@@ -116,7 +117,13 @@ export function HeroPicker({ value, onChange, taken = [], label }: Props) {
           </button>
         ))}
       </div>
-      <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-1.5">
+      {/* One row, as wide as the fullest race needs: a second row would push the abilities off a phone's screen. */}
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className="grid gap-1.5"
+        style={{ gridTemplateColumns: `repeat(${MOST_IN_A_RACE}, minmax(0, 1fr))` }}
+      >
         {HERO_IDS.filter((id) => HEROES[id].race === shownRace).map(heroCard)}
       </div>
       <SynergyNote heroId={hero.id} teammates={taken} />

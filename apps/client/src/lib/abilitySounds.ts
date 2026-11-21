@@ -66,6 +66,10 @@ export const ABILITY_SOUND: Record<string, AbilitySound> = {
   titan_barrier: 'guard',
   titan_magnet: 'zap',
   titan_meltdown: 'explosion',
+  kubo_twist: 'saw',
+  kubo_scramble: 'zap',
+  kubo_roll: 'tumble',
+  kubo_solve: 'star',
 };
 
 /** The sound of each hero's basic attack, keyed by hero id. A hero missing here swings a weapon. */
@@ -86,4 +90,5 @@ export const HERO_ATTACK_SOUND: Record<string, AttackSound> = {
   nyx: 'magic',
   aeris: 'magic',
   titan9: 'swing',
+  kubo6: 'magic',
 };

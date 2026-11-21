@@ -46,6 +46,12 @@ const HEAL_TEXT_MINIMUM = 20;
 const EARSHOT = 28;
 /** A hit on a hero weaker than this makes no sound of its own. */
 const IMPACT_MINIMUM = 12;
+/** Every ability in the game by its id, whichever hero it belongs to. */
+const ABILITY_BY_ID = new Map(
+  Object.values(HEROES).flatMap((hero) =>
+    Object.values(hero.abilities).map((ability) => [ability.id, ability] as const),
+  ),
+);
 /** How long a tower's lightning stays in the air. */
 export const STRIKE_SECONDS = 0.34;
 /** How high on a tower the lightning leaves from, and how high on its target it lands. */
@@ -288,7 +294,9 @@ export abstract class BaseSession {
         if (!caster || !defId) return;
         this.actions.set(caster.id, { kind: event.slot, at: this.clock });
         this.cue(ABILITY_SOUND[event.abilityId] ?? 'cast', caster.pos);
-        this.castFx(caster, HEROES[defId].abilities[event.slot], event);
+        // Usually the caster's own ability in that slot; an ability that copies casts someone else's, and
+        // then it is that one's look that is wanted.
+        this.castFx(caster, ABILITY_BY_ID.get(event.abilityId) ?? HEROES[defId].abilities[event.slot], event);
         return;
       }
       case 'damage': {

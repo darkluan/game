@@ -45,6 +45,8 @@ const C = {
 } as const satisfies Record<string, Color>;
 
 const TURN = Math.PI * 2;
+/** The colours of the tiles on Kubo-6's faces, for what it throws about. */
+const TILE: Color[] = ['#ff5a3c', '#ff9d2e', '#f4f6fa', '#ffd84a', '#4aa3ff', '#4fd67a'];
 
 /** The direction from one point to another, as the scene measures angles. */
 const angle = (a: Vec2, b: Vec2): number => Math.atan2(b.x - a.x, b.z - a.z);
@@ -513,5 +515,35 @@ export const ABILITY_FX: Record<string, (c: CastFxContext) => void> = {
     put(c, 'burst', c.caster, 4.9, C.flame, 0.5, { delay: 0.2 });
     put(c, 'ring', c.caster, 4.5, c.side, 0.6, { delay: 0.2 });
     spokes(c, c.caster, 4.2, 6, C.white, 0.5);
+  },
+  // Kubo-6: the colours of its tiles, thrown about.
+  kubo_twist: (c) => {
+    const direction = angle(c.caster, c.at);
+    draw(c, 'line', c.caster, c.at, 1.5, C.volt, 0.35);
+    for (let i = 1; i <= 4; i++)
+      put(c, 'slash', along(c.caster, c.at, i / 4.4), 1.4, TILE[i % TILE.length], 0.3, {
+        angle: direction + i * 1.57,
+        delay: i * 0.04,
+      });
+  },
+  kubo_scramble: (c) => {
+    for (let i = 0; i < 6; i++)
+      put(c, 'burst', scatter(c.at, 1.2), 0.9, TILE[i % TILE.length], 0.3, { delay: i * 0.05, angle: i * 1.3 });
+    put(c, 'ring', c.at, 1.9, C.volt, 0.5, { inward: true });
+    put(c, 'ring', c.at, 1.6, c.side, 0.5, { delay: 0.15 });
+  },
+  kubo_roll: (c) => {
+    draw(c, 'line', c.from, c.caster, 1.1, C.volt, 0.3);
+    for (let i = 1; i <= 3; i++) put(c, 'ring', along(c.from, c.caster, i / 3), 1, TILE[i], 0.3, { delay: i * 0.05 });
+    put(c, 'ring', c.caster, 1.6, C.guard, 0.6, { delay: 0.2 });
+  },
+  // The reading itself: a beam to the one read and a ring closing on them. What was read is cast
+  // right after, with its own look.
+  kubo_solve: (c) => {
+    draw(c, 'line', c.caster, c.at, 0.5, C.volt, 0.35);
+    put(c, 'ring', c.at, 2.6, C.volt, 0.5, { inward: true });
+    put(c, 'ring', c.caster, 2.2, C.white, 0.4);
+    for (let i = 0; i < 6; i++) put(c, 'burst', c.caster, 1.2 + i * 0.2, TILE[i], 0.35, { delay: i * 0.04, angle: i });
+    put(c, 'pillar', c.at, 0.7, C.volt, 0.5, { delay: 0.15 });
   },
 };

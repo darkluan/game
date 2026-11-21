@@ -529,6 +529,18 @@ export const EN: Record<string, string> = {
     "With each evolution Nyx's venom grows deadlier and its attacks stronger.",
   'Thần Chết': 'God of Death',
   'Pháo đài di động': 'The Walking Fortress',
+  'Khối đố biết nghĩ': 'The Thinking Puzzle',
+  'Xoay mặt': 'Twist',
+  'Phóng một mặt khối theo đường thẳng: gây sát thương và làm chậm mọi kẻ địch nó xuyên qua.':
+    'Throws a face of the cube down a line: damages and slows every enemy it passes through.',
+  'Xáo trộn': 'Scramble',
+  'Xáo trộn một kẻ địch: gây sát thương và làm nó câm lặng trong chốc lát.':
+    'Scrambles one enemy: damage, and it cannot cast for a moment.',
+  Lăn: 'Roll',
+  'Lăn nhanh một đoạn và được một lớp khiên trong 2,5 giây.': 'Rolls a short way and gains a shield for 2.5 seconds.',
+  'Giải mã': 'Solve',
+  'Đọc chiêu tướng địch vừa dùng và tung lại chính chiêu đó vào nó, theo cấp của Giải mã. Nếu nó chưa dùng chiêu nào, hoặc mục tiêu không phải tướng, bắn một tia gây sát thương.':
+    'Reads the ability an enemy hero cast last and casts that very ability back at them, at the level of Solve. If they have cast nothing yet, or the target is not a hero, fires a damaging beam instead.',
   'Mũi tên tê liệt': 'Numbing Bolt',
   'Bắn một mũi tên xuyên theo đường thẳng, gây sát thương và làm chậm.':
     'Fires a piercing bolt in a line that damages and slows.',

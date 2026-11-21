@@ -6,6 +6,7 @@ import { AbilityPanel } from './AbilityPanel';
 import { HeroPortrait } from './HeroPortrait';
 import { RACE_TEXT, ROLE_NAMES } from './heroText';
 import { SynergyNote } from './SynergyNote';
+import { MOST_IN_A_RACE } from '@/lib/heroCount';
 
 const RACE_ORDER: readonly Race[] = ['human', 'dragon', 'god', 'machine'];
 const RACE_EDGE = {
@@ -103,7 +104,12 @@ export function HeroStrip({ value, onChange, taken = [], label }: Props) {
             </button>
           ))}
         </div>
-        <div role="radiogroup" aria-label={label} className="grid w-52 shrink-0 grid-cols-4 gap-1.5">
+        <div
+          role="radiogroup"
+          aria-label={label}
+          className="grid w-60 shrink-0 gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${MOST_IN_A_RACE}, minmax(0, 1fr))` }}
+        >
           {HERO_IDS.filter((id) => HEROES[id].race === tab).map(portrait)}
         </div>
       </div>
@@ -127,7 +133,7 @@ export function HeroStrip({ value, onChange, taken = [], label }: Props) {
             <p className={`text-[11px] font-bold tracking-widest uppercase ${RACE_TEXT[race]}`}>
               {tr(RACES[race].name)}
             </p>
-            <div className="grid grid-cols-4 gap-1">
+            <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${MOST_IN_A_RACE}, minmax(0, 1fr))` }}>
               {HERO_IDS.filter((id) => HEROES[id].race === race).map(portrait)}
             </div>
           </div>
