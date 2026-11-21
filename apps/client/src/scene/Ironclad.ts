@@ -105,7 +105,7 @@ export class Ironclad {
   private readonly helm: MeshStandardMaterial;
   /** The body's colour gone darker, for the sleeves of the gauntlets. */
   private readonly deep: MeshStandardMaterial;
-  private readonly dark = new MeshStandardMaterial({ color: '#15161c', roughness: 0.5, flatShading: true });
+  private readonly dark = new MeshStandardMaterial({ color: '#15161c', roughness: 0.5 });
   private readonly colours: IroncladColours;
 
   private time = Math.random() * 10;
@@ -120,9 +120,10 @@ export class Ironclad {
     this.colours = colours;
     this.materials = {
       under: new MeshStandardMaterial({ color: colours.under, roughness: 0.7 }),
-      // Cut in flats, and with little metal in it: with no sky to mirror, true metal shows black here.
-      plate: new MeshStandardMaterial({ color: colours.plate, roughness: 0.4, metalness: 0.25, flatShading: true }),
-      trim: new MeshStandardMaterial({ color: colours.trim, roughness: 0.3, metalness: 0.3, flatShading: true }),
+      // Turned smooth, like armour and not like a machine; and with little metal in it, since with no
+      // sky to mirror true metal shows black here.
+      plate: new MeshStandardMaterial({ color: colours.plate, roughness: 0.4, metalness: 0.25 }),
+      trim: new MeshStandardMaterial({ color: colours.trim, roughness: 0.3, metalness: 0.3 }),
       fire: new MeshStandardMaterial({
         color: colours.fire,
         emissive: colours.fire,
@@ -132,9 +133,8 @@ export class Ironclad {
     };
     this.deep = this.materials.under.clone();
     this.deep.color.multiplyScalar(0.55);
-    this.deep.flatShading = true;
     this.helm = colours.helm
-      ? new MeshStandardMaterial({ color: colours.helm, roughness: 0.3, metalness: 0.3, flatShading: true })
+      ? new MeshStandardMaterial({ color: colours.helm, roughness: 0.3, metalness: 0.3 })
       : this.materials.plate;
     this.model.scale.setScalar(height);
     this.root.add(this.model);
@@ -187,16 +187,16 @@ export class Ironclad {
     const upper = new Group();
     upper.position.set(side * 0.07, 0, 0);
     this.hips.add(upper);
-    this.part(new CylinderGeometry(0.042, 0.034, THIGH, 6), under, upper, [0, -THIGH / 2, 0]);
+    this.part(new CylinderGeometry(0.042, 0.034, THIGH, 16), under, upper, [0, -THIGH / 2, 0]);
     const lower = new Group();
     lower.position.y = -THIGH;
     upper.add(lower);
-    this.part(new CylinderGeometry(0.04, 0.085, SHIN, 6), plate, lower, [0, -SHIN / 2, 0]);
-    this.part(new TorusGeometry(0.086, 0.012, 4, 6), trim, lower, [0, -SHIN + 0.012, 0], [UP, 0, 0]);
-    this.part(new BoxGeometry(0.13, 0.05, 0.19), plate, lower, [0, -SHIN + 0.025, 0.04]);
-    this.part(new ConeGeometry(0.05, 0.1, 4), trim, lower, [0, -SHIN + 0.03, 0.15], [UP, UP / 2, 0], [1, 1, 0.6]);
+    this.part(new CylinderGeometry(0.04, 0.085, SHIN, 16), plate, lower, [0, -SHIN / 2, 0]);
+    this.part(new TorusGeometry(0.086, 0.012, 8, 22), trim, lower, [0, -SHIN + 0.012, 0], [UP, 0, 0]);
+    this.part(new SphereGeometry(0.1, 18, 12), plate, lower, [0, -SHIN + 0.03, 0.045], [0, 0, 0], [0.68, 0.34, 1]);
+    this.part(new ConeGeometry(0.05, 0.1, 14), trim, lower, [0, -SHIN + 0.03, 0.15], [UP, UP / 2, 0], [1, 1, 0.6]);
     // The knee: a pointed cap with a slit of fire under it.
-    this.part(new ConeGeometry(0.05, 0.11, 4), plate, lower, [0, 0.02, 0.035], [0.5, UP / 2, 0]);
+    this.part(new ConeGeometry(0.05, 0.11, 14), plate, lower, [0, 0.02, 0.035], [0.5, UP / 2, 0]);
     this.part(new BoxGeometry(0.05, 0.012, 0.01), fire, lower, [0, -0.05, 0.062]);
     return { upper, lower };
   }
@@ -204,11 +204,11 @@ export class Ironclad {
   /** A narrow waist, a skirt of plates, and a breastplate like a wedge with a furnace door in it. */
   private buildBody(): Sprite {
     const { under, plate, trim, fire } = this.materials;
-    this.part(new CylinderGeometry(0.075, 0.095, 0.08, 6), under, this.hips, [0, 0.02, 0]);
+    this.part(new CylinderGeometry(0.075, 0.095, 0.08, 16), under, this.hips, [0, 0.02, 0]);
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
       this.part(
-        new ConeGeometry(0.06, 0.16, 4),
+        new ConeGeometry(0.06, 0.16, 14),
         i % 2 ? trim : plate,
         this.hips,
         [Math.sin(a) * 0.095, -0.03, Math.cos(a) * 0.08],
@@ -218,11 +218,11 @@ export class Ironclad {
     }
     this.chest.position.y = 0.06;
     this.hips.add(this.chest);
-    this.part(new CylinderGeometry(0.06, 0.07, 0.09, 6), under, this.chest, [0, 0.04, 0]);
+    this.part(new CylinderGeometry(0.06, 0.07, 0.09, 16), under, this.chest, [0, 0.04, 0]);
     // The breastplate: broad at the shoulders, a point at the belt.
-    this.part(new CylinderGeometry(0.15, 0.07, 0.17, 6), plate, this.chest, [0, 0.16, 0], [0, 0, 0], [1, 1, 0.75]);
-    this.part(new CylinderGeometry(0.11, 0.15, 0.05, 6), trim, this.chest, [0, 0.265, 0], [0, 0, 0], [1, 1, 0.75]);
-    this.part(new ConeGeometry(0.06, 0.12, 4), plate, this.chest, [0, 0.05, 0.075], [Math.PI, UP / 2, 0], [1, 1, 0.4]);
+    this.part(new CylinderGeometry(0.15, 0.07, 0.17, 16), plate, this.chest, [0, 0.16, 0], [0, 0, 0], [1, 1, 0.75]);
+    this.part(new CylinderGeometry(0.11, 0.15, 0.05, 16), trim, this.chest, [0, 0.265, 0], [0, 0, 0], [1, 1, 0.75]);
+    this.part(new ConeGeometry(0.06, 0.12, 14), plate, this.chest, [0, 0.05, 0.075], [Math.PI, UP / 2, 0], [1, 1, 0.4]);
     // The furnace: a slot of fire across the chest behind three bars.
     this.part(new BoxGeometry(0.13, 0.055, 0.02), fire, this.chest, [0, 0.185, 0.105]);
     for (const x of [-0.04, 0, 0.04])
@@ -230,14 +230,14 @@ export class Ironclad {
     // Two stacks behind the shoulders that burn, as on anything with a fire inside it.
     for (const side of [-1, 1]) {
       this.part(
-        new CylinderGeometry(0.022, 0.028, 0.14, 5),
+        new CylinderGeometry(0.022, 0.028, 0.14, 16),
         plate,
         this.chest,
         [side * 0.07, 0.28, -0.1],
         [-0.35, 0, 0],
       );
       const flame = this.part(
-        new ConeGeometry(0.024, 0.11, 5),
+        new ConeGeometry(0.024, 0.11, 14),
         fire,
         this.chest,
         [side * 0.07, 0.38, -0.14],
@@ -257,22 +257,29 @@ export class Ironclad {
     const upper = new Group();
     upper.position.set(side * 0.19, SHOULDER, 0);
     this.chest.add(upper);
-    this.part(new CylinderGeometry(0.034, 0.03, UPPER_ARM, 6), under, upper, [0, -UPPER_ARM / 2, 0]);
+    this.part(new CylinderGeometry(0.034, 0.03, UPPER_ARM, 16), under, upper, [0, -UPPER_ARM / 2, 0]);
     // The shoulder: a dome, a thick cuff round its foot, and a stud on its crown.
-    this.part(new SphereGeometry(0.115, 8, 5), plate, upper, [side * 0.03, 0.03, 0], [0, 0, side * 0.25], [1, 0.82, 1]);
-    this.part(new CylinderGeometry(0.1, 0.092, 0.05, 8), trim, upper, [side * 0.02, -0.045, 0], [0, 0, side * 0.25]);
-    this.part(new SphereGeometry(0.03, 6, 4), trim, upper, [side * 0.06, 0.125, 0]);
+    this.part(
+      new SphereGeometry(0.115, 18, 12),
+      plate,
+      upper,
+      [side * 0.03, 0.03, 0],
+      [0, 0, side * 0.25],
+      [1, 0.82, 1],
+    );
+    this.part(new CylinderGeometry(0.1, 0.092, 0.05, 16), trim, upper, [side * 0.02, -0.045, 0], [0, 0, side * 0.25]);
+    this.part(new SphereGeometry(0.03, 18, 12), trim, upper, [side * 0.06, 0.125, 0]);
     const lower = new Group();
     lower.position.y = -UPPER_ARM;
     upper.add(lower);
     // The sleeve of the gauntlet, six-sided and thicker toward the fist.
-    this.part(new CylinderGeometry(0.066, 0.086, 0.19, 6), this.deep, lower, [0, -0.1, 0]);
-    this.part(new CylinderGeometry(0.07, 0.07, 0.025, 6), trim, lower, [0, -0.01, 0]);
+    this.part(new CylinderGeometry(0.066, 0.086, 0.19, 16), this.deep, lower, [0, -0.1, 0]);
+    this.part(new CylinderGeometry(0.07, 0.07, 0.025, 16), trim, lower, [0, -0.01, 0]);
     // The fist: a blunt block, brighter than the sleeve, with knuckles cut into its front.
-    this.part(new CylinderGeometry(0.09, 0.076, 0.1, 6), under, lower, [0, -0.24, 0]);
+    this.part(new CylinderGeometry(0.09, 0.076, 0.1, 16), under, lower, [0, -0.24, 0]);
     for (const x of [-0.035, 0, 0.035])
       this.part(new BoxGeometry(0.026, 0.03, 0.02), this.deep, lower, [x, -0.255, 0.072]);
-    this.part(new CylinderGeometry(0.052, 0.052, 0.012, 8), fire, lower, [0, -0.292, 0]);
+    this.part(new CylinderGeometry(0.052, 0.052, 0.012, 16), fire, lower, [0, -0.292, 0]);
     this.part(new BoxGeometry(0.012, 0.03, 0.012), plate, lower, [0, -0.2, 0.082]);
     return { upper, lower, muzzle: this.glow(lower, 0.22, [0, -0.31, 0], 0.25) };
   }
@@ -284,13 +291,13 @@ export class Ironclad {
     const { helm, dark } = this;
     this.head.position.y = 0.3;
     this.chest.add(this.head);
-    this.part(new CylinderGeometry(0.035, 0.045, 0.04, 6), this.materials.under, this.head, [0, 0, 0]);
-    this.part(new SphereGeometry(0.075, 7, 5), helm, this.head, [0, 0.085, 0], [0, Math.PI / 7, 0], [1, 1.1, 1.08]);
-    this.part(new ConeGeometry(0.06, 0.11, 4), dark, this.head, [0, 0.07, 0.055], [UP + 0.35, UP / 2, 0], [1, 1, 0.8]);
+    this.part(new CylinderGeometry(0.035, 0.045, 0.04, 16), this.materials.under, this.head, [0, 0, 0]);
+    this.part(new SphereGeometry(0.075, 18, 12), helm, this.head, [0, 0.085, 0], [0, Math.PI / 7, 0], [1, 1.1, 1.08]);
+    this.part(new ConeGeometry(0.06, 0.11, 14), dark, this.head, [0, 0.07, 0.055], [UP + 0.35, UP / 2, 0], [1, 1, 0.8]);
     this.part(new BoxGeometry(0.1, 0.014, 0.02), fire, this.head, [0, 0.092, 0.072]);
     for (const side of [-1, 1]) {
       this.part(
-        new ConeGeometry(0.03, 0.1, 4),
+        new ConeGeometry(0.03, 0.1, 14),
         dark,
         this.head,
         [side * 0.07, 0.045, 0.02],
@@ -299,7 +306,7 @@ export class Ironclad {
       );
       this.part(
         // A long fin standing up from each side of the helm, like an ear pricked.
-        new ConeGeometry(0.026, 0.24, 4),
+        new ConeGeometry(0.026, 0.24, 14),
         plate,
         this.head,
         [side * 0.095, 0.2, -0.02],
@@ -313,7 +320,7 @@ export class Ironclad {
       const tall = 0.2 - Math.abs(i - 2) * 0.04;
       const flame = this.part(
         // Broad at the foot and curling back: a tongue of flame, not a spike.
-        new ConeGeometry(0.05, tall, 7),
+        new ConeGeometry(0.05, tall, 14),
         fire,
         this.head,
         [0, 0.17 + tall / 2, 0.05 - i * 0.035],
