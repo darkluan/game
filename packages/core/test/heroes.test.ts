@@ -323,3 +323,52 @@ describe('Raze-3', () => {
     expect(a.hero.heat).toBe(HEROES.raze3.abilities.E.cost[0]);
   });
 });
+
+describe('Kubo-6', () => {
+  /** Kubo-6 facing a hero of the given kind, with its ultimate learned and both heroes close enough for anything. */
+  const facing = (other: string) => {
+    const scene = arena('kubo6', other, 4);
+    scene.a.hero.heat = 0;
+    return scene;
+  };
+
+  it('strikes with a plain beam when its target has cast nothing', () => {
+    const { a, b, cast } = facing('kael');
+    const before = b.health.hp;
+    const events = cast('R');
+    // One cast, its own: nothing was copied.
+    expect(
+      events.filter((e) => e.t === 'cast' && e.casterId === a.id).map((e) => e.t === 'cast' && e.abilityId),
+    ).toEqual(['kubo_solve']);
+    expect(b.health.hp).toBeLessThan(before);
+  });
+
+  it('casts back at a hero the ability that hero cast last', () => {
+    const { sim, a, b, cast } = facing('lyra');
+    // Lyra shoots her mark at Kubo-6: that is now what there is to copy.
+    sim.command('b', { t: 'cast', slot: 'W', targetId: a.id });
+    run(sim, 2);
+    expect(b.hero.lastCast).toEqual({ defId: 'lyra', slot: 'W' });
+    const events = cast('R');
+    const cast_ = events.flatMap((e) => (e.t === 'cast' && e.casterId === a.id ? [e.abilityId] : []));
+    expect(cast_).toEqual(['kubo_solve', HEROES.lyra.abilities.W.id]);
+    // Its own ultimate is what goes on cooldown, and the copy costs nothing more.
+    expect(sim.cooldownLeft(a, 'R')).toBeGreaterThan(0);
+    expect(a.hero.heat).toBe(HEROES.kubo6.abilities.R.cost[0]);
+    // Copying is not casting: what Kubo-6 itself cast last is still its own ultimate.
+    expect(a.hero.lastCast).toEqual({ defId: 'kubo6', slot: 'R' });
+  });
+
+  const others = HERO_IDS.flatMap((id) => ABILITY_SLOTS.map((slot) => [id, slot] as [string, AbilitySlot]));
+
+  it.each(others)('can copy %s %s without breaking the match', (id, slot) => {
+    const { sim, a, b, cast } = facing(id);
+    // The copy is made as if the other hero had just cast this, whatever it takes to cast it for real.
+    b.hero.lastCast = { defId: id, slot };
+    const events = cast('R');
+    expect(events.some((e) => e.t === 'cast' && e.casterId === a.id && e.abilityId === 'kubo_solve')).toBe(true);
+    // Whatever was copied, the match goes on, and Kubo-6 is not left in another hero's fixed form.
+    run(sim, 60);
+    expect(a.hero.siege).toBeFalsy();
+  });
+});

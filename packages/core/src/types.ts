@@ -173,6 +173,8 @@ export interface HeroState {
   /** Machines: 0..100. */
   heat: number;
   lastCastTick: number;
+  /** The ability this hero cast last, by whose it is and which slot: what a copying ability reads. */
+  lastCast?: { defId: string; slot: AbilitySlot };
   /** Machines: tick at which the current Overload ends, 0 when not overloaded. */
   overloadUntil: number;
   /** Dragons: how many evolutions have happened (0..2). */

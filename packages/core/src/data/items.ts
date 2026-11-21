@@ -92,6 +92,8 @@ export const HERO_BUILDS: Record<string, string[]> = {
   mekka: ['spell_book', 'swift_boots', 'hourglass', 'giant_heart'],
   raze3: ['swift_boots', 'great_blade', 'storm_blade', 'blood_axe'],
   titan9: ['swift_boots', 'guardian_plate', 'giant_heart', 'phoenix_feather'],
+  // A caster on Heat: power, then more casts.
+  kubo6: ['spell_book', 'swift_boots', 'ancient_staff', 'hourglass'],
 };
 
 /** The build the shop recommends for a hero: its own, or its role's when it has none yet. */

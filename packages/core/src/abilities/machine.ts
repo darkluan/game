@@ -1,6 +1,6 @@
 import { seconds } from '../data/balance.js';
 import { angleTo } from '../math.js';
-import type { AbilityEffect } from '../systems/ability.js';
+import { type AbilityEffect, recast } from '../systems/ability.js';
 import { mostWounded } from './god.js';
 
 const TURRET = { radius: 0.6, armor: 10, intervalTicks: seconds(1), projectileSpeed: 18 } as const;
@@ -149,5 +149,37 @@ export const machineEffects: Record<string, AbilityEffect> = {
       sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
       sim.addStatus(e, 'silence', param('silenceTicks'));
     }
+  },
+
+  // ---- Kubo-6 ----
+
+  /** A face of the cube thrown down a line: it cuts and slows whatever it passes through. */
+  kubo_twist({ sim, caster, point, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+    }
+  },
+
+  /** One enemy's wits scrambled like the cube's colours: hurt, and unable to cast for a moment. */
+  kubo_scramble({ sim, target, param, damage }) {
+    if (!target) return;
+    damage(target, param('damage'));
+    sim.addStatus(target, 'silence', param('silenceTicks'));
+  },
+
+  /** A roll along the ground, turning a harder face outward as it goes. */
+  kubo_roll({ sim, caster, param, dash }) {
+    dash(param('distance'));
+    sim.addStatus(caster, 'shield', param('buffTicks'), param('shield'));
+  },
+
+  /**
+   * Reads the last ability an enemy hero cast and casts it back at them. Against one that has cast
+   * nothing worth the copying, or anything that is not a hero, it is a plain beam instead.
+   */
+  kubo_solve({ sim, caster, target, param, damage, power }) {
+    if (!target) return;
+    if (!recast(sim, caster, target, caster.hero.abilityLevels.R, power)) damage(target, param('damage'));
   },
 };

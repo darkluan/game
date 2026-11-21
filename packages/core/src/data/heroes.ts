@@ -1218,7 +1218,82 @@ const titan9: HeroDef = {
   },
 };
 
-/** Two heroes per race first (the launch roster), then the third and the fourth of each race. */
+const kubo6: HeroDef = {
+  id: 'kubo6',
+  name: 'Kubo-6',
+  title: 'Khối đố biết nghĩ',
+  race: 'machine',
+  role: 'mage',
+  base: {
+    hp: 600,
+    hpPerLevel: 72,
+    hpRegen: 2,
+    mana: 0,
+    manaPerLevel: 0,
+    manaRegen: 0,
+    attack: 50,
+    attackPerLevel: 3.2,
+    armor: 20,
+    moveSpeed: 6.5,
+    attackRange: 5.5,
+    attackInterval: seconds(1.05),
+    projectileSpeed: 20,
+  },
+  resource: 'heat',
+  passive: {
+    effect: 'heat',
+    description: 'Dùng thanh Nhiệt. Chơi sát ngưỡng 50–99 để chiêu mạnh hơn 25%.',
+    params: {},
+  },
+  abilities: {
+    Q: ability(
+      'kubo_twist',
+      'Xoay mặt',
+      'Phóng một mặt khối theo đường thẳng: gây sát thương và làm chậm mọi kẻ địch nó xuyên qua.',
+      'direction',
+      8,
+      'damage',
+      s3(6, 5.5, 5),
+      same(20),
+      { damage: [70, 108, 146], width: same(1.5), slow: same(0.3), slowTicks: same(30) },
+    ),
+    W: ability(
+      'kubo_scramble',
+      'Xáo trộn',
+      'Xáo trộn một kẻ địch: gây sát thương và làm nó câm lặng trong chốc lát.',
+      'unit',
+      6.5,
+      'damage',
+      s3(13, 12, 11),
+      same(25),
+      { damage: [45, 70, 95], silenceTicks: [24, 28, 32] },
+    ),
+    E: ability(
+      'kubo_roll',
+      'Lăn',
+      'Lăn nhanh một đoạn và được một lớp khiên trong 2,5 giây.',
+      'direction',
+      5,
+      'escape',
+      s3(14, 13, 12),
+      same(15),
+      { distance: same(5), shield: [50, 80, 110], buffTicks: same(50) },
+    ),
+    R: ability(
+      'kubo_solve',
+      'Giải mã',
+      'Đọc chiêu tướng địch vừa dùng và tung lại chính chiêu đó vào nó, theo cấp của Giải mã. Nếu nó chưa dùng chiêu nào, hoặc mục tiêu không phải tướng, bắn một tia gây sát thương.',
+      'unit',
+      7,
+      'damage',
+      s3(70, 60, 50),
+      same(40),
+      { damage: [140, 210, 280] },
+    ),
+  },
+};
+
+/** Two heroes per race first (the launch roster), then the third and the fourth of each race, then those added since. */
 export const HEROES: Record<string, HeroDef> = {
   kael,
   lyra,
@@ -1236,6 +1311,7 @@ export const HEROES: Record<string, HeroDef> = {
   nyx,
   aeris,
   titan9,
+  kubo6,
 };
 export const HERO_IDS: readonly string[] = Object.keys(HEROES);
 /** The four heroes of the MVP, one per race. */
