@@ -25,7 +25,7 @@ export type CastAim = { on: 'self' } | { on: 'unit'; target: ViewEntity | null }
 
 /**
  * Quick cast: aim at the cursor. Without a cursor aim (HUD button) or without an enemy under it,
- * unit-targeted abilities fall back to the nearest enemy in range. The drawing of where a held
+ * unit-targeted abilities fall back to the nearest enemy in range, and an escape goes straight ahead. The drawing of where a held
  * ability would land asks the same question, so what is shown is what is cast.
  */
 export function aimOf(game: GameSession, slot: AbilitySlot, aim: Vec2 | null): CastAim {
@@ -34,11 +34,14 @@ export function aimOf(game: GameSession, slot: AbilitySlot, aim: Vec2 | null): C
   if (def.targeting === 'unit')
     return { on: 'unit', target: (aim && game.pickEnemy(aim, 1.5)) ?? game.nearestEnemy(def.range) };
   const hero = game.hero;
-  const point = aim ??
-    game.nearestEnemy(def.range + 2)?.pos ?? {
-      x: hero.pos.x + Math.sin(hero.facing) * def.range,
-      z: hero.pos.z + Math.cos(hero.facing) * def.range,
-    };
+  const ahead = {
+    x: hero.pos.x + Math.sin(hero.facing) * def.range,
+    z: hero.pos.z + Math.cos(hero.facing) * def.range,
+  };
+  // With nothing aimed, an attack goes at the nearest enemy. A way out does not: a dash to get away
+  // goes the way the hero is already heading, which on a phone is the way the stick is pushed.
+  const dash = def.ai === 'escape' && def.targeting === 'direction';
+  const point = aim ?? (dash ? ahead : (game.nearestEnemy(def.range + 2)?.pos ?? ahead));
   return { on: 'point', point };
 }
 
