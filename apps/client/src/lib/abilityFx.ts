@@ -45,8 +45,6 @@ const C = {
 } as const satisfies Record<string, Color>;
 
 const TURN = Math.PI * 2;
-/** The colour of Brann's fire. */
-const FORGE: Color = '#ff8a3c';
 /** The colours of the tiles on Kubo-6's faces, for what it throws about. */
 const TILE: Color[] = ['#ff5a3c', '#ff9d2e', '#f4f6fa', '#ffd84a', '#4aa3ff', '#4fd67a'];
 
@@ -548,34 +546,44 @@ export const ABILITY_FX: Record<string, (c: CastFxContext) => void> = {
     for (let i = 0; i < 6; i++) put(c, 'burst', c.caster, 1.2 + i * 0.2, TILE[i], 0.35, { delay: i * 0.04, angle: i });
     put(c, 'pillar', c.at, 0.7, C.volt, 0.5, { delay: 0.15 });
   },
-  // Brann: the orange of a forge fire.
+  // Brann: fire, and nothing of lightning about it: rolling bursts along the way a shot goes, pillars
+  // of flame where it lands, ground left burning.
   brann_slug: (c) => {
-    put(c, 'burst', c.caster, 1.1, FORGE, 0.2, { angle: angle(c.caster, c.at) });
-    draw(c, 'bolt', c.caster, c.at, 0.5, FORGE, 0.3);
-    draw(c, 'line', c.caster, c.at, 1.2, c.side, 0.3);
-    put(c, 'burst', c.at, 1.2, C.white, 0.25, { delay: 0.08 });
+    const direction = angle(c.caster, c.at);
+    put(c, 'burst', c.caster, 1.2, C.flame, 0.22, { angle: direction });
+    draw(c, 'line', c.caster, c.at, 1.2, C.fire, 0.35);
+    for (let i = 1; i <= 5; i++)
+      put(c, 'burst', along(c.caster, c.at, i / 5), 0.9, i % 2 ? C.fire : C.flame, 0.3, {
+        delay: i * 0.035,
+        angle: i * 1.3,
+      });
+    put(c, 'pillar', c.at, 0.5, C.fire, 0.35, { delay: 0.15 });
+    put(c, 'ring', c.at, 1.3, c.side, 0.35, { delay: 0.15 });
   },
   brann_slag: (c) => {
-    put(c, 'pillar', c.at, 0.9, FORGE, 0.5);
-    put(c, 'disc', c.at, 2.4, FORGE, 0.6);
+    put(c, 'pillar', c.at, 1, C.fire, 0.55);
+    put(c, 'disc', c.at, 2.4, C.fire, 0.7);
     put(c, 'ring', c.at, 2.4, c.side, 0.6);
-    for (let i = 0; i < 5; i++) put(c, 'burst', scatter(c.at, 1.8), 0.7, C.white, 0.3, { delay: i * 0.07, angle: i });
+    for (let i = 0; i < 6; i++) put(c, 'pillar', scatter(c.at, 1.9), 0.35, C.flame, 0.4, { delay: 0.1 + i * 0.08 });
   },
   brann_kick: (c) => {
-    put(c, 'burst', c.from, 2.2, FORGE, 0.35);
+    put(c, 'burst', c.from, 2.2, C.fire, 0.4);
+    put(c, 'disc', c.from, 2.2, C.flame, 0.3);
     put(c, 'ring', c.from, 2.2, c.side, 0.45);
-    draw(c, 'line', c.from, c.caster, 0.9, FORGE, 0.3);
-    put(c, 'ring', c.caster, 1.2, C.white, 0.3, { delay: 0.1 });
+    for (let i = 1; i <= 3; i++)
+      put(c, 'burst', along(c.from, c.caster, i / 3.5), 0.8, C.flame, 0.3, { delay: i * 0.04 });
   },
   brann_bore: (c) => {
     const direction = angle(c.caster, c.at);
-    put(c, 'ring', c.caster, 2.4, FORGE, 0.3, { inward: true });
-    put(c, 'burst', c.caster, 2.6, C.white, 0.3, { angle: direction, delay: 0.05 });
-    draw(c, 'line', c.caster, c.at, 2, c.side, 0.5);
-    draw(c, 'bolt', c.caster, c.at, 1.3, FORGE, 0.5);
-    draw(c, 'bolt', c.caster, c.at, 0.5, C.white, 0.5);
-    for (let i = 1; i <= 5; i++)
-      put(c, 'ring', along(c.caster, c.at, i / 5), 1.4 + i * 0.15, FORGE, 0.35, { delay: i * 0.04 });
-    put(c, 'burst', c.at, 2.6, FORGE, 0.4, { delay: 0.2 });
+    put(c, 'ring', c.caster, 2.6, C.fire, 0.35, { inward: true });
+    put(c, 'burst', c.caster, 2.8, C.flame, 0.35, { angle: direction, delay: 0.05 });
+    draw(c, 'line', c.caster, c.at, 2, c.side, 0.55);
+    draw(c, 'line', c.caster, c.at, 1.2, C.flame, 0.5);
+    for (let i = 1; i <= 8; i++) {
+      const spot = along(c.caster, c.at, i / 8);
+      put(c, 'burst', spot, 1.5, i % 2 ? C.fire : C.flame, 0.4, { delay: i * 0.03, angle: i * 1.1 });
+      if (i % 2 === 0) put(c, 'pillar', spot, 0.6, C.fire, 0.45, { delay: 0.1 + i * 0.03 });
+    }
+    put(c, 'burst', c.at, 2.8, C.fire, 0.45, { delay: 0.25 });
   },
 };

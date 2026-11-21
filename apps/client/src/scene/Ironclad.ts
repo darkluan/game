@@ -103,6 +103,8 @@ export class Ironclad {
   private readonly castShadow: boolean;
   private readonly materials: Record<Exclude<keyof IroncladColours, 'helm'>, MeshStandardMaterial>;
   private readonly helm: MeshStandardMaterial;
+  /** The body's colour gone darker, for the sleeves of the gauntlets. */
+  private readonly deep: MeshStandardMaterial;
   private readonly dark = new MeshStandardMaterial({ color: '#15161c', roughness: 0.5, flatShading: true });
   private readonly colours: IroncladColours;
 
@@ -128,6 +130,9 @@ export class Ironclad {
         roughness: 0.3,
       }),
     };
+    this.deep = this.materials.under.clone();
+    this.deep.color.multiplyScalar(0.55);
+    this.deep.flatShading = true;
     this.helm = colours.helm
       ? new MeshStandardMaterial({ color: colours.helm, roughness: 0.3, metalness: 0.3, flatShading: true })
       : this.materials.plate;
@@ -243,38 +248,33 @@ export class Ironclad {
     return this.glow(this.chest, 0.3, [0, 0.185, 0.14], 0.3);
   }
 
-  /** A slim upper arm under a great angular shoulder, and for a forearm a gun: a drum, a banded barrel, a flared mouth. */
+  /**
+   * A great round shoulder with a cuff under it, a short upper arm, and a forearm that is all gauntlet:
+   * a thick dark sleeve ending in a heavy fist of a block, with the mouth of a gun in its face.
+   */
   private buildArm(side: number): Arm {
     const { under, plate, trim, fire } = this.materials;
     const upper = new Group();
     upper.position.set(side * 0.19, SHOULDER, 0);
     this.chest.add(upper);
-    this.part(new CylinderGeometry(0.032, 0.028, UPPER_ARM, 6), under, upper, [0, -UPPER_ARM / 2, 0]);
-    // The shoulder: two plates, one over the other, and a fin standing up from the top one.
-    this.part(new CylinderGeometry(0.05, 0.105, 0.09, 5), plate, upper, [side * 0.02, 0.025, 0], [0, 0, side * 0.35]);
-    this.part(new CylinderGeometry(0.105, 0.09, 0.03, 5), trim, upper, [side * 0.035, -0.02, 0], [0, 0, side * 0.35]);
-    this.part(
-      new ConeGeometry(0.04, 0.16, 4),
-      plate,
-      upper,
-      [side * 0.06, 0.11, 0],
-      [0, UP / 2, -side * 0.5],
-      [1, 1, 0.3],
-    );
+    this.part(new CylinderGeometry(0.034, 0.03, UPPER_ARM, 6), under, upper, [0, -UPPER_ARM / 2, 0]);
+    // The shoulder: a dome, a thick cuff round its foot, and a stud on its crown.
+    this.part(new SphereGeometry(0.115, 8, 5), plate, upper, [side * 0.03, 0.03, 0], [0, 0, side * 0.25], [1, 0.82, 1]);
+    this.part(new CylinderGeometry(0.1, 0.092, 0.05, 8), trim, upper, [side * 0.02, -0.045, 0], [0, 0, side * 0.25]);
+    this.part(new SphereGeometry(0.03, 6, 4), trim, upper, [side * 0.06, 0.125, 0]);
     const lower = new Group();
     lower.position.y = -UPPER_ARM;
     upper.add(lower);
-    // The gun hangs from the elbow, its mouth at the bottom.
-    this.part(new CylinderGeometry(0.06, 0.07, 0.08, 6), plate, lower, [0, -0.03, 0]);
-    this.part(new CylinderGeometry(0.052, 0.058, 0.2, 8), under, lower, [0, -0.16, 0]);
-    for (const y of [-0.09, -0.16, -0.23])
-      this.part(new TorusGeometry(0.058, 0.01, 4, 8), trim, lower, [0, y, 0], [UP, 0, 0]);
-    this.part(new CylinderGeometry(0.058, 0.08, 0.06, 8), plate, lower, [0, -0.285, 0]);
-    this.part(new CylinderGeometry(0.06, 0.06, 0.012, 8), fire, lower, [0, -0.31, 0]);
-    // A guard over the back of the gun, like the back of a gauntlet, and a sight.
-    this.part(new ConeGeometry(0.05, 0.2, 4), plate, lower, [side * 0.055, -0.1, 0], [Math.PI, UP / 2, 0], [0.4, 1, 1]);
-    this.part(new BoxGeometry(0.012, 0.03, 0.012), trim, lower, [0, -0.25, 0.07]);
-    return { upper, lower, muzzle: this.glow(lower, 0.22, [0, -0.33, 0], 0.25) };
+    // The sleeve of the gauntlet, six-sided and thicker toward the fist.
+    this.part(new CylinderGeometry(0.066, 0.086, 0.19, 6), this.deep, lower, [0, -0.1, 0]);
+    this.part(new CylinderGeometry(0.07, 0.07, 0.025, 6), trim, lower, [0, -0.01, 0]);
+    // The fist: a blunt block, brighter than the sleeve, with knuckles cut into its front.
+    this.part(new CylinderGeometry(0.09, 0.076, 0.1, 6), under, lower, [0, -0.24, 0]);
+    for (const x of [-0.035, 0, 0.035])
+      this.part(new BoxGeometry(0.026, 0.03, 0.02), this.deep, lower, [x, -0.255, 0.072]);
+    this.part(new CylinderGeometry(0.052, 0.052, 0.012, 8), fire, lower, [0, -0.292, 0]);
+    this.part(new BoxGeometry(0.012, 0.03, 0.012), plate, lower, [0, -0.2, 0.082]);
+    return { upper, lower, muzzle: this.glow(lower, 0.22, [0, -0.31, 0], 0.25) };
   }
 
   /** A small closed helm: a visor that comes to a point, a slit of light for eyes, cheek plates, and a crest of fire. */
@@ -312,12 +312,13 @@ export class Ironclad {
     for (let i = 0; i < 5; i++) {
       const tall = 0.2 - Math.abs(i - 2) * 0.04;
       const flame = this.part(
-        new ConeGeometry(0.03, tall, 5),
+        // Broad at the foot and curling back: a tongue of flame, not a spike.
+        new ConeGeometry(0.05, tall, 7),
         fire,
         this.head,
-        [0, 0.18 + tall / 2, 0.05 - i * 0.035],
-        [-0.25 - i * 0.12, 0, 0],
-        [0.6, 1, 1],
+        [0, 0.17 + tall / 2, 0.05 - i * 0.035],
+        [-0.3 - i * 0.16, 0, 0],
+        [0.75, 1, 1],
       );
       this.flames.push(flame);
     }
