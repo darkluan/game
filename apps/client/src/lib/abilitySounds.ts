@@ -66,6 +66,10 @@ export const ABILITY_SOUND: Record<string, AbilitySound> = {
   titan_barrier: 'guard',
   titan_magnet: 'zap',
   titan_meltdown: 'explosion',
+  brann_slug: 'snipe',
+  brann_slag: 'fire',
+  brann_kick: 'explosion',
+  brann_bore: 'orbital',
   kubo_twist: 'saw',
   kubo_scramble: 'zap',
   kubo_roll: 'tumble',
@@ -91,4 +95,5 @@ export const HERO_ATTACK_SOUND: Record<string, AttackSound> = {
   aeris: 'magic',
   titan9: 'swing',
   kubo6: 'magic',
+  brann: 'gun',
 };

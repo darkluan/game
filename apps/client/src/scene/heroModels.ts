@@ -1,5 +1,6 @@
 import { CUBE_ACTIONS, type CubeColours } from './Cube';
 import { HYDRA_ACTIONS, type HydraColours } from './Hydra';
+import { IRONCLAD_ACTIONS, type IroncladColours } from './Ironclad';
 import { LONG_DRAGON_ACTIONS, type LongDragonColours } from './LongDragon';
 import { MECH_ACTIONS, type MechColours } from './Mech';
 import type { HumanDress } from './humanDress';
@@ -40,6 +41,8 @@ export interface HeroLook {
   swordsman?: SwordsmanColours;
   /** Set for a hero drawn as the long eastern dragon built in code; `model` is then empty. */
   longDragon?: LongDragonColours;
+  /** Set for a hero drawn as the tall figure in plate with guns for forearms, built in code; `model` is then empty. */
+  ironclad?: IroncladColours;
   /** Set for a hero drawn as the thinking puzzle cube built in code; `model` is then empty. */
   cube?: CubeColours;
   /** Set for a hero drawn as a war machine built in code; `model` is then empty. */
@@ -337,6 +340,17 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     showcaseScale: 0.9,
     mech: { kind: 'fortress', hull: '#4a5548', plate: '#aab79a', glow: '#ffb347' },
     rig: { idle: '', run: '', death: '', actions: MECH_ACTIONS },
+  },
+  // The god of the forge: a tall lean figure in gold plate over red, its helm of black and silver, a fire burning in it, a crest of that
+  // fire on its helm, and a gun for each forearm. Built in code, on a frame of its own.
+  brann: {
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 2.7,
+    showcaseScale: 0.85,
+    ironclad: { under: '#b01f2a', plate: '#e3a92c', trim: '#fff0b8', fire: '#ff3d24', helm: '#b9c0cc' },
+    rig: { idle: '', run: '', death: '', actions: IRONCLAD_ACTIONS },
   },
   // A puzzle cube that thinks: three layers of coloured tiles turning on each other, an eye in its
   // front, hanging in the air with loose pieces circling it. Built in code.

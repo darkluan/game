@@ -30,6 +30,7 @@ const PARAMS: Record<string, [label: string, unit: Unit]> = {
   mark: ['Sát thương nhận thêm khi bị đánh dấu', 'percent'],
   echo: ['Sức tia khi chép được chiêu', 'percent'],
   markedMult: ['Lên mục tiêu bị đánh dấu', 'times'],
+  farMult: ['Ở cuối tầm bắn', 'times'],
   stealthMult: ['Khi đang tàng hình', 'times'],
   lowMult: ['Lên mục tiêu máu thấp', 'times'],
   threshold: ['Ngưỡng máu thấp', 'percent'],

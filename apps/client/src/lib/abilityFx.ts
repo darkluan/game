@@ -45,6 +45,8 @@ const C = {
 } as const satisfies Record<string, Color>;
 
 const TURN = Math.PI * 2;
+/** The colour of Brann's fire. */
+const FORGE: Color = '#ff8a3c';
 /** The colours of the tiles on Kubo-6's faces, for what it throws about. */
 const TILE: Color[] = ['#ff5a3c', '#ff9d2e', '#f4f6fa', '#ffd84a', '#4aa3ff', '#4fd67a'];
 
@@ -545,5 +547,35 @@ export const ABILITY_FX: Record<string, (c: CastFxContext) => void> = {
     put(c, 'ring', c.caster, 2.2, C.white, 0.4);
     for (let i = 0; i < 6; i++) put(c, 'burst', c.caster, 1.2 + i * 0.2, TILE[i], 0.35, { delay: i * 0.04, angle: i });
     put(c, 'pillar', c.at, 0.7, C.volt, 0.5, { delay: 0.15 });
+  },
+  // Brann: the orange of a forge fire.
+  brann_slug: (c) => {
+    put(c, 'burst', c.caster, 1.1, FORGE, 0.2, { angle: angle(c.caster, c.at) });
+    draw(c, 'bolt', c.caster, c.at, 0.5, FORGE, 0.3);
+    draw(c, 'line', c.caster, c.at, 1.2, c.side, 0.3);
+    put(c, 'burst', c.at, 1.2, C.white, 0.25, { delay: 0.08 });
+  },
+  brann_slag: (c) => {
+    put(c, 'pillar', c.at, 0.9, FORGE, 0.5);
+    put(c, 'disc', c.at, 2.4, FORGE, 0.6);
+    put(c, 'ring', c.at, 2.4, c.side, 0.6);
+    for (let i = 0; i < 5; i++) put(c, 'burst', scatter(c.at, 1.8), 0.7, C.white, 0.3, { delay: i * 0.07, angle: i });
+  },
+  brann_kick: (c) => {
+    put(c, 'burst', c.from, 2.2, FORGE, 0.35);
+    put(c, 'ring', c.from, 2.2, c.side, 0.45);
+    draw(c, 'line', c.from, c.caster, 0.9, FORGE, 0.3);
+    put(c, 'ring', c.caster, 1.2, C.white, 0.3, { delay: 0.1 });
+  },
+  brann_bore: (c) => {
+    const direction = angle(c.caster, c.at);
+    put(c, 'ring', c.caster, 2.4, FORGE, 0.3, { inward: true });
+    put(c, 'burst', c.caster, 2.6, C.white, 0.3, { angle: direction, delay: 0.05 });
+    draw(c, 'line', c.caster, c.at, 2, c.side, 0.5);
+    draw(c, 'bolt', c.caster, c.at, 1.3, FORGE, 0.5);
+    draw(c, 'bolt', c.caster, c.at, 0.5, C.white, 0.5);
+    for (let i = 1; i <= 5; i++)
+      put(c, 'ring', along(c.caster, c.at, i / 5), 1.4 + i * 0.15, FORGE, 0.35, { delay: i * 0.04 });
+    put(c, 'burst', c.at, 2.6, FORGE, 0.4, { delay: 0.2 });
   },
 };

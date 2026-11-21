@@ -246,6 +246,7 @@ export const EN: Record<string, string> = {
   'Thoát trận': 'Leave match',
   'Tấn công kẻ địch gần nhất': 'Attack the nearest enemy',
   'Tốc biến': 'Flash',
+  'Ở cuối tầm bắn': 'At the end of its reach',
   'Sức tia khi chép được chiêu': 'Beam strength when an ability is copied',
   'Lăn chuột, dùng phím mũi tên hoặc bấm bản đồ nhỏ để xem trận':
     'Scroll, use the arrow keys or click the minimap to watch the fight',
@@ -530,6 +531,18 @@ export const EN: Record<string, string> = {
     "With each evolution Nyx's venom grows deadlier and its attacks stronger.",
   'Thần Chết': 'God of Death',
   'Pháo đài di động': 'The Walking Fortress',
+  'Thần Lò Rèn': 'God of the Forge',
+  'Đạn nung': 'Hot Slug',
+  'Bắn một viên đạn nung đỏ xuyên theo đường thẳng.': 'Fires a red-hot slug that pierces down a line.',
+  'Xỉ lò': 'Slag',
+  'Đổ xỉ nóng chảy xuống một điểm: mặt đất cháy trong 3 giây và làm chậm kẻ địch dính phải.':
+    'Pours molten slag on a point: the ground burns for 3 seconds and enemies it lands on are slowed.',
+  'Giật lùi': 'Recoil',
+  'Bắn một phát xuống chân: kẻ địch đứng gần bị sát thương, còn Brann bật đi theo hướng đã chọn.':
+    'Fires into the ground at his feet: enemies close by are hurt, and Brann is thrown the way you chose.',
+  'Đại pháo lò rèn': 'The Great Gun',
+  'Nạp và bắn một phát pháo rất xa theo đường thẳng, xuyên mọi kẻ địch. Càng xa nòng pháo càng đau, tối đa gấp rưỡi.':
+    'Fires one shot down a very long line, through every enemy. The farther from the muzzle it lands the harder it hits, up to half as much again.',
   'Khối đố biết nghĩ': 'The Thinking Puzzle',
   'Xoay mặt': 'Twist',
   'Phóng một mặt khối theo đường thẳng: gây sát thương và làm chậm mọi kẻ địch nó xuyên qua.':
