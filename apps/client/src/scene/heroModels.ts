@@ -1,3 +1,4 @@
+import { BRAWLER_ACTIONS, type BrawlerColours } from './Brawler';
 import { CUBE_ACTIONS, type CubeColours } from './Cube';
 import { HYDRA_ACTIONS, type HydraColours } from './Hydra';
 import { IRONCLAD_ACTIONS, type IroncladColours } from './Ironclad';
@@ -43,6 +44,8 @@ export interface HeroLook {
   longDragon?: LongDragonColours;
   /** Set for a hero drawn as the tall figure in plate with guns for forearms, built in code; `model` is then empty. */
   ironclad?: IroncladColours;
+  /** Set for a hero drawn as the four-armed dragon that walks upright, built in code; `model` is then empty. */
+  brawler?: BrawlerColours;
   /** Set for a hero drawn as the thinking puzzle cube built in code; `model` is then empty. */
   cube?: CubeColours;
   /** Set for a hero drawn as a war machine built in code; `model` is then empty. */
@@ -50,7 +53,7 @@ export interface HeroLook {
 }
 
 export interface HeroModel extends HeroLook {
-  /** Dragons: the look after each evolution, replacing the base look. */
+  /** A dragon with a body of its own for each form: the look after each evolution, replacing the base look. */
   stages?: HeroLook[];
 }
 
@@ -351,6 +354,45 @@ export const HERO_MODELS: Record<string, HeroModel> = {
     showcaseScale: 0.85,
     ironclad: { under: '#b01f2a', plate: '#e3a92c', trim: '#fff0b8', fire: '#ff3d24', helm: '#b9c0cc' },
     rig: { idle: '', run: '', death: '', actions: IRONCLAD_ACTIONS },
+  },
+  // A dragon in the shape of a man, with four arms: smooth blue skin over heavy muscle, a red sash, horns of bone,
+  // built in code. Unlike the other dragons it has a body for each form: lean with stubs for horns, then thick and
+  // spined, then a deeper blue and burning gold at its spines, knuckles and chest, and at last red, with six arms
+  // and a long dark sash.
+  garok: {
+    model: '',
+    hide: [],
+    scale: 1,
+    height: 1.95,
+    showcaseScale: 0.95,
+    brawler: { form: 0, hide: '#4f7fd6', belly: '#8fb4f0', cloth: '#b8322a', horn: '#efe3c4', glow: '#ffc83d' },
+    rig: { idle: '', run: '', death: '', actions: BRAWLER_ACTIONS },
+    stages: [
+      {
+        model: '',
+        hide: [],
+        scale: 1,
+        height: 2.3,
+        brawler: { form: 1, hide: '#3a64c2', belly: '#7ea4ea', cloth: '#b8322a', horn: '#efe3c4', glow: '#ffc83d' },
+        rig: { idle: '', run: '', death: '', actions: BRAWLER_ACTIONS },
+      },
+      {
+        model: '',
+        hide: [],
+        scale: 1,
+        height: 2.7,
+        brawler: { form: 2, hide: '#27479c', belly: '#6088d8', cloth: '#8f2420', horn: '#f4ead0', glow: '#ffc83d' },
+        rig: { idle: '', run: '', death: '', actions: BRAWLER_ACTIONS },
+      },
+      {
+        model: '',
+        hide: [],
+        scale: 1,
+        height: 3.1,
+        brawler: { form: 3, hide: '#b3262a', belly: '#e2675c', cloth: '#241c2e', horn: '#f4ead0', glow: '#ffc83d' },
+        rig: { idle: '', run: '', death: '', actions: BRAWLER_ACTIONS },
+      },
+    ],
   },
   // A puzzle cube that thinks: three layers of coloured tiles turning on each other, an eye in its
   // front, hanging in the air with loose pieces circling it. Built in code.

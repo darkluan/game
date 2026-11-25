@@ -38,6 +38,7 @@ const PARAMS: Record<string, [label: string, unit: Unit]> = {
   haste: ['Tăng tốc chạy', 'percent'],
   knockback: ['Hất lùi', 'number'],
   pull: ['Kéo lại', 'number'],
+  throw: ['Quật ra sau lưng', 'number'],
   stunTicks: ['Choáng', 'seconds'],
   rootTicks: ['Trói chân', 'seconds'],
   silenceTicks: ['Câm lặng', 'seconds'],

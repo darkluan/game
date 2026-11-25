@@ -546,6 +546,41 @@ export const ABILITY_FX: Record<string, (c: CastFxContext) => void> = {
     for (let i = 0; i < 6; i++) put(c, 'burst', c.caster, 1.2 + i * 0.2, TILE[i], 0.35, { delay: i * 0.04, angle: i });
     put(c, 'pillar', c.at, 0.7, C.volt, 0.5, { delay: 0.15 });
   },
+  // Garok: fists, dust and broken ground.
+  garok_flurry: (c) => {
+    const direction = angle(c.caster, c.at);
+    for (let i = 0; i < 4; i++) {
+      const hit = around(along(c.caster, c.at, 0.45 + (i % 2) * 0.4), i < 2 ? 0.6 : -0.6, direction + TURN / 4);
+      put(c, 'burst', hit, 1, C.white, 0.2, { delay: i * 0.09, angle: direction });
+      put(c, 'ring', hit, 0.8, C.earth, 0.25, { delay: i * 0.09 });
+    }
+    draw(c, 'line', c.caster, c.at, 2.4, c.side, 0.4);
+  },
+  garok_throw: (c) => {
+    // The enemy goes from in front of him, over, to behind.
+    const landed = along(c.at, c.caster, 2);
+    put(c, 'ring', c.at, 1.1, c.side, 0.3);
+    draw(c, 'line', c.at, landed, 0.8, C.wind, 0.35);
+    put(c, 'burst', landed, 1.9, C.earth, 0.4, { delay: 0.2 });
+    put(c, 'ring', landed, 1.6, C.stun, 0.45, { delay: 0.2 });
+  },
+  garok_brace: (c) => {
+    put(c, 'ring', c.caster, 2.6, C.earth, 0.4, { inward: true });
+    put(c, 'pillar', c.caster, 1.2, C.guard, 0.6);
+    put(c, 'ring', c.caster, 1.6, C.white, 0.6, { delay: 0.2 });
+  },
+  garok_quake: (c) => {
+    put(c, 'burst', c.caster, 2.8, C.earth, 0.4);
+    put(c, 'ring', c.caster, 2.2, C.white, 0.35);
+    draw(c, 'line', c.caster, c.at, 2.6, c.side, 0.6);
+    draw(c, 'bolt', c.caster, c.at, 1.4, C.crack, 0.8);
+    for (let i = 1; i <= 6; i++) {
+      const spot = along(c.caster, c.at, i / 6);
+      put(c, 'burst', spot, 1.5, C.earth, 0.4, { delay: i * 0.05, angle: i });
+      put(c, 'pillar', spot, 0.45, C.stone, 0.35, { delay: i * 0.05 });
+    }
+    put(c, 'ring', c.at, 1.8, C.stun, 0.5, { delay: 0.3 });
+  },
   // Brann: fire, and nothing of lightning about it: rolling bursts along the way a shot goes, pillars
   // of flame where it lands, ground left burning.
   brann_slug: (c) => {

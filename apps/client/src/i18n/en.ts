@@ -248,6 +248,7 @@ export const EN: Record<string, string> = {
   'Tốc biến': 'Flash',
   'Tiêu hao {cost}': 'Cost {cost}',
   'Ở cuối tầm bắn': 'At the end of its reach',
+  'Quật ra sau lưng': 'Thrown behind him',
   'Sức tia khi chép được chiêu': 'Beam strength when an ability is copied',
   'Lăn chuột, dùng phím mũi tên hoặc bấm bản đồ nhỏ để xem trận':
     'Scroll, use the arrow keys or click the minimap to watch the fight',
@@ -493,8 +494,8 @@ export const EN: Record<string, string> = {
   Thần: 'God',
   'Người máy': 'Machine',
   'Mang được 5 món đồ thay vì 4 và mua rẻ hơn 10%.': 'Carries 5 items instead of 4 and buys 10% cheaper.',
-  'Chiêu không tốn gì. Tiến hóa ở cấp 5 và 9: to hơn, khỏe hơn, chiêu mạnh hơn.':
-    'Abilities cost nothing. Evolves at levels 5 and 9: bigger, tougher, stronger abilities.',
+  'Chiêu không tốn gì. Tiến hóa theo cấp, thường ở cấp 5 và 9: to hơn, khỏe hơn, chiêu mạnh hơn.':
+    'Abilities cost nothing. Evolves as it levels, usually at levels 5 and 9: bigger, tougher, stronger abilities.',
   'Mạnh hơn khi có lính phe mình ở gần. Hồi sinh lâu hơn 50%.':
     'Stronger with allied minions nearby. Takes 50% longer to respawn.',
   'Chiêu sinh Nhiệt thay vì tốn mana. Nhiệt trên 50 chiêu mạnh hơn, chạm 100 thì Quá tải. Không tự hồi máu.':
@@ -534,6 +535,21 @@ export const EN: Record<string, string> = {
     "With each evolution Nyx's venom grows deadlier and its attacks stronger.",
   'Thần Chết': 'God of Death',
   'Pháo đài di động': 'The Walking Fortress',
+  'Tứ thủ long': 'The Four-Armed Dragon',
+  'Garok tiến hóa ba lần thay vì hai, ở cấp 4, 8 và 12. Dạng cuối mọc thêm đôi tay thứ ba.':
+    'Garok evolves three times instead of two, at levels 4, 8 and 12. The last form grows a third pair of arms.',
+  'Loạn quyền': 'Flurry',
+  'Tung cả bốn nắm đấm ra phía trước: gây sát thương và làm chậm mọi kẻ địch trong tầm tay.':
+    "Throws all four fists forward: damages and slows every enemy within arm's reach.",
+  'Quật qua vai': 'Shoulder Throw',
+  'Tóm một kẻ địch rồi quật nó qua vai ra sau lưng mình: gây sát thương và làm choáng.':
+    'Grabs an enemy and throws it over his shoulder to land behind him: damages and stuns it.',
+  'Gồng mình': 'Brace',
+  'Gồng cứng người trong 4 giây: thêm giáp và một lớp khiên chặn sát thương.':
+    'Sets every muscle for 4 seconds: extra armor and a shield that absorbs damage.',
+  'Tứ quyền chấn địa': 'Four-Fist Quake',
+  'Nện cả bốn nắm đấm xuống đất: một đường nứt chạy thẳng ra xa, gây sát thương lớn và làm choáng mọi kẻ địch trên đó.':
+    'Slams all four fists into the ground: a crack runs out in a line, dealing heavy damage and stunning every enemy on it.',
   'Thần Lò Rèn': 'God of the Forge',
   'Đạn nung': 'Hot Slug',
   'Bắn một viên đạn nung đỏ xuyên theo đường thẳng.': 'Fires a red-hot slug that pierces down a line.',

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { Group } from 'three';
 import type { ActorAction } from '@/lib/session';
 import { Actor } from './Actor';
+import { Brawler } from './Brawler';
 import type { HeroLook } from './heroModels';
 import { Cube } from './Cube';
 import { dressHuman } from './humanDress';
@@ -50,6 +51,7 @@ export function useHeroActors(looks: readonly HeroLook[], castShadow: boolean): 
         if (look.hydra) return new Hydra(look.hydra, look.height ?? 2.6, castShadow);
         if (look.longDragon) return new LongDragon(look.longDragon, look.height ?? 2.2, castShadow);
         if (look.ironclad) return new Ironclad(look.ironclad, look.height ?? 2.7, castShadow);
+        if (look.brawler) return new Brawler(look.brawler, look.height ?? 2.5, castShadow);
         if (look.cube) return new Cube(look.cube, look.height ?? 2.5, castShadow);
         if (look.mech) return new Mech(look.mech, look.height ?? 2.6, castShadow);
         if (look.swordsman) return new Swordsman(look.swordsman, look.height ?? 1.9, castShadow);
