@@ -1,12 +1,22 @@
 import { tr } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
-import { ITEM_LIST, itemPrice, ITEMS } from '@game/core';
+import { ITEM_LIST, itemPrice, ITEMS, SHOP } from '@game/core';
 import type { GameSession, HudState } from '@/lib/session';
 import { describeItem } from './heroText';
 import { ItemIcon } from './icons/ItemIcon';
 
-/** The hero's bag. Items can be sold back by clicking them while the shop is open. */
+/** A picked item waits this long for the second click that sells it. */
+const SELL_CONFIRM_MS = 3000;
+
+/** The hero's bag. With the shop open, one click picks an item and a second click on it sells it. */
 export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSession; columns: number }) {
+  // The item waiting for its second click. A stray click costs half an item's price, so one is never enough.
+  const [picked, setPicked] = useState<{ slot: number; id: string } | null>(null);
+  useEffect(() => {
+    if (!picked) return;
+    const timer = window.setTimeout(() => setPicked(null), SELL_CONFIRM_MS);
+    return () => window.clearTimeout(timer);
+  }, [picked]);
   return (
     <div
       className="grid gap-1"
@@ -18,16 +28,33 @@ export function ItemBag({ hud, game, columns }: { hud: HudState; game: GameSessi
         if (!item) {
           return <span key={i} className="h-9 rounded-sm border border-dashed border-border" />;
         }
+        // Holds only while the same item is still in the slot and the shop is still open.
+        const confirming = hud.canShop && picked?.slot === i && picked.id === item.id;
+        const refund = Math.floor(itemPrice(item.id, hud.discount) * SHOP.sellRefund);
+        const hint = confirming
+          ? tr('Bấm lần nữa để bán lấy {gold} vàng', { gold: refund })
+          : `${tr(item.name)}: ${describeItem(item.stats)}${hud.canShop ? ` · ${tr('bấm để bán lại nửa giá')}` : ''}`;
         return (
           <button
             key={i}
             type="button"
             disabled={!hud.canShop}
-            title={`${tr(item.name)}: ${describeItem(item.stats)}${hud.canShop ? ` · ${tr('bấm để bán lại nửa giá')}` : ''}`}
-            onClick={() => game.send({ t: 'sell', slotIndex: i })}
-            className="flex h-9 items-center justify-center rounded-sm text-gold border border-border bg-background px-1 text-[10px] enabled:cursor-pointer enabled:hover:border-danger"
+            title={hint}
+            aria-label={hint}
+            onClick={() => {
+              if (confirming) game.send({ t: 'sell', slotIndex: i });
+              setPicked(confirming ? null : { slot: i, id: item.id });
+            }}
+            className={`flex h-9 items-center justify-center rounded-sm border bg-background px-1 text-[10px] enabled:cursor-pointer enabled:hover:border-danger ${confirming ? 'border-danger text-danger' : 'border-border text-gold'}`}
           >
-            <ItemIcon id={item.id} className="size-8" />
+            {confirming ? (
+              <span className="leading-tight font-bold tabular-nums">
+                {tr('Bán?')}
+                <span className="block">+{refund}</span>
+              </span>
+            ) : (
+              <ItemIcon id={item.id} className="size-8" />
+            )}
           </button>
         );
       })}
@@ -79,7 +106,7 @@ export function ShopPanel({ hud, game, onClose }: { hud: HudState; game: GameSes
       <p className={`text-xs ${hud.canShop ? 'text-hp' : 'text-danger'}`}>
         {hud.canShop
           ? full
-            ? tr('Túi đồ đã đầy. Bấm vào một món trong túi để bán.')
+            ? tr('Túi đồ đã đầy. Bấm hai lần vào một món trong túi để bán.')
             : tr('Đang ở đền: mua được.')
           : tr('Chỉ mua bán được khi đứng ở đền của đội mình.')}
       </p>
