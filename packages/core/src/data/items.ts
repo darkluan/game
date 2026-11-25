@@ -79,6 +79,8 @@ export const HERO_BUILDS: Record<string, string[]> = {
   baru: ['swift_boots', 'giant_heart', 'guardian_plate', 'steel_armor'],
   zerak: ['swift_boots', 'war_hammer', 'blood_axe', 'guardian_plate'],
   nyx: ['swift_bow', 'swift_boots', 'storm_blade', 'blood_axe'],
+  // He has to be among them to use any of his four hands: speed, then damage that keeps him up.
+  garok: ['swift_boots', 'war_hammer', 'blood_axe', 'guardian_plate'],
 
   // Gods.
   sola: ['mana_gem', 'swift_boots', 'hourglass', 'arcane_orb'],

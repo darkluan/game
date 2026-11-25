@@ -1,4 +1,5 @@
 import { seconds } from '../data/balance.js';
+import { dist } from '../math.js';
 import type { AbilityEffect } from '../systems/ability.js';
 import { spawnZone } from '../systems/summons.js';
 
@@ -158,6 +159,40 @@ export const dragonEffects: Record<string, AbilityEffect> = {
       damage(e, param('damage'));
       sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
       sim.addStatus(e, 'mark', param('markTicks'), param('mark'));
+    }
+  },
+
+  // ---- Garok ----
+
+  /** All four fists thrown forward: everything within arm's reach is hurt and slowed. */
+  garok_flurry({ sim, caster, point, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+    }
+  },
+
+  /** Take hold of one enemy and throw it over the shoulder: it lands behind him, hurt and stunned. */
+  garok_throw({ sim, caster, target, dir, param, damage }) {
+    if (!target) return;
+    // Pushed from its own far side, it travels back past him.
+    const beyond = { x: target.pos.x + dir.x, z: target.pos.z + dir.z };
+    sim.knockback(target, beyond, dist(caster.pos, target.pos) + param('throw'));
+    damage(target, param('damage'));
+    sim.addStatus(target, 'stun', param('stunTicks'));
+  },
+
+  /** Every muscle set hard: armour, and a shield over it. */
+  garok_brace({ sim, caster, param }) {
+    sim.addStatus(caster, 'armor', param('durationTicks'), param('armor'));
+    sim.addStatus(caster, 'shield', param('durationTicks'), param('shield'));
+  },
+
+  /** Four fists into the ground: a crack runs out in a line and stuns whatever stands on it. */
+  garok_quake({ sim, caster, point, param, damage, enemiesOnLine }) {
+    for (const e of enemiesOnLine(caster.pos, point, param('width'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'stun', param('stunTicks'));
     }
   },
 };

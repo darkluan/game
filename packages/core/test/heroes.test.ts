@@ -324,6 +324,28 @@ describe('Raze-3', () => {
   });
 });
 
+describe('Garok', () => {
+  it('throws an enemy over his shoulder: it lands behind him, stunned', () => {
+    const { sim, a, b, cast } = arena('garok', 'kael', 2.5);
+    const before = b.health.hp;
+    cast('W');
+    expect(b.pos.x).toBeLessThan(a.pos.x);
+    expect(a.pos.x - b.pos.x).toBeCloseTo(HEROES.garok.abilities.W.params.throw[0], 0);
+    expect(b.health.hp).toBeLessThan(before);
+    expect(sim.hasStatus(b, 'stun')).toBe(true);
+  });
+
+  it('evolves three times, at levels 4, 8 and 12', () => {
+    const { sim, a } = arena('garok', 'kael', 40);
+    const stageAt = (level: number) => {
+      a.hero.level = level;
+      sim.step();
+      return a.hero.stage;
+    };
+    expect([1, 3, 4, 7, 8, 11, 12].map(stageAt)).toEqual([0, 0, 1, 1, 2, 2, 3]);
+  });
+});
+
 describe('Kubo-6', () => {
   /** Kubo-6 facing a hero of the given kind, with its ultimate learned and both heroes close enough for anything. */
   const facing = (other: string) => {

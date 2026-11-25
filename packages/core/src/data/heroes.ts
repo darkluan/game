@@ -1363,6 +1363,87 @@ const brann: HeroDef = {
   },
 };
 
+const garok: HeroDef = {
+  id: 'garok',
+  name: 'Garok',
+  title: 'Tứ thủ long',
+  race: 'dragon',
+  role: 'fighter',
+  base: {
+    hp: 680,
+    hpPerLevel: 88,
+    hpRegen: 3,
+    mana: 0,
+    manaPerLevel: 0,
+    manaRegen: 0,
+    attack: 58,
+    attackPerLevel: 3.8,
+    armor: 30,
+    moveSpeed: 6.4,
+    attackRange: 2.2,
+    attackInterval: seconds(0.95),
+    projectileSpeed: 0,
+  },
+  resource: 'none',
+  passive: {
+    effect: 'evolution',
+    description: 'Garok tiến hóa ba lần thay vì hai, ở cấp 4, 8 và 12. Dạng cuối mọc thêm đôi tay thứ ba.',
+    params: {},
+  },
+  // Three steps where the other dragons have two: smaller ones, and the last only comes at the top level.
+  evolutions: [
+    { level: 4, scale: 1.2, hp: 180, attack: 8, abilityMult: 1.1 },
+    { level: 8, scale: 1.4, hp: 420, attack: 18, abilityMult: 1.2 },
+    { level: 12, scale: 1.6, hp: 700, attack: 32, abilityMult: 1.3 },
+  ],
+  abilities: {
+    Q: ability(
+      'garok_flurry',
+      'Loạn quyền',
+      'Tung cả bốn nắm đấm ra phía trước: gây sát thương và làm chậm mọi kẻ địch trong tầm tay.',
+      'direction',
+      3.4,
+      'damage',
+      s3(6, 5.5, 5),
+      same(0),
+      { damage: [70, 110, 150], width: same(2.4), slow: same(0.3), slowTicks: same(30) },
+    ),
+    W: ability(
+      'garok_throw',
+      'Quật qua vai',
+      'Tóm một kẻ địch rồi quật nó qua vai ra sau lưng mình: gây sát thương và làm choáng.',
+      'unit',
+      3,
+      'engage',
+      s3(13, 12, 11),
+      same(0),
+      { damage: [60, 95, 130], throw: same(2.5), stunTicks: [16, 20, 24] },
+    ),
+    E: ability(
+      'garok_brace',
+      'Gồng mình',
+      'Gồng cứng người trong 4 giây: thêm giáp và một lớp khiên chặn sát thương.',
+      'self',
+      0,
+      'shield',
+      s3(16, 15, 14),
+      same(0),
+      { shield: [90, 150, 210], armor: [20, 30, 40], durationTicks: same(80) },
+    ),
+    R: ability(
+      'garok_quake',
+      'Tứ quyền chấn địa',
+      'Nện cả bốn nắm đấm xuống đất: một đường nứt chạy thẳng ra xa, gây sát thương lớn và làm choáng mọi kẻ địch trên đó.',
+      'direction',
+      9,
+      'damage',
+      s3(75, 65, 55),
+      same(0),
+      { damage: [190, 285, 380], width: same(2.6), stunTicks: same(24) },
+    ),
+  },
+};
+
 /** Two heroes per race first (the launch roster), then the third and the fourth of each race, then those added since. */
 export const HEROES: Record<string, HeroDef> = {
   kael,
@@ -1383,6 +1464,7 @@ export const HEROES: Record<string, HeroDef> = {
   titan9,
   kubo6,
   brann,
+  garok,
 };
 export const HERO_IDS: readonly string[] = Object.keys(HEROES);
 /** The four heroes of the MVP, one per race. */

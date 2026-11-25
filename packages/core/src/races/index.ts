@@ -28,7 +28,7 @@ export const RACES: Record<Race, RaceDef> = {
   dragon: {
     id: 'dragon',
     name: 'Rồng',
-    description: 'Chiêu không tốn gì. Tiến hóa ở cấp 5 và 9: to hơn, khỏe hơn, chiêu mạnh hơn.',
+    description: 'Chiêu không tốn gì. Tiến hóa theo cấp, thường ở cấp 5 và 9: to hơn, khỏe hơn, chiêu mạnh hơn.',
     itemSlots: SHOP.slots,
     shopDiscount: 0,
     respawnMult: 1,

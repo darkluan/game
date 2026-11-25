@@ -177,7 +177,7 @@ export interface HeroState {
   lastCast?: { defId: string; slot: AbilitySlot };
   /** Machines: tick at which the current Overload ends, 0 when not overloaded. */
   overloadUntil: number;
-  /** Dragons: how many evolutions have happened (0..2). */
+  /** Dragons: how many evolutions have happened. */
   stage: number;
   /** Gods: allied minions currently close by. */
   followers: number;
