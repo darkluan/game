@@ -3,6 +3,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router';
 import { Box3, type Group, Vector3 } from 'three';
 import { HEROES } from '@game/core';
+import type { ActorAction } from '@/lib/session';
 import { useHeroActors } from '@/scene/heroActors';
 import { HERO_MODELS } from '@/scene/heroModels';
 import { heroColor } from '@/scene/palette';
@@ -36,7 +37,10 @@ function framingOf(heroId: string): (typeof FRAMING)[keyof typeof FRAMING] {
 }
 
 function Subject({ heroId }: { heroId: string }) {
-  const look = HERO_MODELS[heroId] ?? HERO_MODELS.kael;
+  const model = HERO_MODELS[heroId] ?? HERO_MODELS.kael;
+  // ?form=1 shows a later form of a hero that has a body for each, for checking it.
+  const form = Number(new URLSearchParams(window.location.search).get('form') ?? 0) || 0;
+  const look = (form > 0 && model.stages?.[form - 1]) || model;
   const holder = useRef<Group>(null);
   const camera = useThree((s) => s.camera);
   const looks = useMemo(() => [look], [look]);
@@ -51,7 +55,14 @@ function Subject({ heroId }: { heroId: string }) {
 
   useFrame((_, delta) => {
     // Hold the idle pose a moment in, so every portrait is taken at the same point of the animation.
-    if (frames.current < 20) actor.update(delta, 0, { dead: false, moving: false });
+    if (frames.current < 20) {
+      // ?act=R&p=0.5 holds the hero halfway through that action, for checking a pose.
+      const query = new URLSearchParams(window.location.search);
+      const move = look.rig.actions[query.get('act') ?? ''];
+      const clock = move ? (frames.current / 19) * move.seconds * Number(query.get('p') ?? 0.5) : 0;
+      const action = move ? { kind: query.get('act') as ActorAction['kind'], at: 0 } : undefined;
+      actor.update(delta, clock, { dead: false, moving: false, action });
+    }
     frames.current++;
     if (frames.current !== 20) return;
     const box = new Box3().setFromObject(actor.root);
