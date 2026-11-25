@@ -96,6 +96,10 @@ export interface HudState {
   overloadSeconds: number;
   /** Dragons: evolutions so far. */
   stage: number;
+  /** Dragons: how many evolutions the hero has in all. */
+  stages: number;
+  /** Dragons: the level the next evolution comes at, or null once fully evolved. */
+  nextEvolveLevel: number | null;
   /** Gods: allied minions close by. */
   followers: number;
   level: number;

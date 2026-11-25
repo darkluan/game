@@ -84,8 +84,11 @@ export function ResourceBar({ hud }: { hud: HudState }) {
   }
   return (
     <p className="text-xs text-muted-foreground">
-      {tr('Chiêu không tốn gì · Tiến hóa:')} <span className="font-semibold text-race-dragon">{hud.stage} / 2</span>
-      {hud.stage < 2 && ` ${tr('(lần tới ở cấp {level})', { level: hud.stage === 0 ? 5 : 9 })}`}
+      {tr('Chiêu không tốn gì · Tiến hóa:')}{' '}
+      <span className="font-semibold text-race-dragon">
+        {hud.stage} / {hud.stages}
+      </span>
+      {hud.nextEvolveLevel !== null && ` ${tr('(lần tới ở cấp {level})', { level: hud.nextEvolveLevel })}`}
     </p>
   );
 }

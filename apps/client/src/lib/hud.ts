@@ -118,6 +118,8 @@ export function buildHud(input: HudInput): HudState {
     heat: you.heat,
     overloadSeconds: Math.ceil(you.overload / TICK_RATE),
     stage: input.stage,
+    stages: def.evolutions?.length ?? 0,
+    nextEvolveLevel: def.evolutions?.[input.stage]?.level ?? null,
     followers: you.followers,
     level: input.level,
     xpFraction: you.xp,

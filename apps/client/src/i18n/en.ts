@@ -237,7 +237,7 @@ export const EN: Record<string, string> = {
   '{gold} vàng': '{gold} gold',
   'Cửa hàng (B)': 'Shop (B)',
   'Cần điều khiển di chuyển': 'Movement stick',
-  'Tiến hóa {stage}/2': 'Evolution {stage}/2',
+  'Tiến hóa {stage}/{stages}': 'Evolution {stage}/{stages}',
   '· QUÁ TẢI': '· OVERLOAD',
   'Toàn màn hình': 'Full screen',
   'Thoát toàn màn hình': 'Exit full screen',

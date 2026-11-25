@@ -254,7 +254,10 @@ function Vitals({ hud }: { hud: HudState }) {
           <span>
             {tr('Cấp {level}', { level: hud.level })}
             {hud.resource === 'none' && (
-              <span className="text-race-dragon"> · {tr('Tiến hóa {stage}/2', { stage: hud.stage })}</span>
+              <span className="text-race-dragon">
+                {' '}
+                · {tr('Tiến hóa {stage}/{stages}', { stage: hud.stage, stages: hud.stages })}
+              </span>
             )}
             {hud.overloadSeconds > 0 && <span className="text-danger"> {tr('· QUÁ TẢI')}</span>}
           </span>
