@@ -550,6 +550,18 @@ export const EN: Record<string, string> = {
   'Tứ quyền chấn địa': 'Four-Fist Quake',
   'Nện cả bốn nắm đấm xuống đất: một đường nứt chạy thẳng ra xa, gây sát thương lớn và làm choáng mọi kẻ địch trên đó.':
     'Slams all four fists into the ground: a crack runs out in a line, dealing heavy damage and stunning every enemy on it.',
+  'Song đao ma trơi': 'The Wisp Blades',
+  'Lướt chém': 'Rush',
+  'Lướt xuyên qua kẻ địch, chém mọi thứ trên đường.': 'Rushes through the enemy, cutting everything on the way.',
+  'Vòng đao': 'Whirl',
+  'Xoay hai lưỡi đao một vòng: gây sát thương mọi kẻ địch quanh mình và làm chúng chậm lại.':
+    'Turns once with both blades out: damages every enemy close by and slows them.',
+  'Thổi lửa': 'Kindle',
+  'Thổi bùng lửa trên lưỡi đao: chạy nhanh và đánh thường mạnh hơn trong 3 giây.':
+    'Blows up the fire on the blades: moves faster and hits harder with basic attacks for 3 seconds.',
+  'Giàn hỏa': 'Pyre',
+  'Lao tới một kẻ địch và bổ cả hai lưỡi đao xuống: sát thương lớn, rồi mặt đất quanh đó cháy trong 3 giây.':
+    'Leaps onto one enemy and brings both blades down: heavy damage, and the ground there burns for 3 seconds.',
   'Thần Lò Rèn': 'God of the Forge',
   'Đạn nung': 'Hot Slug',
   'Bắn một viên đạn nung đỏ xuyên theo đường thẳng.': 'Fires a red-hot slug that pierces down a line.',

@@ -45,6 +45,8 @@ const C = {
 } as const satisfies Record<string, Color>;
 
 const TURN = Math.PI * 2;
+/** The colour of Varo's fire. */
+const WISP: Color = '#3f7dff';
 /** The colours of the tiles on Kubo-6's faces, for what it throws about. */
 const TILE: Color[] = ['#ff5a3c', '#ff9d2e', '#f4f6fa', '#ffd84a', '#4aa3ff', '#4fd67a'];
 
@@ -620,5 +622,39 @@ export const ABILITY_FX: Record<string, (c: CastFxContext) => void> = {
       if (i % 2 === 0) put(c, 'pillar', spot, 0.6, C.fire, 0.45, { delay: 0.1 + i * 0.03 });
     }
     put(c, 'burst', c.at, 2.8, C.fire, 0.45, { delay: 0.25 });
+  },
+  // Varo: the deep blue of a will-o'-the-wisp, left hanging in the air where the blades went.
+  varo_rush: (c) => {
+    const direction = angle(c.from, c.caster);
+    draw(c, 'line', c.from, c.caster, 1.6, WISP, 0.35);
+    for (let i = 1; i <= 4; i++)
+      put(c, 'slash', along(c.from, c.caster, i / 4.4), 1.5, i % 2 ? WISP : C.white, 0.3, {
+        angle: direction + (i % 2 ? 1.1 : -1.1),
+        delay: i * 0.035,
+      });
+    put(c, 'ring', c.caster, 1.3, c.side, 0.35, { delay: 0.12 });
+  },
+  varo_whirl: (c) => {
+    for (let i = 0; i < 6; i++)
+      put(c, 'slash', c.caster, 2.8, i % 2 ? WISP : C.white, 0.35, { angle: (i / 6) * TURN, delay: i * 0.05 });
+    put(c, 'ring', c.caster, 2.8, c.side, 0.5);
+    put(c, 'disc', c.caster, 2.8, WISP, 0.3);
+  },
+  varo_kindle: (c) => {
+    put(c, 'ring', c.caster, 2, WISP, 0.4, { inward: true });
+    put(c, 'pillar', c.caster, 0.8, WISP, 0.6, { delay: 0.1 });
+    put(c, 'burst', c.caster, 1.6, C.white, 0.35, { delay: 0.1 });
+  },
+  // The great blaze: a pillar where the blades come down, the ground alight round it, flames going up all over it.
+  varo_pyre: (c) => {
+    draw(c, 'line', c.from, c.caster, 0.5, WISP, 0.25);
+    put(c, 'slash', c.at, 2.2, C.white, 0.3, { angle: angle(c.caster, c.at) + 0.9, delay: 0.05 });
+    put(c, 'slash', c.at, 2.2, WISP, 0.3, { angle: angle(c.caster, c.at) - 0.9, delay: 0.1 });
+    put(c, 'pillar', c.at, 1.4, WISP, 0.7, { delay: 0.12 });
+    put(c, 'burst', c.at, 3.2, WISP, 0.5, { delay: 0.12 });
+    put(c, 'disc', c.at, 3, WISP, 0.8, { delay: 0.12 });
+    put(c, 'ring', c.at, 3, c.side, 0.7, { delay: 0.12 });
+    for (let i = 0; i < 8; i++)
+      put(c, 'pillar', scatter(c.at, 2.6), 0.4, i % 2 ? WISP : C.white, 0.5, { delay: 0.2 + i * 0.09 });
   },
 };

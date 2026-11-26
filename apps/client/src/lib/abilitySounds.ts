@@ -70,6 +70,10 @@ export const ABILITY_SOUND: Record<string, AbilitySound> = {
   garok_throw: 'slam',
   garok_brace: 'guard',
   garok_quake: 'quake',
+  varo_rush: 'dash',
+  varo_whirl: 'saw',
+  varo_kindle: 'fire',
+  varo_pyre: 'execute',
   brann_slug: 'snipe',
   brann_slag: 'fire',
   brann_kick: 'explosion',
@@ -100,5 +104,6 @@ export const HERO_ATTACK_SOUND: Record<string, AttackSound> = {
   titan9: 'swing',
   kubo6: 'magic',
   brann: 'gun',
+  varo: 'swing',
   garok: 'swing',
 };
