@@ -1,4 +1,5 @@
 import { seconds } from '../data/balance.js';
+import { angleTo } from '../math.js';
 import type { AbilityEffect } from '../systems/ability.js';
 import { spawnZone } from '../systems/summons.js';
 import { mostWounded } from './god.js';
@@ -150,5 +151,45 @@ export const humanEffects: Record<string, AbilityEffect> = {
       everyTicks: STARFALL_PULSE_TICKS,
       value: (param('burn') * power) / 2,
     });
+  },
+
+  // ---- Varo ----
+
+  /** A rush through the enemy, both blades out. */
+  varo_rush({ caster, def, param, damage, dash, enemiesOnLine }) {
+    const from = dash(def.range);
+    for (const e of enemiesOnLine(from, caster.pos, param('width'))) damage(e, param('damage'));
+  },
+
+  /** One full turn with the blades held out: everything close is cut and slowed. */
+  varo_whirl({ sim, caster, param, damage }) {
+    for (const e of sim.enemiesWithin(caster.team, caster.pos, param('radius'))) {
+      damage(e, param('damage'));
+      sim.addStatus(e, 'slow', param('slowTicks'), param('slow'));
+    }
+  },
+
+  /** The fire on the blades blown up: faster, and harder basic attacks, for a few seconds. */
+  varo_kindle({ sim, caster, param }) {
+    sim.addStatus(caster, 'haste', param('buffTicks'), param('haste'));
+    sim.addStatus(caster, 'attack', param('buffTicks'), param('attack'));
+  },
+
+  /** A leap onto one enemy with both blades coming down, and the ground left burning where they land. */
+  varo_pyre({ sim, caster, target, param, damage, blink, power }) {
+    if (!target) return;
+    const gap = target.radius + caster.radius + 0.3;
+    const away = angleTo(target.pos, caster.pos);
+    blink({ x: target.pos.x + Math.sin(away) * gap, z: target.pos.z + Math.cos(away) * gap });
+    caster.facing = angleTo(caster.pos, target.pos);
+    damage(target, param('damage'));
+    spawnZone(sim, caster, target.pos, {
+      effect: 'burn',
+      radius: param('radius'),
+      lifeTicks: param('lifeTicks'),
+      everyTicks: seconds(0.5),
+      value: (param('burn') * power) / 2,
+    });
+    if (sim.isTargetable(target)) caster.hero.order = { t: 'attack', targetId: target.id };
   },
 };

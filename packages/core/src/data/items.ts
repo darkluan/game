@@ -67,6 +67,8 @@ export const HERO_BUILDS: Record<string, string[]> = {
   // Humans: five slots.
   // A bruiser who dives in: speed to reach the fight, then damage that also keeps him standing.
   kael: ['swift_boots', 'war_hammer', 'blood_axe', 'guardian_plate', 'great_blade'],
+  // In and out fast, and every cut has to count.
+  varo: ['swift_boots', 'great_blade', 'storm_blade', 'blood_axe', 'hourglass'],
   // All her damage is her bow: faster shots first, then harder ones that heal her.
   lyra: ['swift_bow', 'swift_boots', 'storm_blade', 'blood_axe', 'great_blade'],
   // Spells and nothing else: power, then more casts.

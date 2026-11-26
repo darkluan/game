@@ -1444,6 +1444,79 @@ const garok: HeroDef = {
   },
 };
 
+const varo: HeroDef = {
+  id: 'varo',
+  name: 'Varo',
+  title: 'Song đao ma trơi',
+  race: 'human',
+  role: 'assassin',
+  base: {
+    hp: 640,
+    hpPerLevel: 76,
+    hpRegen: 2,
+    mana: 240,
+    manaPerLevel: 26,
+    manaRegen: 3.2,
+    attack: 60,
+    attackPerLevel: 4.4,
+    armor: 26,
+    moveSpeed: 6.9,
+    attackRange: 2.2,
+    attackInterval: seconds(0.9),
+    projectileSpeed: 0,
+  },
+  resource: 'mana',
+  // Not a dragon, but it wakes once: at the level its last move opens, its fire takes the whole of it.
+  // The step changes how it looks and nothing else, so it is no stronger than its numbers say.
+  evolutions: [{ level: 6, scale: 1, hp: 0, attack: 0, abilityMult: 1 }],
+  abilities: {
+    Q: ability(
+      'varo_rush',
+      'Lướt chém',
+      'Lướt xuyên qua kẻ địch, chém mọi thứ trên đường.',
+      'direction',
+      5.5,
+      'engage',
+      s3(7, 6.5, 6),
+      [40, 45, 50],
+      { damage: [65, 100, 135], width: same(1.6) },
+    ),
+    W: ability(
+      'varo_whirl',
+      'Vòng đao',
+      'Xoay hai lưỡi đao một vòng: gây sát thương mọi kẻ địch quanh mình và làm chúng chậm lại.',
+      'self',
+      0,
+      'damage',
+      s3(9, 8.5, 8),
+      [45, 50, 55],
+      { damage: [70, 105, 140], radius: same(2.8), slow: same(0.25), slowTicks: same(30) },
+    ),
+    E: ability(
+      'varo_kindle',
+      'Thổi lửa',
+      'Thổi bùng lửa trên lưỡi đao: chạy nhanh và đánh thường mạnh hơn trong 3 giây.',
+      'self',
+      0,
+      'buff',
+      s3(13, 12, 11),
+      same(40),
+      { haste: same(0.3), attack: [0.2, 0.3, 0.4], buffTicks: same(60) },
+    ),
+    R: ability(
+      'varo_pyre',
+      'Giàn hỏa',
+      'Lao tới một kẻ địch và bổ cả hai lưỡi đao xuống: sát thương lớn, rồi mặt đất quanh đó cháy trong 3 giây.',
+      'unit',
+      6,
+      'engage',
+      s3(60, 52, 44),
+      same(100),
+      { damage: [150, 225, 300], burn: [40, 60, 80], radius: same(3), lifeTicks: same(60) },
+    ),
+  },
+};
+
 /** Two heroes per race first (the launch roster), then the third and the fourth of each race, then those added since. */
 export const HEROES: Record<string, HeroDef> = {
   kael,
@@ -1465,6 +1538,7 @@ export const HEROES: Record<string, HeroDef> = {
   kubo6,
   brann,
   garok,
+  varo,
 };
 export const HERO_IDS: readonly string[] = Object.keys(HEROES);
 /** The four heroes of the MVP, one per race. */
